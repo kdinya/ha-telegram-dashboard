@@ -40,7 +40,7 @@ def main() -> None:
     cm = ConfigManager(config_path)
     cm.load()
     renderer = MessageRenderer()
-    access = AccessController(cm.config)
+    access = AccessController(cm.config.get("users", []), default_role=cm.config.get("default_role", "guest"))
 
     supervisor_token = os.environ.get("SUPERVISOR_TOKEN", "")
     ha_client = None

@@ -28,10 +28,15 @@ class AccessController:
       - ``blocked_entities``: always denied, even for members.
     """
 
-    def __init__(self, users: list[dict], default_role: str = DEFAULT_ROLE) -> None:
-        self._users = {
-            int(user["telegram_id"]): user for user in users
-        }
+    def __init__(self, users: list[dict] | dict, default_role: str = DEFAULT_ROLE) -> None:
+        user_list = users.get("users", []) if isinstance(users, dict) else (users or [])
+        self._users = {}
+        for user in user_list:
+            if isinstance(user, dict) and "telegram_id" in user:
+                try:
+                    self._users[int(user["telegram_id"])] = user
+                except (ValueError, TypeError):
+                    pass
         if default_role not in ROLE_PRIORITY:
             raise ValueError(f"unknown default role '{default_role}'")
         self._default_role = default_role
