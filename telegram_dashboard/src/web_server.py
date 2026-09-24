@@ -10,6 +10,7 @@ from aiohttp import web
 from .config_manager import ConfigManager
 from .renderer import MessageRenderer
 from .access_controller import AccessController
+from .bot_engine import BotEngine
 
 logger = logging.getLogger("telegram_dashboard.web")
 
@@ -254,12 +255,17 @@ class WebApp:
         # Render HTML using unified renderer
         text = self.renderer.render_section(section, state)
 
-        # Build preview keyboard
-        if self.bot_engine:
-            self.bot_engine.config = {"menu": menu, "users": self.cm.config.get("users", [])}
-            keyboard = self.bot_engine.build_keyboard(section_key, 0, state=state)
-        else:
-            keyboard = []
+        # Build preview keyboard respecting simulated role and sections parity
+        simulated_users = [{"telegram_id": 0, "role": user_role, "name": f"Preview ({user_role})"}]
+        preview_access = AccessController(simulated_users)
+        preview_engine = BotEngine(
+            config={"menu": menu, "users": simulated_users},
+            access_controller=preview_access,
+            renderer=self.renderer,
+        )
+        if self.bot_engine and hasattr(self.bot_engine, "catalog"):
+            preview_engine.catalog = getattr(self.bot_engine, "catalog", {})
+        keyboard = preview_engine.build_keyboard(section_key, 0, state=state)
 
         return web.json_response({"html": text, "keyboard": keyboard})
 

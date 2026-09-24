@@ -738,6 +738,13 @@ function renderMenuChecklist(selectedKeys) {
     const isChecked = (selectedKeys || []).includes(k) ? 'checked' : '';
     return `<label><input type="checkbox" value="${k}" ${isChecked}> ${s.icon || '📁'} ${cleanTitle}</label>`;
   }).join('');
+
+  menuSectionsChecklist.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      syncCurrentSectionFromForm();
+      updatePreview();
+    });
+  });
 }
 
 // --- Entities (Показники: Назва - Дані) ---
@@ -910,29 +917,28 @@ $('btn-delete-section').addEventListener('click', () => {
   showToast('Розділ видалено');
 });
 
-// --- Apply section ---
-$('btn-apply-section').addEventListener('click', () => {
+function syncCurrentSectionFromForm() {
+  if (!config || !config.menu || !currentSectionKey) return;
   const sec = config.menu[currentSectionKey];
   if (!sec) return;
 
-  sec.title = stripLeadingEmoji(secTitle.value.trim()) || 'Розділ';
-  sec.icon = secIcon.value.trim() || '📁';
+  if (secTitle) {
+    sec.title = stripLeadingEmoji(secTitle.value.trim()) || 'Розділ';
+  }
+  if (secIcon) {
+    sec.icon = secIcon.value.trim() || '📁';
+  }
 
   const roles = [];
-  if (roleAdmin.checked) roles.push('admin');
-  if (roleMember.checked) roles.push('member');
-  if (roleGuest.checked) roles.push('guest');
+  if (roleAdmin?.checked) roles.push('admin');
+  if (roleMember?.checked) roles.push('member');
+  if (roleGuest?.checked) roles.push('guest');
   sec.roles = roles.length ? roles : ['admin'];
 
-  // Save selected sub-sections for navigation
   const checked = [];
   document.getElementById('menu-sections-checklist')?.querySelectorAll('input:checked').forEach(i => checked.push(i.value));
   sec.sections = checked;
-
-  renderSectionsPills();
-  updatePreview();
-  showToast('Зміни для розділу застосовано');
-});
+}
 
 // --- Users ---
 function renderUsers() {
@@ -1068,7 +1074,7 @@ function applySettings() {
 
 // --- Save config ---
 $('btn-save').addEventListener('click', async () => {
-  $('btn-apply-section').click();
+  syncCurrentSectionFromForm();
   applySettings();
   try {
     const res = await fetch('api/config', {
@@ -1233,11 +1239,21 @@ function setupEventListeners() {
   });
 
   secTitle?.addEventListener('input', () => {
-    const sec = config && config.menu ? config.menu[currentSectionKey] : null;
-    if (sec) sec.title = secTitle.value;
+    syncCurrentSectionFromForm();
+    renderSectionsPills();
+    updatePreview();
   });
   secIcon?.addEventListener('input', () => {
     if (secIconDisplay) secIconDisplay.textContent = secIcon.value || '📁';
+    syncCurrentSectionFromForm();
+    renderSectionsPills();
+    updatePreview();
+  });
+  [roleAdmin, roleMember, roleGuest].forEach(cb => {
+    cb?.addEventListener('change', () => {
+      syncCurrentSectionFromForm();
+      updatePreview();
+    });
   });
   if (secType) {
     secType.addEventListener('change', () => {
