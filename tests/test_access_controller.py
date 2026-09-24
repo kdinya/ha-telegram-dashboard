@@ -22,3 +22,39 @@ def test_access_controller_roles():
     reboot_action = {"id": "reboot", "min_role": "admin"}
     assert ac.check_action(1, reboot_action).allowed is True
     assert ac.check_action(2, reboot_action).allowed is False
+
+
+def test_access_controller_fail_closed_whitelist():
+    user = {
+        "telegram_id": 50,
+        "name": "Restricted User",
+        "role": "member",
+        "allowed_domains": ["light"],
+        "allowed_areas": ["living_room"],
+        "allowed_labels": ["guest_safe"],
+    }
+    ac = AccessController([user])
+
+    # Domain mismatch / missing
+    res = ac.check_entity(50, "switch.boiler", domain="switch", area="living_room", labels=["guest_safe"])
+    assert res.allowed is False
+
+    # Domain inferred from entity_id when domain is None
+    res = ac.check_entity(50, "switch.boiler", domain=None, area="living_room", labels=["guest_safe"])
+    assert res.allowed is False
+
+    # Domain matches, but area is None -> must be DENIED (fail-closed)
+    res = ac.check_entity(50, "light.kitchen", domain="light", area=None, labels=["guest_safe"])
+    assert res.allowed is False
+
+    # Area mismatch
+    res = ac.check_entity(50, "light.kitchen", domain="light", area="kitchen", labels=["guest_safe"])
+    assert res.allowed is False
+
+    # Labels missing when allowed_labels is set -> must be DENIED (fail-closed)
+    res = ac.check_entity(50, "light.lamp", domain="light", area="living_room", labels=None)
+    assert res.allowed is False
+
+    # All match -> allowed
+    res = ac.check_entity(50, "light.lamp", domain="light", area="living_room", labels=["guest_safe"])
+    assert res.allowed is True

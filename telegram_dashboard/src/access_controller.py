@@ -88,19 +88,36 @@ class AccessController:
             value = user.get(key)
             return value if isinstance(value, list) else None
 
+        # If domain was not supplied by catalog, infer it from entity_id (e.g. light.living_room -> light)
+        effective_domain = domain
+        if effective_domain is None and "." in entity_id:
+            effective_domain = entity_id.split(".", 1)[0]
+
+        # Fail-closed whitelist enforcement: if a filter list is set,
+        # missing attributes or non-matching values must deny access.
         allowed_entities = whitelist("allowed_entities")
         if allowed_entities is not None and entity_id not in allowed_entities:
             return AccessDecision(False, role, reason=f"Сутність {entity_id} не дозволена для вас.")
+
         allowed_domains = whitelist("allowed_domains")
-        if allowed_domains is not None and domain is not None and domain not in allowed_domains:
-            return AccessDecision(False, role, reason=f"Категорія '{domain}' не дозволена для вас.")
+        if allowed_domains is not None:
+            if effective_domain is None or effective_domain not in allowed_domains:
+                return AccessDecision(
+                    False, role, reason=f"Категорія '{effective_domain or 'невідома'}' не дозволена для вас."
+                )
+
         allowed_areas = whitelist("allowed_areas")
-        if allowed_areas is not None and area is not None and area not in allowed_areas:
-            return AccessDecision(False, role, reason=f"Зона '{area}' не дозволена для вас.")
+        if allowed_areas is not None:
+            if area is None or area not in allowed_areas:
+                return AccessDecision(
+                    False, role, reason=f"Зона '{area or 'невідома'}' не дозволена для вас."
+                )
+
         allowed_labels = whitelist("allowed_labels")
-        if allowed_labels is not None and labels:
-            if not any(label in allowed_labels for label in labels):
+        if allowed_labels is not None:
+            if not labels or not any(label in allowed_labels for label in labels):
                 return AccessDecision(False, role, reason="Категорія не дозволена для вас.")
+
         return AccessDecision(True, role)
 
     def filter_actions(self, telegram_id: int, actions: list[dict]) -> list[dict]:
