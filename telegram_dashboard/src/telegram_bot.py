@@ -1,0 +1,178 @@
+"""Lightweight async Telegram Bot polling service using aiohttp."""
+from __future__ import annotations
+
+import asyncio
+import logging
+from typing import Any, Callable, Awaitable
+import aiohttp
+
+logger = logging.getLogger("telegram_dashboard.bot_polling")
+
+
+class TelegramBotRunner:
+    def __init__(
+        self, token: str, bot_engine: Any, get_ha_state: Callable[[], Awaitable[dict[str, Any]]] | None = None
+    ) -> None:
+        self.token = token
+        self.bot_engine = bot_engine
+        self.get_ha_state = get_ha_state
+        self.base_url = f"https://api.telegram.org/bot{token}"
+        self._session: aiohttp.ClientSession | None = None
+        self._running = False
+        self._task: asyncio.Task | None = None
+
+    async def _post(self, method: str, data: dict[str, Any]) -> dict[str, Any] | None:
+        if self._session is None or self._session.closed:
+            self._session = aiohttp.ClientSession()
+        url = f"{self.base_url}/{method}"
+        try:
+            async with self._session.post(url, json=data, timeout=30) as resp:
+                if resp.status == 200:
+                    return await resp.json()
+                text = await resp.text()
+                logger.warning("Telegram %s returned %s: %s", method, resp.status, text[:150])
+        except Exception as e:
+            logger.error("Telegram %s request error: %s", method, e)
+        return None
+
+    async def send_message(
+        self, chat_id: int, text: str, reply_markup: dict | None = None, parse_mode: str = "HTML"
+    ) -> None:
+        payload: dict[str, Any] = {
+            "chat_id": chat_id,
+            "text": text,
+            "parse_mode": parse_mode,
+        }
+        if reply_markup:
+            payload["reply_markup"] = reply_markup
+        await self._post("sendMessage", payload)
+
+    async def edit_message_text(
+        self, chat_id: int, message_id: int, text: str,
+        reply_markup: dict | None = None, parse_mode: str = "HTML"
+    ) -> None:
+        payload: dict[str, Any] = {
+            "chat_id": chat_id,
+            "message_id": message_id,
+            "text": text,
+            "parse_mode": parse_mode,
+        }
+        if reply_markup:
+            payload["reply_markup"] = reply_markup
+        await self._post("editMessageText", payload)
+
+    async def answer_callback_query(self, callback_query_id: str, text: str | None = None) -> None:
+        payload: dict[str, Any] = {"callback_query_id": callback_query_id}
+        if text:
+            payload["text"] = text
+        await self._post("answerCallbackQuery", payload)
+
+    async def _current_state(self) -> dict[str, Any]:
+        if self.get_ha_state:
+            try:
+                return await self.get_ha_state() or {}
+            except Exception as e:
+                logger.error("Failed to fetch state for bot: %s", e)
+        return {}
+
+    async def _process_update(self, update: dict[str, Any]) -> None:
+        state = await self._current_state()
+
+        if "message" in update:
+            msg = update["message"]
+            user_id = msg.get("from", {}).get("id")
+            chat_id = msg.get("chat", {}).get("id")
+            text = (msg.get("text") or "").strip()
+
+            if not user_id or not chat_id:
+                return
+
+            if text in ("/start", "/menu", "/home"):
+                res = await self.bot_engine.handle_navigation(user_id, "main", state)
+                reply_markup = {"inline_keyboard": res.get("keyboard", [])} if res.get("keyboard") else None
+                await self.send_message(chat_id, res.get("text", ""), reply_markup=reply_markup)
+            elif text.startswith("/"):
+                sec_key = text[1:].split()[0]
+                res = await self.bot_engine.handle_navigation(user_id, sec_key, state)
+                reply_markup = {"inline_keyboard": res.get("keyboard", [])} if res.get("keyboard") else None
+                await self.send_message(chat_id, res.get("text", ""), reply_markup=reply_markup)
+
+        elif "callback_query" in update:
+            cb = update["callback_query"]
+            cb_id = cb.get("id")
+            user_id = cb.get("from", {}).get("id")
+            data = cb.get("data", "")
+            msg = cb.get("message")
+            chat_id = msg.get("chat", {}).get("id") if msg else None
+            msg_id = msg.get("message_id") if msg else None
+
+            if not user_id or not chat_id or not msg_id:
+                if cb_id:
+                    await self.answer_callback_query(cb_id)
+                return
+
+            toast = None
+            if data.startswith("/sec_"):
+                sec_key = data[5:]
+                res = await self.bot_engine.handle_navigation(user_id, sec_key, state)
+                reply_markup = {"inline_keyboard": res.get("keyboard", [])} if res.get("keyboard") else None
+                await self.edit_message_text(chat_id, msg_id, res.get("text", ""), reply_markup=reply_markup)
+            elif data.startswith("/ent_"):
+                parts = data[5:].split("_")
+                sec_key = parts[0]
+                page = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
+                res = await self.bot_engine.handle_navigation(user_id, sec_key, state, page=page)
+                reply_markup = {"inline_keyboard": res.get("keyboard", [])} if res.get("keyboard") else None
+                await self.edit_message_text(chat_id, msg_id, res.get("text", ""), reply_markup=reply_markup)
+            elif data.startswith("/act_"):
+                act_id = data[5:]
+                res = await self.bot_engine.handle_action(user_id, act_id, state)
+                toast = res.get("toast")
+            elif data.startswith("/tog_"):
+                parts = data[5:].split("_")
+                sec_key = parts[0]
+                idx = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
+                res = await self.bot_engine.handle_entity_toggle(user_id, sec_key, idx)
+                toast = res.get("toast")
+                # Refresh navigation
+                nav = await self.bot_engine.handle_navigation(user_id, sec_key, state)
+                reply_markup = {"inline_keyboard": nav.get("keyboard", [])} if nav.get("keyboard") else None
+                await self.edit_message_text(chat_id, msg_id, nav.get("text", ""), reply_markup=reply_markup)
+
+            if cb_id:
+                await self.answer_callback_query(cb_id, text=toast)
+
+    async def _polling_loop(self) -> None:
+        logger.info("Starting Telegram Bot polling loop...")
+        offset = 0
+        while self._running:
+            try:
+                res = await self._post("getUpdates", {"offset": offset, "timeout": 20})
+                if res and res.get("ok"):
+                    for item in res.get("result", []):
+                        offset = item["update_id"] + 1
+                        asyncio.create_task(self._process_update(item))
+                else:
+                    await asyncio.sleep(2)
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error("Error in bot polling loop: %s", e)
+                await asyncio.sleep(5)
+
+    def start(self) -> None:
+        if self._running or not self.token:
+            return
+        self._running = True
+        self._task = asyncio.create_task(self._polling_loop())
+
+    async def stop(self) -> None:
+        self._running = False
+        if self._task and not self._task.done():
+            self._task.cancel()
+            try:
+                await self._task
+            except asyncio.CancelledError:
+                pass
+        if self._session and not self._session.closed:
+            await self._session.close()

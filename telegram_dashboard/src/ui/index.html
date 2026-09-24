@@ -2,9 +2,10 @@
 <html lang="uk">
 <head>
   <meta charset="UTF-8">
+  <base href="./">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Telegram Dashboard — Home Assistant</title>
-  <link rel="stylesheet" href="/ui/style.css">
+  <link rel="stylesheet" href="ui/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 </head>
@@ -32,7 +33,7 @@
       </nav>
       <div class="sidebar-footer">
         <span class="status-indicator online"></span>
-        <span>Home Assistant зв'язок активний</span>
+        <span id="ha-status-text">Home Assistant зв'язок активний</span>
       </div>
     </aside>
 
@@ -60,6 +61,43 @@
               </div>
               <div id="sections-list" class="sections-container">
                 <!-- Injected via JS -->
+              </div>
+            </div>
+
+            <!-- Section Editor Form -->
+            <div id="section-editor" class="panel-card">
+              <div class="panel-header">
+                <h3>✏️ Редагування розділу: <span id="editor-section-key" class="text-accent">main</span></h3>
+                <button id="btn-delete-section" class="btn btn-danger btn-sm">🗑️ Видалити розділ</button>
+              </div>
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label>Назва розділу</label>
+                  <input type="text" id="sec-title" class="form-control" placeholder="Наприклад: 🌡 Клімат">
+                </div>
+                <div class="form-group" style="width: 120px;">
+                  <label>Іконка</label>
+                  <input type="text" id="sec-icon" class="form-control" placeholder="🌡">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Тип розділу</label>
+                <select id="sec-type" class="form-control">
+                  <option value="menu">Головне меню (список кнопок)</option>
+                  <option value="section">Інформаційний розділ (віджети та дії)</option>
+                  <option value="entities">Каталог сутностей (авто-перемикачі)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Дозволені ролі</label>
+                <div class="checkbox-group">
+                  <label><input type="checkbox" id="role-admin" value="admin"> Адміністратор</label>
+                  <label><input type="checkbox" id="role-member" value="member"> Член родини</label>
+                  <label><input type="checkbox" id="role-guest" value="guest"> Гість</label>
+                </div>
+              </div>
+              <div class="form-actions">
+                <button id="btn-apply-section" class="btn btn-primary btn-sm">Застосувати до розділу</button>
               </div>
             </div>
           </section>
@@ -93,6 +131,11 @@
           <section id="tab-settings" class="tab-pane">
             <div class="panel-card">
               <h3>⚙️ Параметри Telegram-бота</h3>
+              <div class="form-group">
+                <label>Токен Telegram-бота (Bot Token)</label>
+                <input type="password" id="setting-bot-token" class="form-control" placeholder="Введіть 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11">
+                <small class="field-hint">Отримайте його у @BotFather. Також можна вказати у конфігурації додатку Home Assistant.</small>
+              </div>
               <div class="form-group">
                 <label>Стиль повідомлень</label>
                 <select id="setting-theme" class="form-control">
@@ -147,6 +190,10 @@
       </div>
     </main>
   </div>
-  <script src="/ui/app.js"></script>
+
+  <!-- Toast notification -->
+  <div id="toast" class="toast">Повідомлення</div>
+
+  <script src="ui/app.js"></script>
 </body>
 </html>

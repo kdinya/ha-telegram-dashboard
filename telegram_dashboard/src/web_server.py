@@ -7,14 +7,20 @@ from typing import Any
 from aiohttp import web
 from .config_manager import ConfigManager
 from .renderer import MessageRenderer
-from .access_controller import AccessController
 
 
 class WebApp:
-    def __init__(self, config_manager: ConfigManager, renderer: MessageRenderer, ha_client: Any | None = None) -> None:
+    def __init__(
+        self,
+        config_manager: ConfigManager,
+        renderer: MessageRenderer,
+        ha_client: Any | None = None,
+        bot_engine: Any | None = None,
+    ) -> None:
         self.cm = config_manager
         self.renderer = renderer
         self.ha_client = ha_client
+        self.bot_engine = bot_engine
         self.app = web.Application()
         self._setup_routes()
 
@@ -34,7 +40,12 @@ class WebApp:
     async def index_handler(self, request: web.Request) -> web.Response:
         ui_file = Path(__file__).parent / "ui" / "index.html"
         if ui_file.exists():
-            return web.FileResponse(ui_file)
+            content = ui_file.read_text(encoding="utf-8")
+            ingress_path = request.headers.get("X-Ingress-Path", "")
+            if ingress_path:
+                base_href = ingress_path.rstrip("/") + "/"
+                content = content.replace('<base href="./">', f'<base href="{base_href}">')
+            return web.Response(text=content, content_type="text/html")
         return web.Response(text="Telegram Dashboard UI Loaded", content_type="text/html")
 
     async def get_config(self, request: web.Request) -> web.Response:
@@ -44,6 +55,8 @@ class WebApp:
         data = await request.json()
         try:
             self.cm.save(data)
+            if self.bot_engine:
+                self.bot_engine.config = self.cm.config
             return web.json_response({"ok": True, "config": self.cm.config})
         except Exception as e:
             return web.json_response({"ok": False, "error": str(e)}, status=400)
@@ -69,6 +82,8 @@ class WebApp:
     async def preview_render(self, request: web.Request) -> web.Response:
         data = await request.json()
         section = data.get("section", {})
+        section_key = data.get("section_key", "main")
+        user_role = data.get("role", "admin")
         state = data.get("state", {
             "outside_temp": 18.5,
             "people_home": "2 людей",
@@ -76,10 +91,20 @@ class WebApp:
             "water_valve": {"open": True},
             "leaks": {"Кухня": {"on": False}, "Ванна": {"on": False}},
             "batteries": {"Зал (клімат)": {"level": 85}, "Кухня (протічка)": {"level": 18}},
-            "updated_at": "17:45:00"
+            "updated_at": "17:45:00",
         })
+
+        if self.bot_engine:
+            simulated_uid = 1 if user_role == "admin" else (2 if user_role == "member" else 3)
+            # Temporary mock user role in access controller if needed
+            res = await self.bot_engine.handle_navigation(simulated_uid, section_key, state)
+            return web.json_response({
+                "html": res.get("text", ""),
+                "keyboard": res.get("keyboard", []),
+            })
+
         text = self.renderer.render_section(section, state)
-        return web.json_response({"html": text})
+        return web.json_response({"html": text, "keyboard": []})
 
     async def get_catalog(self, request: web.Request) -> web.Response:
         """Full HA catalog: entities grouped by area, domain and label."""
