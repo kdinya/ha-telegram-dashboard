@@ -7,6 +7,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Code Style: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
+[![Add repository to my Home Assistant](https://my.home-assistant.io/badges/repository.svg)](https://my.home-assistant.io/redirect/repository/?repository_url=https%3A%2F%2Fgithub.com%2Fkdinya%2Fha-telegram-dashboard)
+
 > **Візуальний конструктор та менеджер інтерактивних Telegram-дашбордів для Home Assistant без написання сотень рядків YAML-коду.**
 
 ---
@@ -29,6 +31,14 @@
 ---
 
 ## 🚀 Встановлення
+
+### Швидкий спосіб (один клік)
+
+Натисніть кнопку — Home Assistant сам додасть репозиторій і відкриє магазин додатків:
+
+[![Open your Home Assistant instance and add the repository](https://my.home-assistant.io/badges/repository.svg)](https://my.home-assistant.io/redirect/repository/?repository_url=https%3A%2F%2Fgithub.com%2Fkdinya%2Fha-telegram-dashboard)
+
+### Вручну
 
 1. У Home Assistant перейдіть у **Налаштування** → **Додатки** → **Магазин додатків**.
 2. У правому верхньому кутку натисніть меню (три крапки) → **Репозиторії**.
@@ -60,4 +70,4 @@
 ## 📄 Ліцензія
 
 Розповсюджується за ліцензією [MIT](LICENSE).
-Автор: **kdinya** (<tomchik2@gmail.com>).
+Автор: **kdinya** (<kdinya@users.noreply.github.com>).
