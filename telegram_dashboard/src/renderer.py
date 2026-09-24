@@ -100,7 +100,10 @@ class MessageRenderer:
         if kind == "switch":
             on = bool(state.get(widget.get("entity")))
             icon = "🟢" if on else "🔴"
-            text = html.escape(str(widget.get("on_text", "Увімк."))) if on else html.escape(str(widget.get("off_text", "Вимк.")))
+            text = (
+                html.escape(str(widget.get("on_text", "Увімк.")))
+                if on else html.escape(str(widget.get("off_text", "Вимк.")))
+            )
             return f"├ <b>{label}:</b> {icon} {text}"
         if kind == "battery":
             return battery_line(label, state.get(widget.get("entity")))
