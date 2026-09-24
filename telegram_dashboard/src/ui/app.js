@@ -26,6 +26,17 @@ function slugify(text) {
 }
 
 /** Strip leading emoji so icon + title don't duplicate */
+
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 function stripLeadingEmoji(text) {
   if (!text) return text;
   return text.replace(/^[^\p{L}\p{N}]+/u, '').trim();
@@ -192,9 +203,11 @@ async function fetchEntities() {
   try {
     const data = await api('api/entities');
     availableEntities = data.entities || [];
-    haEntitiesDatalist.innerHTML = availableEntities
-      .map(e => `<option value="${e.entity_id}">${e.friendly_name} (${e.entity_id})</option>`)
-      .join('');
+    if (haEntitiesDatalist) {
+      haEntitiesDatalist.innerHTML = availableEntities
+        .map(e => `<option value="${e.entity_id}">${e.friendly_name} (${e.entity_id})</option>`)
+        .join('');
+    }
   } catch (e) {
     console.warn('Could not fetch entities:', e);
     entitiesLoadError = e.message || 'Помилка завантаження сутностей';
@@ -210,6 +223,7 @@ async function loadConfig() {
     loadSettings();
     updatePreview();
   } catch (e) {
+    console.error('Помилка завантаження конфігурації або ініціалізації редактора:', e);
     showToast('Помилка завантаження конфігурації', true);
   }
 }
@@ -1218,16 +1232,18 @@ function setupEventListeners() {
     showToast('Кнопку додано');
   });
 
-  secTitle.addEventListener('input', () => {
-    const sec = config.menu[currentSectionKey];
+  secTitle?.addEventListener('input', () => {
+    const sec = config && config.menu ? config.menu[currentSectionKey] : null;
     if (sec) sec.title = secTitle.value;
   });
-  secIcon.addEventListener('input', () => {
-    secIconDisplay.textContent = secIcon.value || '📁';
+  secIcon?.addEventListener('input', () => {
+    if (secIconDisplay) secIconDisplay.textContent = secIcon.value || '📁';
   });
-  secType.addEventListener('change', () => {
-    handleSectionTypeChange(secType.value, config.menu[currentSectionKey]);
-  });
+  if (secType) {
+    secType.addEventListener('change', () => {
+      handleSectionTypeChange(secType.value, config.menu[currentSectionKey]);
+    });
+  }
   if (btnAddSectionDevice) {
     btnAddSectionDevice.addEventListener('click', () => {
       openEntityPicker('section_device', 'Оберіть пристрій для відображення');
