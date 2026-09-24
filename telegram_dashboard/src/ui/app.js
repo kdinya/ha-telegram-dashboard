@@ -118,9 +118,8 @@ const blockMenuSections = $('block-menu-sections');
 const blockEntitiesSource = $('block-entities-source');
 const blockSectionItems = $('block-section-items');
 const menuSectionsChecklist = $('menu-sections-checklist');
-const entSourceMode = $('ent-source-mode');
-const entSourceValWrap = $('ent-source-val-wrap');
-const entSourceVal = $('ent-source-val');
+const sectionDevicesList = $('section-devices-list');
+const btnAddSectionDevice = $('btn-add-section-device');
 const widgetsList = $('widgets-list');
 const actionsList = $('actions-list');
 const usersTbody = $('users-tbody');
@@ -356,28 +355,15 @@ function renderEntityPickerList() {
     return;
   }
 
-  // Group by area if present
-  const groups = {};
-  list.forEach(e => {
-    const area = e.area || 'Інші пристрої';
-    if (!groups[area]) groups[area] = [];
-    groups[area].push(e);
-  });
-
-  entityPickerList.innerHTML = Object.keys(groups).map(area => `
-    <div class="entity-group">
-      <h5 class="entity-group-title">${area}</h5>
-      ${groups[area].map(e => `
-        <button type="button" class="entity-item" data-id="${e.entity_id}" data-name="${e.friendly_name}" data-domain="${e.domain}">
-          <span class="entity-item-domain">${e.domain}</span>
-          <div class="entity-item-info">
-            <span class="entity-item-name">${e.friendly_name}</span>
-            <span class="entity-item-id">${e.entity_id}</span>
-          </div>
-          <span class="entity-item-state">${(e.area ? '📍 ' + e.area + ' &middot; ' : '')}${e.state || ''}</span>
-        </button>
-      `).join('')}
-    </div>
+  entityPickerList.innerHTML = list.map(e => `
+    <button type="button" class="entity-item" data-id="${e.entity_id}" data-name="${e.friendly_name}" data-domain="${e.domain}">
+      <span class="entity-item-domain">${e.domain}</span>
+      <div class="entity-item-info">
+        <span class="entity-item-name">${e.friendly_name}</span>
+        <span class="entity-item-id">${e.entity_id}</span>
+      </div>
+      <span class="entity-item-state">${e.state || ''}</span>
+    </button>
   `).join('');
 
   entityPickerList.querySelectorAll('.entity-item').forEach(item => {
@@ -393,6 +379,8 @@ function renderEntityPickerList() {
         selectedActionEntity = eid;
         actionEntityDisplay.value = `${name} (${eid})`;
         renderActionServiceOptions(domain, eid);
+      } else if (entityPickerContext === 'section_device') {
+        addDeviceToSection(eid);
       }
     });
   });
@@ -418,13 +406,25 @@ function setupActionConfig() {
       showToast('Спершу оберіть сутність', true);
       return;
     }
-    const service = actionServiceSelect.value;
+    let service = actionServiceSelect.value;
+    let domain = 'homeassistant';
+    if (service.includes('.')) {
+      const parts = service.split('.');
+      domain = parts[0];
+      service = parts[1];
+    } else if (selectedActionEntity && selectedActionEntity.includes('.')) {
+      domain = selectedActionEntity.split('.')[0];
+    }
     const label = actionLabelInput.value.trim() || 'Дія';
     const sec = config.menu[currentSectionKey];
     if (!sec.actions) sec.actions = [];
+    const actId = `act_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     sec.actions.push({
+      id: actId,
       label: label,
+      domain: domain,
       service: service,
+      entity_id: selectedActionEntity,
       target: { entity_id: selectedActionEntity }
     });
     renderActionsList(sec.actions);
@@ -500,10 +500,7 @@ function handleSectionTypeChange(type, sec) {
   if (type === 'menu') {
     renderMenuChecklist(sec ? sec.sections || [] : []);
   } else if (type === 'entities') {
-    const src = sec && sec.source ? sec.source : { mode: 'all' };
-    entSourceMode.value = src.mode || 'all';
-    entSourceValWrap.style.display = src.mode === 'all' ? 'none' : 'block';
-    if (src.value) entSourceVal.value = src.value;
+    renderSectionDevicesList(sec ? sec.entities || [] : []);
   } else if (type === 'section') {
     renderWidgetsList(sec ? sec.widgets || [] : []);
     renderActionsList(sec ? sec.actions || [] : []);
@@ -691,10 +688,7 @@ $('btn-apply-section').addEventListener('click', () => {
     menuSectionsChecklist.querySelectorAll('input:checked').forEach(i => checked.push(i.value));
     sec.sections = checked;
   } else if (sec.type === 'entities') {
-    sec.source = {
-      mode: entSourceMode.value,
-      value: entSourceMode.value === 'all' ? undefined : entSourceVal.value
-    };
+    if (!sec.entities) sec.entities = [];
   }
 
   renderSectionsPills();
@@ -936,9 +930,60 @@ function setupEventListeners() {
   secType.addEventListener('change', () => {
     handleSectionTypeChange(secType.value, config.menu[currentSectionKey]);
   });
-  entSourceMode.addEventListener('change', () => {
-    entSourceValWrap.style.display = entSourceMode.value === 'all' ? 'none' : 'block';
-  });
+  if (btnAddSectionDevice) {
+    btnAddSectionDevice.addEventListener('click', () => {
+      openEntityPicker('section_device', 'Оберіть пристрій для відображення');
+    });
+  }
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+function renderSectionDevicesList(entities) {
+  if (!sectionDevicesList) return;
+  if (!entities.length) {
+    sectionDevicesList.innerHTML = '<p class="field-hint">Пристрої ще не додані. Натисніть "+ Додати пристрій зі списку".</p>';
+    return;
+  }
+  sectionDevicesList.innerHTML = entities.map((eid, index) => {
+    const found = availableEntities.find(e => e.entity_id === eid);
+    const name = found ? found.friendly_name : eid;
+    const domain = eid.split('.')[0];
+    return `
+      <div class="item-row" data-index="${index}">
+        <div class="item-info">
+          <span style="font-size: 16px; font-weight: 600; color: #38bdf8;">${domain}</span>
+          <div>
+            <div class="item-title">${name}</div>
+            <div class="item-desc">${eid}</div>
+          </div>
+        </div>
+        <button type="button" class="btn btn-danger btn-sm btn-remove-device" data-index="${index}">✕</button>
+      </div>
+    `;
+  }).join('');
+
+  sectionDevicesList.querySelectorAll('.btn-remove-device').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.index, 10);
+      const sec = config.menu[currentSectionKey];
+      if (sec && sec.entities) {
+        sec.entities.splice(idx, 1);
+        renderSectionDevicesList(sec.entities);
+        updatePreview();
+      }
+    });
+  });
+}
+
+function addDeviceToSection(eid) {
+  const sec = config.menu[currentSectionKey];
+  if (!sec) return;
+  if (!sec.entities) sec.entities = [];
+  if (!sec.entities.includes(eid)) {
+    sec.entities.push(eid);
+  }
+  renderSectionDevicesList(sec.entities);
+  updatePreview();
+  showToast('Пристрій додано');
+}

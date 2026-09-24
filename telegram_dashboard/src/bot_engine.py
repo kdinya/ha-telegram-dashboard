@@ -77,7 +77,10 @@ class BotEngine:
         return area_of, domain_of
 
     def _source_entities(self, section: dict) -> list[str]:
-        """Resolve the entity list of an 'entities' section from the catalog."""
+        """Resolve the entity list of an 'entities' section."""
+        explicit = section.get("entities") or section.get("items")
+        if explicit and isinstance(explicit, list):
+            return [str(e) for e in explicit if e]
         source = section.get("source") or {}
         mode = source.get("mode", "all")
         value = source.get("value", "")
@@ -157,8 +160,9 @@ class BotEngine:
         # Action buttons inside this section
         actions = section.get("actions", [])
         allowed_actions = self.access.filter_actions(user_id, actions)
-        for act in allowed_actions:
-            keyboard.append([{"text": act.get("label", "Дія"), "callback_data": f"/act_{act.get('id')}"}])
+        for idx, act in enumerate(allowed_actions):
+            act_id = act.get("id") or f"act_{idx}"
+            keyboard.append([{"text": act.get("label", "Дія"), "callback_data": f"/act_{act_id}"}])
         keyboard.append([
             {"text": "🔄 Оновити", "callback_data": f"/sec_{section_key}"},
             {"text": "⬅️ Головна", "callback_data": "/sec_main"},
@@ -203,8 +207,8 @@ class BotEngine:
 
     def _find_action(self, action_id: str) -> tuple[dict | None, str | None]:
         for sec_key, sec in self.config.get("menu", {}).items():
-            for act in sec.get("actions", []):
-                if act.get("id") == action_id:
+            for idx, act in enumerate(sec.get("actions", [])):
+                if str(act.get("id")) == str(action_id) or f"act_{idx}" == str(action_id) or str(idx) == str(action_id):
                     return act, sec_key
         return None, None
 
@@ -266,9 +270,15 @@ class BotEngine:
                 logger.error("Volume change failed: %s", e)
                 return {"ok": False, "toast": "Помилка зміни гучності"}
 
-        domain = target_action.get("domain", "homeassistant")
+        domain = target_action.get("domain")
         service = target_action.get("service", "toggle")
-        target_entity = target_action.get("entity_id")
+        target_entity = target_action.get("entity_id") or (target_action.get("target") or {}).get("entity_id")
+        if not domain and "." in str(service):
+            domain, _, service = str(service).partition(".")
+        if not domain and target_entity and "." in str(target_entity):
+            domain = str(target_entity).split(".", 1)[0]
+        if not domain:
+            domain = "homeassistant"
         if target_entity:
             entity_decision = self.access.check_entity(
                 user_id, target_entity, area=area_of.get(target_entity), domain=domain_of.get(target_entity)

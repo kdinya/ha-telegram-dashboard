@@ -122,32 +122,16 @@
                 <div id="menu-sections-checklist" class="checkbox-grid"></div>
               </div>
 
-              <!-- Entities Source -->
+              <!-- Section Devices List -->
               <div id="block-entities-source" class="sub-block" style="display: none;">
-                <h4>Джерело пристроїв Home Assistant</h4>
-                <div class="form-row">
-                  <div class="form-group flex-1">
-                    <label>Фільтрувати</label>
-                    <select id="ent-source-mode" class="form-control">
-                      <option value="all">Всі пристрої</option>
-                      <option value="domain">За доменом (тип пристрою)</option>
-                      <option value="area">За зоною (кімната / простір)</option>
-                    </select>
+                <div class="items-header">
+                  <div>
+                    <h4>📱 Пристрої для відображення в меню</h4>
+                    <p class="field-hint" style="margin-top: 4px;">Оберіть пристрої, які відображатимуться в цьому розділі бота.</p>
                   </div>
-                  <div class="form-group flex-1" id="ent-source-val-wrap">
-                    <label>Значення</label>
-                    <select id="ent-source-val" class="form-control">
-                      <option value="light">💡 Освітлення (light)</option>
-                      <option value="switch">🔀 Перемикачі (switch)</option>
-                      <option value="climate">🌡 Клімат (climate)</option>
-                      <option value="cover">🪟 Штори/Ролети (cover)</option>
-                      <option value="media_player">🔊 Мультимедіа (media_player)</option>
-                      <option value="vacuum">🧹 Пилососи (vacuum)</option>
-                      <option value="lock">🔒 Замки (lock)</option>
-                      <option value="sensor">📈 Сенсори (sensor)</option>
-                    </select>
-                  </div>
+                  <button type="button" id="btn-add-section-device" class="btn btn-secondary btn-sm">+ Додати пристрій зі списку</button>
                 </div>
+                <div id="section-devices-list" class="items-list-container" style="margin-top: 12px;"></div>
               </div>
 
               <!-- Widgets & Actions -->

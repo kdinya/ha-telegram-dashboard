@@ -196,24 +196,7 @@ class WebApp:
             except Exception as e:
                 logger.warning("Telegram getUpdates sync failed: %s", e)
 
-        # 2. Check Home Assistant person/notify entities
-        if self.ha_client:
-            try:
-                states = await self.ha_client.get_states()
-                for s in states:
-                    eid = s.get("entity_id", "")
-                    attrs = s.get("attributes", {})
-                    if "telegram" in eid or eid.startswith("person."):
-                        cid = attrs.get("chat_id") or attrs.get("user_id")
-                        if cid and str(cid).isdigit():
-                            tid = int(cid)
-                            name = attrs.get("friendly_name") or eid
-                            existing = any(u.get("telegram_id") == tid for u in self.cm.config.get("users", []))
-                            self.cm.auto_discover_user(tid, name, default_role)
-                            if not existing:
-                                discovered += 1
-            except Exception as e:
-                logger.warning("HA Telegram sync failed: %s", e)
+        # User auto-discovery happens directly through Telegram chat interactions and getUpdates
 
         return web.json_response({
             "ok": True,
