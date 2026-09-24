@@ -122,7 +122,7 @@
                 <h4>Елементи розділу</h4>
                 <div id="section-texts-list" class="section-texts-list"></div>
 
-                <!-- Inline form for adding text (appears above the 3 buttons) -->
+                <!-- Inline form for adding/editing text (appears above the 3 buttons or inline) -->
                 <div id="form-add-text" class="add-text-inline-row" style="display: none;">
                   <div class="icon-input-wrap">
                     <button type="button" id="btn-text-icon-picker" class="btn-icon-select" title="Обрати іконку">
@@ -135,8 +135,10 @@
                     <input type="checkbox" id="item-text-is-heading">
                     <span>Заголовок</span>
                   </label>
-                  <button type="button" id="btn-confirm-add-text" class="btn btn-primary btn-sm">Зберегти</button>
-                  <button type="button" id="btn-cancel-add-text" class="btn btn-ghost btn-sm" title="Скасувати">✕</button>
+                  <div class="add-text-inline-row-actions">
+                    <button type="button" id="btn-confirm-add-text" class="btn btn-primary btn-sm">Зберегти</button>
+                    <button type="button" id="btn-cancel-add-text" class="btn btn-ghost btn-sm" title="Скасувати">✕</button>
+                  </div>
                 </div>
 
                 <!-- Three buttons in one row -->

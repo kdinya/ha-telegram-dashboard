@@ -24,3 +24,20 @@ def test_render_main_html():
     assert "17.5°C" in rendered
     assert "🟢 <b>Відкритий</b>" in rendered
     assert "<code>[▰" in rendered
+
+
+def test_render_section_with_texts_and_parity():
+    renderer = MessageRenderer()
+    section = {
+        "title": "Вітальня",
+        "icon": "🛋️",
+        "texts": [
+            {"icon": "📌", "text": "Важлива інформація", "is_heading": True},
+            {"icon": "💡", "text": "Автоматизація увімкнена", "is_heading": False}
+        ],
+        "entities": []
+    }
+    rendered = renderer.render_section(section, {})
+    assert "<b>📌 Важлива інформація</b>" in rendered
+    assert "├ 💡 Автоматизація увімкнена" in rendered
+    assert "<b>🛋️ Вітальня</b>" in rendered

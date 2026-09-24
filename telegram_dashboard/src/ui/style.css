@@ -992,12 +992,14 @@ body:has(.modal-overlay.open) {
 /* --- Constructor Section Content Builder --- */
 .builder-actions-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   margin-top: 12px;
 }
 
 .btn-builder-action {
-  flex: 1;
+  flex: 1 1 calc(33.333% - 10px);
+  min-width: 140px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1026,6 +1028,7 @@ body:has(.modal-overlay.open) {
 
 .add-text-inline-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
   background: rgba(15, 23, 42, 0.6);
@@ -1033,6 +1036,12 @@ body:has(.modal-overlay.open) {
   border-radius: 8px;
   padding: 10px 12px;
   margin-bottom: 12px;
+}
+
+.add-text-inline-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .checkbox-label-compact {
@@ -1070,11 +1079,12 @@ body:has(.modal-overlay.open) {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 6px;
   padding: 8px 12px;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
 .section-text-item:hover {
   background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 .section-text-item-main {
@@ -1083,6 +1093,11 @@ body:has(.modal-overlay.open) {
   gap: 8px;
   flex: 1;
   min-width: 0;
+}
+
+.section-text-item-icon {
+  font-size: 16px;
+  flex-shrink: 0;
 }
 
 .section-text-item-content {
@@ -1104,6 +1119,7 @@ body:has(.modal-overlay.open) {
   background: rgba(255, 255, 255, 0.08);
   color: #94a3b8;
   margin-left: 6px;
+  flex-shrink: 0;
 }
 
 .badge-text-type.heading {
@@ -1111,18 +1127,69 @@ body:has(.modal-overlay.open) {
   color: #38bdf8;
 }
 
-.btn-remove-text-item {
+.section-text-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.btn-icon-action {
   background: transparent;
   border: none;
-  color: #ef4444;
   cursor: pointer;
   padding: 4px 6px;
   border-radius: 4px;
-  opacity: 0.7;
+  font-size: 14px;
+  line-height: 1;
+  opacity: 0.75;
   transition: opacity 0.15s, background 0.15s;
 }
 
-.btn-remove-text-item:hover {
+.btn-icon-action:hover {
   opacity: 1;
+}
+
+.btn-edit-text-item:hover {
+  background: rgba(56, 189, 248, 0.15);
+}
+
+.btn-remove-text-item {
+  color: #ef4444;
+}
+
+.btn-remove-text-item:hover {
   background: rgba(239, 68, 68, 0.15);
+}
+
+/* Responsive adjustments for narrow screens */
+@media (max-width: 640px) {
+  .builder-actions-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .btn-builder-action {
+    width: 100%;
+    min-width: 0;
+    padding: 12px 14px;
+  }
+  .add-text-inline-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .add-text-inline-row .form-control {
+    width: 100%;
+    min-width: 0;
+  }
+  .add-text-inline-row .icon-input-wrap {
+    align-self: flex-start;
+  }
+  .add-text-inline-row .checkbox-label-compact {
+    align-self: flex-start;
+  }
+  .add-text-inline-row-actions {
+    justify-content: flex-end;
+    margin-top: 4px;
+  }
 }

@@ -69,6 +69,10 @@
    - All business logic (RBAC, Message Renderer, Config Manager, HA Connector, Bot Engine) must have 100% passing tests in `tests/`.
    - Run `pytest` before every release and commit.
 
+8. **Constructor Preview & Telegram Message Parity Invariant**:
+   - Whenever menu sections or their elements (texts, entities, buttons, headings, icons) are edited, added, or removed in the constructor, the preview in the web UI must accurately and synchronously reflect all changes.
+   - The rendered preview must strictly match the composition, formatting, hierarchy, and style of the message that is sent to Telegram. What is configured in the constructor must be identical in the UI preview and in the actual Telegram bot message delivery (WYSIWYG parity).
+
 ---
 
 ## 3. Pre-Flight Verification Checklist
@@ -77,3 +81,4 @@ Before pushing any commit or releasing:
 1. **Lint**: `flake8 telegram_dashboard/src tests --max-line-length=120 --ignore=E203,W503,F401` — zero errors.
 2. **Unit Tests**: `python -m pytest tests/ -v` — 100% passing.
 3. **Clean Working Tree**: no temporary artifacts or unstaged files remain.
+4. **Constructor Preview & Telegram Parity Check**: ensure changes to sections and their elements immediately render in the UI live preview and strictly correspond to the Telegram message formatting.

@@ -518,6 +518,53 @@ function renderSectionsPills() {
 // --- Section editor ---
 let selectedButtonTarget = null;
 let activeIconTarget = 'section';
+let editingTextIdx = null; // null | number (index) | -1 (new item)
+
+function resetTextItemForm() {
+  editingTextIdx = null;
+  const formAddText = $('form-add-text');
+  const itemTextInput = $('item-text-input');
+  const itemTextIcon = $('item-text-icon');
+  const itemTextIconDisplay = $('item-text-icon-display');
+  const itemTextIsHeading = $('item-text-is-heading');
+
+  if (itemTextInput) itemTextInput.value = '';
+  if (itemTextIcon) itemTextIcon.value = '💬';
+  if (itemTextIconDisplay) itemTextIconDisplay.textContent = '💬';
+  if (itemTextIsHeading) itemTextIsHeading.checked = false;
+  if (formAddText) formAddText.style.display = 'none';
+}
+
+function openTextItemForm(idx = -1) {
+  const formAddText = $('form-add-text');
+  const itemTextInput = $('item-text-input');
+  const itemTextIcon = $('item-text-icon');
+  const itemTextIconDisplay = $('item-text-icon-display');
+  const itemTextIsHeading = $('item-text-is-heading');
+  const sec = config && config.menu ? config.menu[currentSectionKey] : null;
+
+  editingTextIdx = idx;
+
+  if (idx >= 0 && sec && sec.texts && sec.texts[idx]) {
+    const item = sec.texts[idx];
+    if (itemTextInput) itemTextInput.value = item.text || '';
+    if (itemTextIcon) itemTextIcon.value = item.icon || '💬';
+    if (itemTextIconDisplay) itemTextIconDisplay.textContent = item.icon || '💬';
+    if (itemTextIsHeading) itemTextIsHeading.checked = Boolean(item.is_heading);
+  } else {
+    if (itemTextInput) itemTextInput.value = '';
+    if (itemTextIcon) itemTextIcon.value = '💬';
+    if (itemTextIconDisplay) itemTextIconDisplay.textContent = '💬';
+    if (itemTextIsHeading) itemTextIsHeading.checked = false;
+  }
+
+  if (formAddText) {
+    formAddText.style.display = 'flex';
+  }
+  if (itemTextInput) {
+    itemTextInput.focus();
+  }
+}
 
 function loadSectionIntoEditor(key) {
   if (!config || !config.menu || !config.menu[key]) return;
@@ -561,10 +608,8 @@ function loadSectionIntoEditor(key) {
   renderMenuChecklist(sec.sections || sec.menu_sections || []);
 
   if (!sec.texts) sec.texts = [];
+  resetTextItemForm();
   renderSectionTexts(sec.texts);
-
-  const formAddText = $('form-add-text');
-  if (formAddText) formAddText.style.display = 'none';
 
   $('btn-delete-section').style.display = isMain ? 'none' : 'inline-flex';
 }
@@ -591,19 +636,30 @@ function renderSectionTexts(texts) {
 
     el.innerHTML = `
       <div class="section-text-item-main">
-        <span>${safeIcon}</span>
+        <span class="section-text-item-icon">${safeIcon}</span>
         <span class="${contentClass}">${safeText}</span>
         ${badgeHtml}
       </div>
-      <button type="button" class="btn-remove-text-item" title="Видалити" data-idx="${idx}">🗑️</button>
+      <div class="section-text-item-actions">
+        <button type="button" class="btn-icon-action btn-edit-text-item" title="Правити" data-idx="${idx}">✏️</button>
+        <button type="button" class="btn-icon-action btn-remove-text-item" title="Видалити" data-idx="${idx}">🗑️</button>
+      </div>
     `;
 
+    el.querySelector('.btn-edit-text-item').addEventListener('click', () => {
+      openTextItemForm(idx);
+    });
+
     el.querySelector('.btn-remove-text-item').addEventListener('click', () => {
-      const sec = config.menu[currentSectionKey];
+      const sec = config && config.menu ? config.menu[currentSectionKey] : null;
       if (sec && sec.texts) {
         sec.texts.splice(idx, 1);
+        if (editingTextIdx === idx) {
+          resetTextItemForm();
+        }
         renderSectionTexts(sec.texts);
         updatePreview();
+        showToast('Елемент видалено');
       }
     });
 
@@ -1057,9 +1113,10 @@ function setupEventListeners() {
   if (btnActionAddText && formAddText) {
     btnActionAddText.addEventListener('click', () => {
       const isHidden = formAddText.style.display === 'none';
-      formAddText.style.display = isHidden ? 'flex' : 'none';
-      if (isHidden && itemTextInput) {
-        itemTextInput.focus();
+      if (isHidden) {
+        openTextItemForm(-1);
+      } else {
+        resetTextItemForm();
       }
     });
   }
@@ -1078,46 +1135,50 @@ function setupEventListeners() {
 
   if (btnConfirmAddText) {
     btnConfirmAddText.addEventListener('click', () => {
-      const textVal = (itemTextInput.value || '').trim();
+      const textVal = (itemTextInput ? itemTextInput.value : '').trim();
       if (!textVal) {
         showToast('Введіть текст перед збереженням', true);
-        itemTextInput.focus();
+        if (itemTextInput) itemTextInput.focus();
         return;
       }
 
-      const sec = config.menu[currentSectionKey];
+      const sec = config && config.menu ? config.menu[currentSectionKey] : null;
       if (!sec) return;
       if (!sec.texts) sec.texts = [];
 
-      sec.texts.push({
-        icon: itemTextIcon ? itemTextIcon.value : '💬',
+      const payload = {
+        icon: itemTextIcon ? (itemTextIcon.value || '💬') : '💬',
         text: textVal,
-        is_heading: itemTextIsHeading ? itemTextIsHeading.checked : false
-      });
+        is_heading: itemTextIsHeading ? Boolean(itemTextIsHeading.checked) : false
+      };
 
-      // Reset form
-      itemTextInput.value = '';
-      if (itemTextIsHeading) itemTextIsHeading.checked = false;
-      if (formAddText) formAddText.style.display = 'none';
+      if (editingTextIdx !== null && editingTextIdx >= 0 && editingTextIdx < sec.texts.length) {
+        sec.texts[editingTextIdx] = payload;
+        showToast('Елемент успішно оновлено');
+      } else {
+        sec.texts.push(payload);
+        showToast('Елемент успішно додано до розділу');
+      }
 
+      // Hide input fields, render item with edit & remove buttons, update preview
+      resetTextItemForm();
       renderSectionTexts(sec.texts);
       updatePreview();
-      showToast('Елемент успішно додано до розділу');
     });
 
-    itemTextInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        btnConfirmAddText.click();
-      }
-    });
+    if (itemTextInput) {
+      itemTextInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          btnConfirmAddText.click();
+        }
+      });
+    }
   }
 
   if (btnCancelAddText) {
     btnCancelAddText.addEventListener('click', () => {
-      if (itemTextInput) itemTextInput.value = '';
-      if (itemTextIsHeading) itemTextIsHeading.checked = false;
-      if (formAddText) formAddText.style.display = 'none';
+      resetTextItemForm();
     });
   }
 
