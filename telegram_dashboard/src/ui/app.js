@@ -1,6 +1,7 @@
 let config = null;
 let currentSection = "main";
 let currentRole = "admin";
+let lastActiveEditorTab = "builder";
 
 function showToast(msg) {
   const toast = document.getElementById("toast");
@@ -74,15 +75,25 @@ function renderSections() {
 function loadSectionEditor(key) {
   if (!config || !config.menu || !config.menu[key]) return;
   const sec = config.menu[key];
-  document.getElementById("editor-section-key").innerText = key;
-  document.getElementById("sec-title").value = sec.title || "";
-  document.getElementById("sec-icon").value = sec.icon || "";
-  document.getElementById("sec-type").value = sec.type || "section";
+  const secKeyEl = document.getElementById("editor-section-key");
+  if (secKeyEl) secKeyEl.innerText = key;
+  
+  const titleInput = document.getElementById("sec-title");
+  if (titleInput) titleInput.value = sec.title || "";
+  
+  const iconInput = document.getElementById("sec-icon");
+  if (iconInput) iconInput.value = sec.icon || "";
+  
+  const typeInput = document.getElementById("sec-type");
+  if (typeInput) typeInput.value = sec.type || "section";
 
   const roles = sec.roles || ["admin", "member", "guest"];
-  document.getElementById("role-admin").checked = roles.includes("admin");
-  document.getElementById("role-member").checked = roles.includes("member");
-  document.getElementById("role-guest").checked = roles.includes("guest");
+  const rAdmin = document.getElementById("role-admin");
+  if (rAdmin) rAdmin.checked = roles.includes("admin");
+  const rMember = document.getElementById("role-member");
+  if (rMember) rMember.checked = roles.includes("member");
+  const rGuest = document.getElementById("role-guest");
+  if (rGuest) rGuest.checked = roles.includes("guest");
 
   const delBtn = document.getElementById("btn-delete-section");
   if (delBtn) {
@@ -248,7 +259,6 @@ async function updatePreview() {
         btnContainer.appendChild(rowDiv);
       });
     } else {
-      // Fallback preview buttons
       const row = document.createElement("div");
       row.className = "tg-btn-row";
       if (currentSection === "main") {
@@ -293,16 +303,59 @@ function selectSection(key) {
   updatePreview();
 }
 
+function switchTab(tabName) {
+  const navItems = document.querySelectorAll(".nav-item");
+  const tabPanes = document.querySelectorAll(".tab-pane");
+
+  navItems.forEach(b => {
+    if (b.dataset.tab === tabName) {
+      b.classList.add("active");
+    } else {
+      b.classList.remove("active");
+    }
+  });
+
+  if (tabName === "preview") {
+    document.body.classList.add("mobile-preview-active");
+    updatePreview();
+  } else {
+    document.body.classList.remove("mobile-preview-active");
+    lastActiveEditorTab = tabName;
+    tabPanes.forEach(p => p.classList.remove("active"));
+    const target = document.getElementById(`tab-${tabName}`);
+    if (target) target.classList.add("active");
+  }
+}
+
 // Event bindings
 document.querySelectorAll(".nav-item").forEach(btn => {
   btn.onclick = () => {
-    document.querySelectorAll(".nav-item").forEach(b => b.classList.remove("active"));
-    document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
-    btn.classList.add("active");
-    const target = document.getElementById(`tab-${btn.dataset.tab}`);
-    if (target) target.classList.add("active");
+    switchTab(btn.dataset.tab);
   };
 });
+
+// Mobile back button inside preview
+const btnBack = document.getElementById("btn-back-to-editor");
+if (btnBack) {
+  btnBack.onclick = () => {
+    switchTab(lastActiveEditorTab || "builder");
+  };
+}
+
+// Desktop toggle preview
+const btnTogglePreview = document.getElementById("btn-toggle-preview");
+if (btnTogglePreview) {
+  btnTogglePreview.onclick = () => {
+    const splitView = document.getElementById("split-view");
+    if (splitView) {
+      const isHidden = splitView.classList.toggle("preview-hidden");
+      const label = btnTogglePreview.querySelector(".preview-toggle-label");
+      if (label) {
+        label.innerText = isHidden ? "Показати телефон" : "Прев'ю";
+      }
+    }
+  };
+}
 
 document.getElementById("btn-add-section").onclick = addNewSection;
 document.getElementById("btn-delete-section").onclick = deleteCurrentSection;

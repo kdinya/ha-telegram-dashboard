@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <base href="./">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Telegram Dashboard — Home Assistant</title>
   <link rel="stylesheet" href="ui/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,7 +11,7 @@
 </head>
 <body>
   <div class="app-layout">
-    <!-- Sidebar navigation -->
+    <!-- Navigation Sidebar / Mobile Nav -->
     <aside class="sidebar">
       <div class="brand">
         <div class="logo-icon">📱</div>
@@ -22,18 +22,22 @@
       </div>
       <nav class="nav-links">
         <button class="nav-item active" data-tab="builder">
-          <span class="icon">🎛️</span> Конструктор меню
+          <span class="icon">🎛️</span> <span class="nav-text">Конструктор</span>
         </button>
         <button class="nav-item" data-tab="rbac">
-          <span class="icon">🔐</span> Права доступу (RBAC)
+          <span class="icon">🔐</span> <span class="nav-text">Доступ</span>
         </button>
         <button class="nav-item" data-tab="settings">
-          <span class="icon">⚙️</span> Налаштування
+          <span class="icon">⚙️</span> <span class="nav-text">Налаштування</span>
+        </button>
+        <!-- Mobile & Tablet dedicated Preview Tab -->
+        <button class="nav-item nav-item-preview" data-tab="preview">
+          <span class="icon">📱</span> <span class="nav-text">Прев'ю бота</span>
         </button>
       </nav>
       <div class="sidebar-footer">
         <span class="status-indicator online"></span>
-        <span id="ha-status-text">Home Assistant зв'язок активний</span>
+        <span id="ha-status-text">Home Assistant активний</span>
       </div>
     </aside>
 
@@ -41,17 +45,20 @@
     <main class="content-area">
       <header class="top-header">
         <div class="header-title">
-          <h1 id="page-title">Конструктор меню Telegram-бота</h1>
-          <p class="subtitle">Налаштовуйте розділи, датчики та права доступу без жодного рядка коду</p>
+          <h1 id="page-title">Конструктор меню Telegram</h1>
+          <p class="subtitle">Керування розділами, датчиками та доступом</p>
         </div>
         <div class="header-actions">
-          <button id="btn-save" class="btn btn-primary">💾 Зберегти зміни</button>
+          <button id="btn-toggle-preview" class="btn btn-secondary desktop-toggle-preview" title="Сховати або показати телефон">
+            <span class="preview-toggle-icon">📱</span> <span class="preview-toggle-label">Прев'ю</span>
+          </button>
+          <button id="btn-save" class="btn btn-primary">💾 Зберегти</button>
         </div>
       </header>
 
-      <div class="split-view">
-        <!-- Editor Left Column -->
-        <div class="editor-pane">
+      <div class="split-view" id="split-view">
+        <!-- Editor Column -->
+        <div class="editor-pane" id="editor-pane">
           <!-- Builder Tab -->
           <section id="tab-builder" class="tab-pane active">
             <div class="panel-card">
@@ -67,21 +74,21 @@
             <!-- Section Editor Form -->
             <div id="section-editor" class="panel-card">
               <div class="panel-header">
-                <h3>✏️ Редагування розділу: <span id="editor-section-key" class="text-accent">main</span></h3>
-                <button id="btn-delete-section" class="btn btn-danger btn-sm">🗑️ Видалити розділ</button>
+                <h3>✏️ Редагування: <span id="editor-section-key" class="text-accent">main</span></h3>
+                <button id="btn-delete-section" class="btn btn-danger btn-sm">🗑️ Видалити</button>
               </div>
               <div class="form-row">
                 <div class="form-group flex-1">
-                  <label>Назва розділу</label>
+                  <label for="sec-title">Назва розділу</label>
                   <input type="text" id="sec-title" class="form-control" placeholder="Наприклад: 🌡 Клімат">
                 </div>
-                <div class="form-group" style="width: 120px;">
-                  <label>Іконка</label>
+                <div class="form-group form-group-icon">
+                  <label for="sec-icon">Іконка</label>
                   <input type="text" id="sec-icon" class="form-control" placeholder="🌡">
                 </div>
               </div>
               <div class="form-group">
-                <label>Тип розділу</label>
+                <label for="sec-type">Тип розділу</label>
                 <select id="sec-type" class="form-control">
                   <option value="menu">Головне меню (список кнопок)</option>
                   <option value="section">Інформаційний розділ (віджети та дії)</option>
@@ -109,21 +116,23 @@
                 <h3>👥 Користувачі та Ролі</h3>
                 <button id="btn-add-user" class="btn btn-secondary btn-sm">+ Додати користувача</button>
               </div>
-              <p class="section-desc">Керуйте доступом до бота. Користувачі без реєстрації отримують роль за замовчуванням (Гість).</p>
-              <table class="users-table">
-                <thead>
-                  <tr>
-                    <th>Telegram ID</th>
-                    <th>Ім'я / Примітка</th>
-                    <th>Роль</th>
-                    <th>Доступні дії</th>
-                    <th>Дії</th>
-                  </tr>
-                </thead>
-                <tbody id="users-tbody">
-                  <!-- Injected via JS -->
-                </tbody>
-              </table>
+              <p class="section-desc">Керуйте доступом до бота. Користувачі без реєстрації отримують роль за замовчуванням.</p>
+              <div class="table-responsive">
+                <table class="users-table">
+                  <thead>
+                    <tr>
+                      <th>Telegram ID</th>
+                      <th>Ім'я / Примітка</th>
+                      <th>Роль</th>
+                      <th>Доступні дії</th>
+                      <th>Дії</th>
+                    </tr>
+                  </thead>
+                  <tbody id="users-tbody">
+                    <!-- Injected via JS -->
+                  </tbody>
+                </table>
+              </div>
             </div>
           </section>
 
@@ -132,12 +141,12 @@
             <div class="panel-card">
               <h3>⚙️ Параметри Telegram-бота</h3>
               <div class="form-group">
-                <label>Токен Telegram-бота (Bot Token)</label>
-                <input type="password" id="setting-bot-token" class="form-control" placeholder="Введіть 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11">
+                <label for="setting-bot-token">Токен Telegram-бота (Bot Token)</label>
+                <input type="password" id="setting-bot-token" class="form-control" placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11">
                 <small class="field-hint">Отримайте його у @BotFather. Також можна вказати у конфігурації додатку Home Assistant.</small>
               </div>
               <div class="form-group">
-                <label>Стиль повідомлень</label>
+                <label for="setting-theme">Стиль повідомлень</label>
                 <select id="setting-theme" class="form-control">
                   <option value="cards">Сучасний (HTML Картки з цитатами)</option>
                   <option value="minimal">Мінімалістичний</option>
@@ -145,7 +154,7 @@
                 </select>
               </div>
               <div class="form-group">
-                <label>Роль за замовчуванням для нових людей</label>
+                <label for="setting-default-role">Роль за замовчуванням для нових людей</label>
                 <select id="setting-default-role" class="form-control">
                   <option value="guest">Гість (тільки перегляд дозволеного)</option>
                   <option value="member">Член родини (стандартні прилади)</option>
@@ -156,8 +165,12 @@
           </section>
         </div>
 
-        <!-- Phone Preview Right Column -->
-        <div class="preview-pane">
+        <!-- Phone Preview Column -->
+        <div class="preview-pane" id="preview-pane">
+          <div class="preview-header-mobile">
+            <span class="preview-title">📱 Симулятор Telegram</span>
+            <button id="btn-back-to-editor" class="btn btn-secondary btn-sm">⬅️ До налаштувань</button>
+          </div>
           <div class="phone-frame">
             <div class="phone-notch"></div>
             <div class="tg-chat-header">
@@ -178,7 +191,7 @@
               </div>
             </div>
             <div class="preview-role-picker">
-              <span>Симуляція від імені:</span>
+              <span>Симуляція від:</span>
               <select id="preview-role-select" class="form-control form-control-sm">
                 <option value="admin">Адміністратор</option>
                 <option value="member">Член родини</option>
