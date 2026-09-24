@@ -35,6 +35,12 @@ def main() -> None:
         logger.warning("SUPERVISOR_TOKEN missing: HA catalog and service calls are disabled")
     web_app = WebApp(cm, renderer, ha_client=ha_client)
 
+    async def on_cleanup(app) -> None:
+        if ha_client is not None:
+            await ha_client.close()
+
+    web_app.app.on_cleanup.append(on_cleanup)
+
     port = int(os.environ.get("INGRESS_PORT", 8099))
     logger.info("Starting Telegram Dashboard Ingress Server on port %s...", port)
     from aiohttp import web

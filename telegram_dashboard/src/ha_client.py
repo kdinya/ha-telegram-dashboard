@@ -13,22 +13,31 @@ class HAClient:
     def __init__(self, base_url: str, token: str, session: aiohttp.ClientSession | None = None) -> None:
         self._base = base_url.rstrip("/")
         self._token = token
-        self._session = session or aiohttp.ClientSession(
-            headers={"Authorization": f"Bearer {token}"}
-        )
+        self._session = session
+
+    async def _ensure_session(self) -> aiohttp.ClientSession:
+        """Create the session lazily inside a running event loop."""
+        if self._session is None or self._session.closed:
+            self._session = aiohttp.ClientSession(
+                headers={"Authorization": f"Bearer {self._token}"}
+            )
+        return self._session
 
     async def close(self) -> None:
-        await self._session.close()
+        if self._session is not None and not self._session.closed:
+            await self._session.close()
 
     async def _get(self, path: str) -> Any:
-        async with self._session.get(f"{self._base}{path}") as resp:
+        session = await self._ensure_session()
+        async with session.get(f"{self._base}{path}") as resp:
             if resp.status != 200:
                 text = await resp.text()
                 raise RuntimeError(f"HA API {path} failed: {resp.status} {text[:200]}")
             return await resp.json()
 
     async def _post(self, path: str, payload: dict) -> Any:
-        async with self._session.post(
+        session = await self._ensure_session()
+        async with session.post(
             f"{self._base}{path}", data=json.dumps(payload),
             headers={"Content-Type": "application/json"},
         ) as resp:
