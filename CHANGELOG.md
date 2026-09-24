@@ -11,6 +11,11 @@
 - Fix: saving an action recovers the chosen entity if the picker selection was lost.
 # Changelog
 
+## [1.0.2] - 2026-09-24
+### Fixed
+- Added `panel_icon: "mdi:telegram"` to display official Telegram icon on Home Assistant sidebar.
+- Constructor UI: direct entities and action buttons with live status indication.
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
