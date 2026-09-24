@@ -295,8 +295,16 @@ body {
 
 .form-row {
   display: flex;
-  gap: 16px;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
   margin-bottom: 16px;
+}
+
+.form-group-icon {
+  width: auto;
+  flex-shrink: 0;
+  margin-bottom: 0;
 }
 
 .form-group {
@@ -929,16 +937,13 @@ body {
     font-size: 17px;
   }
   .form-row {
-    flex-direction: column;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 12px;
   }
   .form-group-icon {
-    width: 100%;
-  }
-  .icon-input-wrap {
-    width: 100%;
-  }
-  .form-group-icon .icon-input-wrap .form-control {
-    flex: 1;
+    width: auto;
+    flex-shrink: 0;
   }
 }
 

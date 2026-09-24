@@ -154,6 +154,12 @@ class TelegramBotRunner:
                 act_id = data[5:]
                 res = await self.bot_engine.handle_action(user_id, act_id, state)
                 toast = res.get("toast")
+                sec_key = res.get("section_key") or "main"
+                await asyncio.sleep(0.3)
+                state = await self._current_state()
+                nav = await self.bot_engine.handle_navigation(user_id, sec_key, state)
+                reply_markup = {"inline_keyboard": nav.get("keyboard", [])} if nav.get("keyboard") else None
+                await self.edit_message_text(chat_id, msg_id, nav.get("text", ""), reply_markup=reply_markup)
             elif data.startswith("/tog_"):
                 parts = data[5:].split("_")
                 sec_key = parts[0]

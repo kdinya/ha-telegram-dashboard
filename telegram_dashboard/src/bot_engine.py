@@ -57,7 +57,6 @@ class BotEngine:
                 }
                 users.append(user)
 
-        # Update access controller in-memory state
         if hasattr(self.access, "users"):
             self.access.users[telegram_id] = user
 
@@ -110,19 +109,27 @@ class BotEngine:
                 visible.append(ent)
         return visible
 
-    def build_keyboard(self, section_key: str, user_id: int, page: int = 0) -> list[list[dict[str, str]]]:
-        """Generate inline keyboard for a section respecting user role."""
+    def build_keyboard(
+        self, section_key: str, user_id: int, page: int = 0, state: dict[str, Any] | None = None
+    ) -> list[list[dict[str, str]]]:
+        """Generate inline keyboard for a section respecting user role and live device states."""
         menu = self.config.get("menu", {})
         section = menu.get(section_key, {})
         keyboard: list[list[dict[str, str]]] = []
+        state = state or {}
 
-        if section_key == "main":
+        # 1. Navigation buttons for sub-sections
+        sub_keys = section.get("sections")
+        if sub_keys is None and (section_key == "main" or section.get("type") in ("main", "menu")):
+            sub_keys = [k for k in menu.keys() if k != "main"]
+
+        if sub_keys:
             row: list[dict[str, str]] = []
-            for sub_key in section.get("sections", []):
+            for sub_key in sub_keys:
                 sub_section = menu.get(sub_key, {})
                 decision = self.access.check_section(user_id, sub_key, sub_section)
                 if decision.allowed:
-                    icon = sub_section.get("icon", "")
+                    icon = sub_section.get("icon", "📁")
                     title = sub_section.get("title", sub_key)
                     row.append({"text": f"{icon} {title}".strip(), "callback_data": f"/sec_{sub_key}"})
                     if len(row) == 2:
@@ -130,9 +137,8 @@ class BotEngine:
                         row = []
             if row:
                 keyboard.append(row)
-            keyboard.append([{"text": "🔄 Оновити", "callback_data": "/sec_main"}])
-            return keyboard
 
+        # 2. Entity browser buttons if type == 'entities'
         if section.get("type") == "entities":
             visible = self._visible_entities(section, user_id)
             total_pages = max(1, (len(visible) + ENTITIES_PAGE_SIZE - 1) // ENTITIES_PAGE_SIZE)
@@ -151,22 +157,47 @@ class BotEngine:
             if page < total_pages - 1:
                 nav_row.append({"text": "➡️", "callback_data": f"/ent_{section_key}_{page + 1}"})
             keyboard.append(nav_row)
-            keyboard.append([
-                {"text": "🔄 Оновити", "callback_data": f"/ent_{section_key}_{page}"},
-                {"text": "⬅️ Головна", "callback_data": "/sec_main"},
-            ])
-            return keyboard
 
-        # Action buttons inside this section
+        # 3. Action buttons (with live state indicator for switches/valves/lights)
         actions = section.get("actions", [])
         allowed_actions = self.access.filter_actions(user_id, actions)
         for idx, act in enumerate(allowed_actions):
             act_id = act.get("id") or f"act_{idx}"
-            keyboard.append([{"text": act.get("label", "Дія"), "callback_data": f"/act_{act_id}"}])
-        keyboard.append([
-            {"text": "🔄 Оновити", "callback_data": f"/sec_{section_key}"},
-            {"text": "⬅️ Головна", "callback_data": "/sec_main"},
-        ])
+            raw_label = act.get("label", "Дія")
+            target_entity = act.get("entity_id") or (act.get("target") or {}).get("entity_id")
+
+            # Dynamic button label based on entity state
+            btn_text = raw_label
+            if target_entity and target_entity in state:
+                ent_raw = state[target_entity]
+                ent_st = (ent_raw.get("state") if isinstance(ent_raw, dict) else str(ent_raw)) or ""
+                ent_st_lower = ent_st.lower()
+                domain = target_entity.split(".")[0]
+
+                if ent_st_lower in ("on", "open", "true"):
+                    if domain in ("switch", "light", "valve"):
+                        btn_text = f"🔴 {raw_label} [Увімк.]"
+                    else:
+                        btn_text = f"🟢 {raw_label}: {ent_st}"
+                elif ent_st_lower in ("off", "closed", "false"):
+                    if domain in ("switch", "light", "valve"):
+                        btn_text = f"🟢 {raw_label} [Вимк.]"
+                    else:
+                        btn_text = f"🔴 {raw_label}: {ent_st}"
+                elif ent_st:
+                    btn_text = f"⚡ {raw_label} ({ent_st})"
+
+            keyboard.append([{"text": btn_text, "callback_data": f"/act_{act_id}"}])
+
+        # 4. Standard footer buttons
+        if section_key == "main":
+            keyboard.append([{"text": "🔄 Оновити", "callback_data": "/sec_main"}])
+        else:
+            keyboard.append([
+                {"text": "🔄 Оновити", "callback_data": f"/sec_{section_key}"},
+                {"text": "⬅️ Головна", "callback_data": "/sec_main"},
+            ])
+
         return keyboard
 
     async def handle_navigation(
@@ -198,11 +229,11 @@ class BotEngine:
                 except Exception as e:
                     logger.error("Failed to fetch entity states: %s", e)
             text = self.renderer.render_entity_list(section, all_states)
-            keyboard = self.build_keyboard(section_key, user_id, page=page)
+            keyboard = self.build_keyboard(section_key, user_id, page=page, state=state)
             return {"text": text, "keyboard": keyboard, "parse_mode": "HTML"}
 
         text = self.renderer.render_section(section, state)
-        keyboard = self.build_keyboard(section_key, user_id, page=page)
+        keyboard = self.build_keyboard(section_key, user_id, page=page, state=state)
         return {"text": text, "keyboard": keyboard, "parse_mode": "HTML"}
 
     def _find_action(self, action_id: str) -> tuple[dict | None, str | None]:
@@ -218,14 +249,14 @@ class BotEngine:
 
     async def handle_action(self, user_id: int, action_id: str, state: dict[str, Any]) -> dict[str, Any]:
         """Execute a Home Assistant action requested by an inline button."""
-        target_action, _ = self._find_action(action_id)
+        target_action, sec_key = self._find_action(action_id)
 
         if not target_action:
-            return {"ok": False, "toast": "Дію не знайдено"}
+            return {"ok": False, "toast": "Дію не знайдено", "section_key": "main"}
 
         decision = self.access.check_action(user_id, target_action)
         if not decision.allowed:
-            return {"ok": False, "toast": f"⛔ Відмовлено: {decision.reason}"}
+            return {"ok": False, "toast": f"⛔ Відмовлено: {decision.reason}", "section_key": sec_key}
 
         atype = target_action.get("type", "service")
         area_of, domain_of = self._entity_maps()
@@ -236,7 +267,7 @@ class BotEngine:
                 user_id, speaker, area=area_of.get(speaker), domain=domain_of.get(speaker)
             )
             if not speaker_decision.allowed:
-                return {"ok": False, "toast": f"⛔ Відмовлено: {speaker_decision.reason}"}
+                return {"ok": False, "toast": f"⛔ Відмовлено: {speaker_decision.reason}", "section_key": sec_key}
             tts_service = str(target_action.get("tts_service", "tts.google_translate_say"))
             domain, _, service = tts_service.partition(".")
             payload = {
@@ -245,10 +276,10 @@ class BotEngine:
             }
             try:
                 await self._run_service(domain, service, payload)
-                return {"ok": True, "toast": "🔊 Озвучено"}
+                return {"ok": True, "toast": "🔊 Озвучено", "section_key": sec_key}
             except Exception as e:
                 logger.error("TTS failed: %s", e)
-                return {"ok": False, "toast": "Помилка озвучки"}
+                return {"ok": False, "toast": "Помилка озвучки", "section_key": sec_key}
 
         if atype == "volume":
             speaker = str(target_action.get("entity_id", ""))
@@ -256,7 +287,7 @@ class BotEngine:
                 user_id, speaker, area=area_of.get(speaker), domain=domain_of.get(speaker)
             )
             if not speaker_decision.allowed:
-                return {"ok": False, "toast": f"⛔ Відмовлено: {speaker_decision.reason}"}
+                return {"ok": False, "toast": f"⛔ Відмовлено: {speaker_decision.reason}", "section_key": sec_key}
             direction = str(target_action.get("direction", "up"))
             service_map = {"up": "volume_up", "down": "volume_down", "mute": "volume_mute", "set": "volume_set"}
             service = service_map.get(direction, "volume_up")
@@ -265,10 +296,10 @@ class BotEngine:
                 payload["volume_level"] = float(target_action.get("volume_level", 0.3))
             try:
                 await self._run_service("media_player", service, payload)
-                return {"ok": True, "toast": "🔊 Гучність змінено"}
+                return {"ok": True, "toast": "🔊 Гучність змінено", "section_key": sec_key}
             except Exception as e:
                 logger.error("Volume change failed: %s", e)
-                return {"ok": False, "toast": "Помилка зміни гучності"}
+                return {"ok": False, "toast": "Помилка зміни гучності", "section_key": sec_key}
 
         domain = target_action.get("domain")
         service = target_action.get("service", "toggle")
@@ -284,17 +315,17 @@ class BotEngine:
                 user_id, target_entity, area=area_of.get(target_entity), domain=domain_of.get(target_entity)
             )
             if not entity_decision.allowed:
-                return {"ok": False, "toast": f"⛔ Відмовлено: {entity_decision.reason}"}
+                return {"ok": False, "toast": f"⛔ Відмовлено: {entity_decision.reason}", "section_key": sec_key}
             payload = {"entity_id": [target_entity]}
         else:
             payload = None
 
         try:
             await self._run_service(domain, service, payload)
-            return {"ok": True, "toast": "✅ Виконано"}
+            return {"ok": True, "toast": "✅ Виконано", "section_key": sec_key}
         except Exception as e:
             logger.error("Action execution failed: %s", e)
-            return {"ok": False, "toast": "Помилка виконання дії"}
+            return {"ok": False, "toast": "Помилка виконання дії", "section_key": sec_key}
 
     async def handle_entity_toggle(self, user_id: int, section_key: str, entity_index: int) -> dict[str, Any]:
         """Toggle an entity shown on an 'entities' screen."""

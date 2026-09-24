@@ -100,10 +100,15 @@
               <div class="form-group">
                 <label for="sec-type">Тип розділу</label>
                 <select id="sec-type" class="form-control">
-                  <option value="section">Інформаційний розділ (датчики, віджети та кнопки дій)</option>
-                  <option value="entities">Каталог пристроїв (список перемикачів за доменом або кімнатою)</option>
-                  <option value="menu">Головне меню (кнопки переходу між розділами)</option>
+                  <option value="main">Головний (основний екран)</option>
+                  <option value="section">Розділ</option>
+                  <option value="subsection">Підрозділ</option>
                 </select>
+              </div>
+
+              <div class="form-group">
+                <label for="sec-note">Текстовий напис / опис розділу</label>
+                <input type="text" id="sec-note" class="form-control" placeholder="Короткий напис або примітка в шапці розділу (необов'язково)">
               </div>
 
               <div class="form-group">
@@ -292,6 +297,33 @@
       </div>
       <div class="entity-picker-list" id="entity-picker-list">
         <!-- Entities list injected here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Widget Custom Name Modal -->
+  <div id="widget-config-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>📊 Додавання показника / сутності</h3>
+        <button type="button" class="btn-close-modal" id="btn-close-widget-config">✕</button>
+      </div>
+      <div style="padding: 20px;">
+        <div class="form-group">
+          <label>Обрана сутність</label>
+          <input type="text" id="widget-entity-display" class="form-control" readonly>
+        </div>
+        <div class="form-group">
+          <label for="widget-label-input">Власна назва показника</label>
+          <input type="text" id="widget-label-input" class="form-control" placeholder="Наприклад: Поточна температура, Кран ввідний, Заряд">
+        </div>
+        <div class="form-group">
+          <label for="widget-unit-input">Одиниця виміру (якщо потрібна)</label>
+          <input type="text" id="widget-unit-input" class="form-control" placeholder="Наприклад: °C, %, бар, Вт">
+        </div>
+        <div class="form-actions" style="margin-top: 20px;">
+          <button type="button" id="btn-save-configured-widget" class="btn btn-primary" style="width: 100%;">Додати показник</button>
+        </div>
       </div>
     </div>
   </div>

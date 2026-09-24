@@ -211,7 +211,7 @@ class WebApp:
         user_role = data.get("role", "admin")
         section = data.get("section") or menu.get(section_key, {})
 
-        # Build mock state
+        # Build mock state with sample entities + legacy keys
         state = {
             "outside_temp": 19.2,
             "people_home": "2 вдома",
@@ -220,6 +220,27 @@ class WebApp:
             "leaks": {"Кухня": {"on": False}, "Ванна": {"on": False}},
             "batteries": {"Зал": {"level": 88}, "Кухня": {"level": 64}},
             "updated_at": "12:00:00",
+            # Sample entity states for realistic preview
+            "light.living_room": {"state": "on", "attributes": {"friendly_name": "Світло у вітальні"}},
+            "light.kitchen": {"state": "off", "attributes": {"friendly_name": "Світло на кухні"}},
+            "switch.boiler": {"state": "on", "attributes": {"friendly_name": "Бойлер"}},
+            "switch.water_tap": {"state": "on", "attributes": {"friendly_name": "Ввідний кран"}},
+            "switch.valve": {"state": "open", "attributes": {"friendly_name": "Кран"}},
+            "climate.hall": {
+                "state": "cool", "attributes": {"friendly_name": "Кондиціонер", "temperature": 22.0}
+            },
+            "sensor.living_room_temperature": {
+                "state": "22.5", "attributes": {"unit_of_measurement": "°C", "friendly_name": "Температура"}
+            },
+            "sensor.humidity": {
+                "state": "45", "attributes": {"unit_of_measurement": "%", "friendly_name": "Вологість"}
+            },
+            "sensor.phone_battery": {
+                "state": "85", "attributes": {"unit_of_measurement": "%", "friendly_name": "Заряд"}
+            },
+            "binary_sensor.kitchen_leak": {
+                "state": "off", "attributes": {"device_class": "moisture", "friendly_name": "Датчик"}
+            },
         }
 
         # Check access
@@ -230,46 +251,15 @@ class WebApp:
                 "keyboard": [[{"text": "⬅️ Назад", "callback_data": "/sec_main"}]],
             })
 
-        # Render HTML
+        # Render HTML using unified renderer
         text = self.renderer.render_section(section, state)
 
         # Build preview keyboard
-        keyboard: list[list[dict[str, str]]] = []
-        sec_type = section.get("type", "section")
-
-        if sec_type == "menu" or section_key == "main":
-            row: list[dict[str, str]] = []
-            sections = section.get("sections")
-            if sections is None:
-                sections = [k for k in menu.keys() if k != "main"]
-            for sub_key in sections:
-                sub = menu.get(sub_key, {})
-                sub_roles = sub.get("roles", ["admin", "member", "guest"])
-                if user_role in sub_roles:
-                    title = sub.get("title", sub_key)
-                    icon = sub.get("icon", "📁")
-                    btn_text = f"{icon} {title}"
-                    row.append({"text": btn_text, "callback_data": f"/sec_{sub_key}"})
-                    if len(row) == 2:
-                        keyboard.append(row)
-                        row = []
-            if row:
-                keyboard.append(row)
-        elif sec_type == "section":
-            # Action buttons
-            for act in section.get("actions", []):
-                btn_text = act.get("label", "Дія")
-                keyboard.append([{"text": f"⚡ {btn_text}", "callback_data": f"/act_{btn_text}"}])
-            # Back button
-            if section_key != "main":
-                keyboard.append([{"text": "⬅️ До меню", "callback_data": "/sec_main"}])
-        elif sec_type == "entities":
-            keyboard.append([
-                {"text": "💡 Світло: Увімкнено", "callback_data": "/tog_1"},
-                {"text": "🔀 Бойлер: Вимкнено", "callback_data": "/tog_2"}
-            ])
-            if section_key != "main":
-                keyboard.append([{"text": "⬅️ До меню", "callback_data": "/sec_main"}])
+        if self.bot_engine:
+            self.bot_engine.config = {"menu": menu, "users": self.cm.config.get("users", [])}
+            keyboard = self.bot_engine.build_keyboard(section_key, 0, state=state)
+        else:
+            keyboard = []
 
         return web.json_response({"html": text, "keyboard": keyboard})
 

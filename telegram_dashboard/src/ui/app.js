@@ -182,6 +182,7 @@ async function init() {
   setupIconPicker();
   setupEntityPicker();
   setupActionConfig();
+  setupWidgetConfig();
   await fetchEntities();
   await loadConfig();
   setupEventListeners();
@@ -374,7 +375,12 @@ function renderEntityPickerList() {
       entityPickerModal.classList.remove('open');
 
       if (entityPickerContext === 'widget') {
-        addWidgetFromEntity(eid, name, domain);
+        pendingWidgetEntity = { entityId: eid, friendlyName: name, domain: domain };
+        widgetEntityDisplay.value = `${name} (${eid})`;
+        widgetLabelInput.value = name;
+        const found = availableEntities.find(e => e.entity_id === eid);
+        widgetUnitInput.value = (found && found.attributes && found.attributes.unit_of_measurement) || '';
+        widgetConfigModal.classList.add('open');
       } else if (entityPickerContext === 'action') {
         selectedActionEntity = eid;
         actionEntityDisplay.value = `${name} (${eid})`;
@@ -481,7 +487,10 @@ function loadSectionIntoEditor(key) {
   secTitle.value = stripLeadingEmoji(sec.title || '');
   secIcon.value = sec.icon || '📁';
   secIconDisplay.textContent = sec.icon || '📁';
-  secType.value = sec.type || 'section';
+  const typeVal = sec.type || (key === 'main' ? 'main' : 'section');
+  secType.value = (typeVal === 'menu') ? 'main' : typeVal;
+  const secNoteInput = document.getElementById('sec-note');
+  if (secNoteInput) secNoteInput.value = sec.note || sec.description || '';
 
   const roles = sec.roles || ['admin', 'member', 'guest'];
   roleAdmin.checked = roles.includes('admin');
@@ -493,18 +502,14 @@ function loadSectionIntoEditor(key) {
 }
 
 function handleSectionTypeChange(type, sec) {
-  blockMenuSections.style.display = type === 'menu' ? 'block' : 'none';
-  blockEntitiesSource.style.display = type === 'entities' ? 'block' : 'none';
-  blockSectionItems.style.display = type === 'section' ? 'block' : 'none';
+  // Always display navigation buttons block and items (widgets/actions) block for all section types
+  blockMenuSections.style.display = 'block';
+  blockSectionItems.style.display = 'block';
+  if (blockEntitiesSource) blockEntitiesSource.style.display = 'none';
 
-  if (type === 'menu') {
-    renderMenuChecklist(sec ? sec.sections || [] : []);
-  } else if (type === 'entities') {
-    renderSectionDevicesList(sec ? sec.entities || [] : []);
-  } else if (type === 'section') {
-    renderWidgetsList(sec ? sec.widgets || [] : []);
-    renderActionsList(sec ? sec.actions || [] : []);
-  }
+  renderMenuChecklist(sec ? sec.sections || [] : []);
+  renderWidgetsList(sec ? sec.widgets || [] : []);
+  renderActionsList(sec ? sec.actions || [] : []);
 }
 
 function renderMenuChecklist(selectedKeys) {
@@ -676,6 +681,8 @@ $('btn-apply-section').addEventListener('click', () => {
   sec.title = stripLeadingEmoji(secTitle.value.trim()) || 'Розділ';
   sec.icon = secIcon.value.trim() || '📁';
   sec.type = secType.value;
+  const secNoteInput = document.getElementById('sec-note');
+  if (secNoteInput) sec.note = secNoteInput.value.trim();
 
   const roles = [];
   if (roleAdmin.checked) roles.push('admin');
@@ -683,13 +690,10 @@ $('btn-apply-section').addEventListener('click', () => {
   if (roleGuest.checked) roles.push('guest');
   sec.roles = roles.length ? roles : ['admin'];
 
-  if (sec.type === 'menu') {
-    const checked = [];
-    menuSectionsChecklist.querySelectorAll('input:checked').forEach(i => checked.push(i.value));
-    sec.sections = checked;
-  } else if (sec.type === 'entities') {
-    if (!sec.entities) sec.entities = [];
-  }
+  // Save selected sub-sections for navigation
+  const checked = [];
+  menuSectionsChecklist.querySelectorAll('input:checked').forEach(i => checked.push(i.value));
+  sec.sections = checked;
 
   renderSectionsPills();
   updatePreview();
@@ -986,4 +990,54 @@ function addDeviceToSection(eid) {
   renderSectionDevicesList(sec.entities);
   updatePreview();
   showToast('Пристрій додано');
+}
+
+// Widget configuration modal elements
+const widgetConfigModal = document.getElementById('widget-config-modal');
+const btnCloseWidgetConfig = document.getElementById('btn-close-widget-config');
+const widgetEntityDisplay = document.getElementById('widget-entity-display');
+const widgetLabelInput = document.getElementById('widget-label-input');
+const widgetUnitInput = document.getElementById('widget-unit-input');
+const btnSaveConfiguredWidget = document.getElementById('btn-save-configured-widget');
+let pendingWidgetEntity = null;
+
+function setupWidgetConfig() {
+  if (btnCloseWidgetConfig) {
+    btnCloseWidgetConfig.addEventListener('click', () => widgetConfigModal.classList.remove('open'));
+  }
+  if (widgetConfigModal) {
+    widgetConfigModal.addEventListener('click', e => {
+      if (e.target === widgetConfigModal) widgetConfigModal.classList.remove('open');
+    });
+  }
+  if (btnSaveConfiguredWidget) {
+    btnSaveConfiguredWidget.addEventListener('click', () => {
+      if (!pendingWidgetEntity) return;
+      const sec = config.menu[currentSectionKey];
+      if (!sec.widgets) sec.widgets = [];
+      const customLabel = widgetLabelInput.value.trim() || pendingWidgetEntity.friendlyName;
+      const customUnit = widgetUnitInput.value.trim();
+
+      const kindMap = {
+        'sensor': 'sensor', 'binary_sensor': 'sensor', 'switch': 'switch',
+        'light': 'switch', 'battery': 'battery', 'climate': 'sensor'
+      };
+      const iconMap = {
+        'sensor': '📈', 'binary_sensor': '🚨', 'switch': '🔌', 'light': '💡',
+        'climate': '🌡️', 'battery': '🔋', 'cover': '🪟', 'media_player': '🔊'
+      };
+
+      sec.widgets.push({
+        kind: kindMap[pendingWidgetEntity.domain] || 'sensor',
+        label: customLabel,
+        entity_id: pendingWidgetEntity.entityId,
+        unit: customUnit,
+        icon: iconMap[pendingWidgetEntity.domain] || '📊'
+      });
+      renderWidgetsList(sec.widgets);
+      updatePreview();
+      widgetConfigModal.classList.remove('open');
+      showToast('Показник додано');
+    });
+  }
 }

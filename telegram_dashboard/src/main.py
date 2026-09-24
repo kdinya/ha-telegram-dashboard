@@ -57,7 +57,19 @@ def main() -> None:
 
     async def get_ha_state():
         if ha_client:
-            return await ha_client.collect_dashboard_state({})
+            try:
+                states = await ha_client.get_states()
+                res = {}
+                for s in states:
+                    eid = s.get("entity_id")
+                    if eid:
+                        res[eid] = {
+                            "state": s.get("state"),
+                            "attributes": s.get("attributes", {}),
+                        }
+                return res
+            except Exception as e:
+                logger.error("Error fetching states: %s", e)
         return {}
 
     async def get_all_states():
