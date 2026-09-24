@@ -246,16 +246,6 @@ function setupIconPicker() {
     renderIconGrid();
   });
 
-  const btnTextIconPicker = $('btn-text-icon-picker');
-  if (btnTextIconPicker) {
-    btnTextIconPicker.addEventListener('click', () => {
-      activeIconTarget = 'text_item';
-      iconPickerModal.classList.add('open');
-      renderIconCategories();
-      renderIconGrid();
-    });
-  }
-
   btnCloseIconPicker.addEventListener('click', () => iconPickerModal.classList.remove('open'));
   iconPickerModal.addEventListener('click', e => {
     if (e.target === iconPickerModal) iconPickerModal.classList.remove('open');
@@ -309,9 +299,9 @@ function renderIconGrid() {
 
   iconPickerGrid.querySelectorAll('.icon-pick-item').forEach(item => {
     item.addEventListener('click', () => {
-      if (activeIconTarget === 'text_item') {
-        const textIconInput = $('item-text-icon');
-        const textIconDisplay = $('item-text-icon-display');
+      if (activeIconTarget === 'inline_text_item' || activeIconTarget === 'text_item') {
+        const textIconInput = document.querySelector('#inline-edit-row .item-icon-val');
+        const textIconDisplay = document.querySelector('#inline-edit-row .item-icon-display');
         if (textIconInput) textIconInput.value = item.dataset.icon;
         if (textIconDisplay) textIconDisplay.textContent = item.dataset.icon;
       } else {
@@ -518,52 +508,77 @@ function renderSectionsPills() {
 // --- Section editor ---
 let selectedButtonTarget = null;
 let activeIconTarget = 'section';
-let editingTextIdx = null; // null | number (index) | -1 (new item)
+let editingTextIdx = null; // null | number (index being edited) | -1 (adding new)
 
-function resetTextItemForm() {
-  editingTextIdx = null;
-  const formAddText = $('form-add-text');
-  const itemTextInput = $('item-text-input');
-  const itemTextIcon = $('item-text-icon');
-  const itemTextIconDisplay = $('item-text-icon-display');
-  const itemTextIsHeading = $('item-text-is-heading');
+function createInlineEditRow(initialData = {}, onSave, onCancel) {
+  const row = document.createElement('div');
+  row.className = 'add-text-inline-row';
+  row.id = 'inline-edit-row';
 
-  if (itemTextInput) itemTextInput.value = '';
-  if (itemTextIcon) itemTextIcon.value = '💬';
-  if (itemTextIconDisplay) itemTextIconDisplay.textContent = '💬';
-  if (itemTextIsHeading) itemTextIsHeading.checked = false;
-  if (formAddText) formAddText.style.display = 'none';
-}
+  const initialIcon = escapeHtml(initialData.icon || '💬');
+  const initialText = escapeHtml(initialData.text || '');
+  const isHeading = Boolean(initialData.is_heading);
 
-function openTextItemForm(idx = -1) {
-  const formAddText = $('form-add-text');
-  const itemTextInput = $('item-text-input');
-  const itemTextIcon = $('item-text-icon');
-  const itemTextIconDisplay = $('item-text-icon-display');
-  const itemTextIsHeading = $('item-text-is-heading');
-  const sec = config && config.menu ? config.menu[currentSectionKey] : null;
+  row.innerHTML = `
+    <div class="icon-input-wrap">
+      <button type="button" class="btn-icon-select btn-inline-icon-picker" title="Обрати іконку">
+        <span class="item-icon-display">${initialIcon}</span>
+      </button>
+      <input type="hidden" class="item-icon-val" value="${initialIcon}">
+    </div>
+    <input type="text" class="form-control flex-1 item-input-val" placeholder="Введіть текст..." value="${initialText}">
+    <label class="checkbox-label-compact" title="Позначте, якщо це заголовок">
+      <input type="checkbox" class="item-heading-val" ${isHeading ? 'checked' : ''}>
+      <span>Заголовок</span>
+    </label>
+    <div class="add-text-inline-row-actions">
+      <button type="button" class="btn btn-primary btn-sm btn-save-inline">Зберегти</button>
+      <button type="button" class="btn btn-ghost btn-sm btn-cancel-inline" title="Скасувати">✕</button>
+    </div>
+  `;
 
-  editingTextIdx = idx;
+  const btnPicker = row.querySelector('.btn-inline-icon-picker');
+  btnPicker.addEventListener('click', () => {
+    activeIconTarget = 'inline_text_item';
+    iconPickerModal.classList.add('open');
+    renderIconCategories();
+    renderIconGrid();
+  });
 
-  if (idx >= 0 && sec && sec.texts && sec.texts[idx]) {
-    const item = sec.texts[idx];
-    if (itemTextInput) itemTextInput.value = item.text || '';
-    if (itemTextIcon) itemTextIcon.value = item.icon || '💬';
-    if (itemTextIconDisplay) itemTextIconDisplay.textContent = item.icon || '💬';
-    if (itemTextIsHeading) itemTextIsHeading.checked = Boolean(item.is_heading);
-  } else {
-    if (itemTextInput) itemTextInput.value = '';
-    if (itemTextIcon) itemTextIcon.value = '💬';
-    if (itemTextIconDisplay) itemTextIconDisplay.textContent = '💬';
-    if (itemTextIsHeading) itemTextIsHeading.checked = false;
-  }
+  const inputVal = row.querySelector('.item-input-val');
+  const iconVal = row.querySelector('.item-icon-val');
+  const headingVal = row.querySelector('.item-heading-val');
+  const btnSave = row.querySelector('.btn-save-inline');
+  const btnCancel = row.querySelector('.btn-cancel-inline');
 
-  if (formAddText) {
-    formAddText.style.display = 'flex';
-  }
-  if (itemTextInput) {
-    itemTextInput.focus();
-  }
+  btnSave.addEventListener('click', () => {
+    const text = (inputVal.value || '').trim();
+    if (!text) {
+      showToast('Введіть текст перед збереженням', true);
+      inputVal.focus();
+      return;
+    }
+    onSave({
+      icon: iconVal.value || '💬',
+      text: text,
+      is_heading: Boolean(headingVal.checked)
+    });
+  });
+
+  btnCancel.addEventListener('click', onCancel);
+
+  inputVal.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      btnSave.click();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      onCancel();
+    }
+  });
+
+  setTimeout(() => inputVal.focus(), 0);
+  return row;
 }
 
 function loadSectionIntoEditor(key) {
@@ -608,7 +623,7 @@ function loadSectionIntoEditor(key) {
   renderMenuChecklist(sec.sections || sec.menu_sections || []);
 
   if (!sec.texts) sec.texts = [];
-  resetTextItemForm();
+  editingTextIdx = null;
   renderSectionTexts(sec.texts);
 
   $('btn-delete-section').style.display = isMain ? 'none' : 'inline-flex';
@@ -618,9 +633,28 @@ function renderSectionTexts(texts) {
   const container = $('section-texts-list');
   if (!container) return;
   container.innerHTML = '';
-  if (!texts || !texts.length) return;
 
-  texts.forEach((item, idx) => {
+  const sec = config && config.menu ? config.menu[currentSectionKey] : null;
+  if (!sec) return;
+  if (!sec.texts) sec.texts = [];
+
+  sec.texts.forEach((item, idx) => {
+    if (editingTextIdx === idx) {
+      // Inline edit row replaces the item card
+      const editRow = createInlineEditRow(item, (updatedData) => {
+        sec.texts[idx] = updatedData;
+        editingTextIdx = null;
+        renderSectionTexts(sec.texts);
+        updatePreview();
+        showToast('Текст успішно оновлено');
+      }, () => {
+        editingTextIdx = null;
+        renderSectionTexts(sec.texts);
+      });
+      container.appendChild(editRow);
+      return;
+    }
+
     const el = document.createElement('div');
     el.className = 'section-text-item';
     const isHeading = Boolean(item.is_heading);
@@ -647,24 +681,37 @@ function renderSectionTexts(texts) {
     `;
 
     el.querySelector('.btn-edit-text-item').addEventListener('click', () => {
-      openTextItemForm(idx);
+      editingTextIdx = idx;
+      renderSectionTexts(sec.texts);
     });
 
     el.querySelector('.btn-remove-text-item').addEventListener('click', () => {
-      const sec = config && config.menu ? config.menu[currentSectionKey] : null;
-      if (sec && sec.texts) {
-        sec.texts.splice(idx, 1);
-        if (editingTextIdx === idx) {
-          resetTextItemForm();
-        }
-        renderSectionTexts(sec.texts);
-        updatePreview();
-        showToast('Елемент видалено');
+      sec.texts.splice(idx, 1);
+      if (editingTextIdx === idx) {
+        editingTextIdx = null;
       }
+      renderSectionTexts(sec.texts);
+      updatePreview();
+      showToast('Елемент видалено');
     });
 
     container.appendChild(el);
   });
+
+  // If adding a new item, render inline edit row at the end of the list
+  if (editingTextIdx === -1) {
+    const newRow = createInlineEditRow({ icon: '💬', text: '', is_heading: false }, (newData) => {
+      sec.texts.push(newData);
+      editingTextIdx = null;
+      renderSectionTexts(sec.texts);
+      updatePreview();
+      showToast('Текст успішно додано');
+    }, () => {
+      editingTextIdx = null;
+      renderSectionTexts(sec.texts);
+    });
+    container.appendChild(newRow);
+  }
 }
 
 function renderMenuChecklist(selectedKeys) {
@@ -1102,22 +1149,19 @@ function setupEventListeners() {
   const btnActionAddText = $('btn-action-add-text');
   const btnActionAddEntity = $('btn-action-add-entity');
   const btnActionAddButton = $('btn-action-add-button');
-  const formAddText = $('form-add-text');
-  const btnConfirmAddText = $('btn-confirm-add-text');
-  const btnCancelAddText = $('btn-cancel-add-text');
-  const itemTextInput = $('item-text-input');
-  const itemTextIcon = $('item-text-icon');
-  const itemTextIconDisplay = $('item-text-icon-display');
-  const itemTextIsHeading = $('item-text-is-heading');
 
-  if (btnActionAddText && formAddText) {
+  if (btnActionAddText) {
     btnActionAddText.addEventListener('click', () => {
-      const isHidden = formAddText.style.display === 'none';
-      if (isHidden) {
-        openTextItemForm(-1);
+      const sec = config && config.menu ? config.menu[currentSectionKey] : null;
+      if (!sec) return;
+      if (!sec.texts) sec.texts = [];
+
+      if (editingTextIdx === -1) {
+        editingTextIdx = null;
       } else {
-        resetTextItemForm();
+        editingTextIdx = -1;
       }
+      renderSectionTexts(sec.texts);
     });
   }
 
@@ -1130,55 +1174,6 @@ function setupEventListeners() {
   if (btnActionAddButton) {
     btnActionAddButton.addEventListener('click', () => {
       showToast('Додавання кнопок буде доступне незабаром');
-    });
-  }
-
-  if (btnConfirmAddText) {
-    btnConfirmAddText.addEventListener('click', () => {
-      const textVal = (itemTextInput ? itemTextInput.value : '').trim();
-      if (!textVal) {
-        showToast('Введіть текст перед збереженням', true);
-        if (itemTextInput) itemTextInput.focus();
-        return;
-      }
-
-      const sec = config && config.menu ? config.menu[currentSectionKey] : null;
-      if (!sec) return;
-      if (!sec.texts) sec.texts = [];
-
-      const payload = {
-        icon: itemTextIcon ? (itemTextIcon.value || '💬') : '💬',
-        text: textVal,
-        is_heading: itemTextIsHeading ? Boolean(itemTextIsHeading.checked) : false
-      };
-
-      if (editingTextIdx !== null && editingTextIdx >= 0 && editingTextIdx < sec.texts.length) {
-        sec.texts[editingTextIdx] = payload;
-        showToast('Елемент успішно оновлено');
-      } else {
-        sec.texts.push(payload);
-        showToast('Елемент успішно додано до розділу');
-      }
-
-      // Hide input fields, render item with edit & remove buttons, update preview
-      resetTextItemForm();
-      renderSectionTexts(sec.texts);
-      updatePreview();
-    });
-
-    if (itemTextInput) {
-      itemTextInput.addEventListener('keydown', e => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          btnConfirmAddText.click();
-        }
-      });
-    }
-  }
-
-  if (btnCancelAddText) {
-    btnCancelAddText.addEventListener('click', () => {
-      resetTextItemForm();
     });
   }
 
