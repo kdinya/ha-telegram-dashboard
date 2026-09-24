@@ -44,7 +44,7 @@ def main() -> None:
     supervisor_token = os.environ.get("SUPERVISOR_TOKEN", "")
     ha_client = None
     if supervisor_token:
-        ha_client = HAClient("http://supervisor/core/api", supervisor_token)
+        ha_client = HAClient("http://supervisor/core", supervisor_token)
         logger.info("Home Assistant API client configured via Supervisor")
     else:
         logger.warning("SUPERVISOR_TOKEN missing: HA catalog and service calls are disabled")
@@ -93,7 +93,7 @@ def main() -> None:
     else:
         logger.info("Telegram token not provided yet; bot runner is idle")
 
-    web_app = WebApp(cm, renderer, ha_client=ha_client, bot_engine=bot_engine)
+    web_app = WebApp(cm, renderer, ha_client=ha_client, bot_engine=bot_engine, telegram_token=telegram_token)
 
     async def on_startup(app) -> None:
         if ha_client:

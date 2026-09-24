@@ -14,6 +14,75 @@ from .access_controller import AccessController
 logger = logging.getLogger("telegram_dashboard.web")
 
 
+def _sample_entities() -> list[dict[str, Any]]:
+    """Demo entities used when HA is unreachable or no supervisor token."""
+    return [
+        {
+            "entity_id": "light.living_room",
+            "friendly_name": "Світло у вітальні",
+            "domain": "light",
+            "area": "Вітальня",
+            "state": "on",
+        },
+        {
+            "entity_id": "light.kitchen",
+            "friendly_name": "Світло на кухні",
+            "domain": "light",
+            "area": "Кухня",
+            "state": "off",
+        },
+        {
+            "entity_id": "switch.boiler",
+            "friendly_name": "Бойлер",
+            "domain": "switch",
+            "area": "Ванна",
+            "state": "on",
+        },
+        {
+            "entity_id": "climate.hall",
+            "friendly_name": "Кондиціонер",
+            "domain": "climate",
+            "area": "Вітальня",
+            "state": "cool",
+        },
+        {
+            "entity_id": "sensor.living_room_temperature",
+            "friendly_name": "Температура у вітальні",
+            "domain": "sensor",
+            "area": "Вітальня",
+            "state": "22.5 °C",
+        },
+        {
+            "entity_id": "binary_sensor.kitchen_leak",
+            "friendly_name": "Датчик протікання кухня",
+            "domain": "binary_sensor",
+            "area": "Кухня",
+            "state": "off",
+        },
+        {
+            "entity_id": "automation.night_mode",
+            "friendly_name": "Нічний режим",
+            "domain": "automation",
+            "area": "Дім",
+            "state": "on",
+        },
+        {
+            "entity_id": "script.turn_off_all_lights",
+            "friendly_name": "Вимкнути все світло",
+            "domain": "script",
+            "area": "Дім",
+            "state": "off",
+        },
+        {
+            "entity_id": "cover.living_room_curtains",
+            "friendly_name": "Штори у вітальні",
+            "domain": "cover",
+            "area": "Вітальня",
+            "state": "open",
+        },
+    ]
+
+
 class WebApp:
     def __init__(
         self,
@@ -21,11 +90,13 @@ class WebApp:
         renderer: MessageRenderer,
         ha_client: Any | None = None,
         bot_engine: Any | None = None,
+        telegram_token: str | None = None,
     ) -> None:
         self.cm = config_manager
         self.renderer = renderer
         self.ha_client = ha_client
         self.bot_engine = bot_engine
+        self.telegram_token = telegram_token or ""
         self.app = web.Application()
         self._setup_routes()
 
@@ -90,7 +161,7 @@ class WebApp:
         """Sync users from Telegram API getUpdates and Home Assistant integration."""
         discovered = 0
         default_role = self.cm.config.get("default_role", "guest")
-        token = self.cm.config.get("telegram_token", "")
+        token = self.telegram_token or self.cm.config.get("telegram_token", "")
 
         # 1. Direct Telegram Bot API getUpdates
         if token:
@@ -235,72 +306,11 @@ class WebApp:
     async def get_entities(self, request: web.Request) -> web.Response:
         """List of individual entities for UI autocompletion and selection."""
         if self.ha_client is None:
-            sample_entities = [
-                {
-                    "entity_id": "light.living_room",
-                    "friendly_name": "Світло у вітальні",
-                    "domain": "light",
-                    "area": "Вітальня",
-                    "state": "on",
-                },
-                {
-                    "entity_id": "light.kitchen",
-                    "friendly_name": "Світло на кухні",
-                    "domain": "light",
-                    "area": "Кухня",
-                    "state": "off",
-                },
-                {
-                    "entity_id": "switch.boiler",
-                    "friendly_name": "Бойлер",
-                    "domain": "switch",
-                    "area": "Ванна",
-                    "state": "on",
-                },
-                {
-                    "entity_id": "climate.hall",
-                    "friendly_name": "Кондиціонер",
-                    "domain": "climate",
-                    "area": "Вітальня",
-                    "state": "cool",
-                },
-                {
-                    "entity_id": "sensor.living_room_temperature",
-                    "friendly_name": "Температура у вітальні",
-                    "domain": "sensor",
-                    "area": "Вітальня",
-                    "state": "22.5 °C",
-                },
-                {
-                    "entity_id": "binary_sensor.kitchen_leak",
-                    "friendly_name": "Датчик протікання кухня",
-                    "domain": "binary_sensor",
-                    "area": "Кухня",
-                    "state": "off",
-                },
-                {
-                    "entity_id": "automation.night_mode",
-                    "friendly_name": "Нічний режим",
-                    "domain": "automation",
-                    "area": "Дім",
-                    "state": "on",
-                },
-                {
-                    "entity_id": "script.turn_off_all_lights",
-                    "friendly_name": "Вимкнути все світло",
-                    "domain": "script",
-                    "area": "Дім",
-                    "state": "off",
-                },
-                {
-                    "entity_id": "cover.living_room_curtains",
-                    "friendly_name": "Штори у вітальні",
-                    "domain": "cover",
-                    "area": "Вітальня",
-                    "state": "open",
-                },
-            ]
-            return web.json_response({"ok": True, "entities": sample_entities})
+            return web.json_response({
+                "ok": True,
+                "entities": _sample_entities(),
+                "warning": "SUPERVISOR_TOKEN відсутній: показано демонстраційні сутності",
+            })
         try:
             states = await self.ha_client.get_states()
             entities = []
@@ -319,4 +329,9 @@ class WebApp:
                 })
             return web.json_response({"ok": True, "entities": entities})
         except Exception as e:
-            return web.json_response({"ok": False, "error": str(e)}, status=502)
+            logger.warning("get_states failed, falling back to sample entities: %s", e)
+            return web.json_response({
+                "ok": True,
+                "entities": _sample_entities(),
+                "warning": f"Home Assistant недоступний: {e}",
+            })

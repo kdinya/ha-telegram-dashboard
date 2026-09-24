@@ -941,3 +941,12 @@ body {
     flex: 1;
   }
 }
+
+/* Fix: icon/entity category tabs must wrap instead of being clipped */
+.icon-categories-tabs,
+.domain-tabs,
+.domain-filters-tabs,
+.entity-picker-filters {
+  flex-wrap: wrap;
+  overflow-x: visible;
+}

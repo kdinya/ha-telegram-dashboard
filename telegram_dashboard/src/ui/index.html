@@ -21,16 +21,16 @@
         </div>
       </div>
       <nav class="nav-links">
-        <button class="nav-item active" data-tab="builder">
+        <button class="nav-item active" data-tab="builder">🧩 
           <span class="icon">🎛️</span> <span class="nav-text">Конструктор</span>
         </button>
-        <button class="nav-item" data-tab="rbac">
+        <button class="nav-item" data-tab="rbac">👥 
           <span class="icon">👥</span> <span class="nav-text">Користувачі</span>
         </button>
-        <button class="nav-item" data-tab="settings">
+        <button class="nav-item" data-tab="settings">⚙️ 
           <span class="icon">⚙️</span> <span class="nav-text">Налаштування</span>
         </button>
-        <button class="nav-item nav-item-preview" data-tab="preview">
+        <button class="nav-item nav-item-preview" data-tab="preview">👁️ 
           <span class="icon">📱</span> <span class="nav-text">Прев'ю бота</span>
         </button>
       </nav>
@@ -82,18 +82,18 @@
 
               <!-- Meta -->
               <div class="form-row">
-                <div class="form-group flex-1">
-                  <label for="sec-title">Назва розділу</label>
-                  <input type="text" id="sec-title" class="form-control" placeholder="Наприклад: Клімат">
-                </div>
                 <div class="form-group form-group-icon">
-                  <label for="sec-icon">Іконка</label>
+                  <label>Іконка</label>
                   <div class="icon-input-wrap">
                     <button type="button" id="btn-open-icon-picker" class="btn-icon-select" title="Обрати іконку з бази">
                       <span id="sec-icon-display">📁</span>
                     </button>
-                    <input type="text" id="sec-icon" class="form-control" placeholder="📁" style="text-align: center;">
+                    <input type="hidden" id="sec-icon">
                   </div>
+                </div>
+                <div class="form-group flex-1">
+                  <label for="sec-title">Назва розділу</label>
+                  <input type="text" id="sec-title" class="form-control" placeholder="Наприклад: Клімат">
                 </div>
               </div>
 

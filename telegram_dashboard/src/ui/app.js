@@ -6,6 +6,7 @@ let config = null;
 let currentSectionKey = 'main';
 let currentSimulatedRole = 'admin';
 let availableEntities = [];
+let entitiesLoadError = null;
 
 const cyrillicMap = {
   'а':'a','б':'b','в':'v','г':'h','ґ':'g','д':'d','е':'e','є':'ye','ж':'zh','з':'z',
@@ -196,6 +197,7 @@ async function fetchEntities() {
       .join('');
   } catch (e) {
     console.warn('Could not fetch entities:', e);
+    entitiesLoadError = e.message || 'Помилка завантаження сутностей';
   }
 }
 
@@ -342,7 +344,15 @@ function renderEntityPickerList() {
   }
 
   if (!list.length) {
-    entityPickerList.innerHTML = '<p class="field-hint" style="padding: 20px;">Нічого не знайдено. Спробуйте інший пошук або фільтр.</p>';
+    entityPickerList.innerHTML = entitiesLoadError
+      ? `<p class="field-hint" style="padding: 20px;">Не вдалося завантажити сутності: ${entitiesLoadError}. <button type="button" class="btn btn-secondary btn-sm" id="btn-retry-entities">Повторити</button></p>`
+      : '<p class="field-hint" style="padding: 20px;">Нічого не знайдено. Спробуйте інший пошук або фільтр.</p>';
+    const retry = document.getElementById('btn-retry-entities');
+    if (retry) retry.addEventListener('click', async () => {
+      entitiesLoadError = null;
+      await fetchEntities();
+      renderEntityPickerList();
+    });
     return;
   }
 
