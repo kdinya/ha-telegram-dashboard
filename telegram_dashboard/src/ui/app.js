@@ -540,8 +540,6 @@ function loadSectionIntoEditor(key) {
   if (!sec.buttons) sec.buttons = [];
 
   renderMenuChecklist(sec.sections || sec.menu_sections || []);
-  renderEntitiesList(sec.entities);
-  renderButtonsList(sec.buttons);
 
   $('btn-delete-section').style.display = isMain ? 'none' : 'inline-flex';
 }
@@ -735,8 +733,6 @@ $('btn-apply-section').addEventListener('click', () => {
 
   sec.title = stripLeadingEmoji(secTitle.value.trim()) || 'Розділ';
   sec.icon = secIcon.value.trim() || '📁';
-  const secNoteInput = document.getElementById('sec-note');
-  if (secNoteInput) sec.note = secNoteInput.value.trim();
 
   const roles = [];
   if (roleAdmin.checked) roles.push('admin');
@@ -751,7 +747,7 @@ $('btn-apply-section').addEventListener('click', () => {
 
   renderSectionsPills();
   updatePreview();
-  showToast('Зміни розділу застосовано');
+  showToast('Зміни для розділу застосовано');
 });
 
 // --- Users ---

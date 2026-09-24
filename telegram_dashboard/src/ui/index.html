@@ -75,12 +75,12 @@
             <div id="section-editor" class="panel-card">
               <div class="panel-header">
                 <div>
-                  <h3>✏️ Розділ: <span id="editor-section-key" class="text-accent">main</span></h3>
+                  <h3>✏️ Основна назва розділу: <span id="editor-section-key" class="text-accent">main</span></h3>
                 </div>
                 <button id="btn-delete-section" class="btn btn-danger btn-sm">🗑️ Видалити</button>
               </div>
 
-              <!-- Meta -->
+              <!-- Meta: Іконка - поле назви (в один рядок) -->
               <div class="form-row">
                 <div class="form-group form-group-icon">
                   <label>Іконка</label>
@@ -102,12 +102,7 @@
               </div>
 
               <div class="form-group">
-                <label for="sec-note">Текстовий напис / опис розділу</label>
-                <input type="text" id="sec-note" class="form-control" placeholder="Короткий напис або примітка в шапці розділу (необов'язково)">
-              </div>
-
-              <div class="form-group">
-                <label>Дозволені ролі для розділу</label>
+                <label>Дозволені ролі</label>
                 <div class="checkbox-group">
                   <label><input type="checkbox" id="role-admin" value="admin"> Адміністратор</label>
                   <label><input type="checkbox" id="role-member" value="member"> Член родини</label>
@@ -122,32 +117,8 @@
                 <div id="menu-sections-checklist" class="checkbox-grid"></div>
               </div>
 
-              <!-- Entities list (Показники: Назва - Дані) -->
-              <div id="block-entities-section" class="sub-block">
-                <div class="items-header">
-                  <div>
-                    <h4>📊 Ентіті та показники (Назва — Дані)</h4>
-                    <p class="field-hint">Додавайте будь-яку кількість ентіті. Відображаються у повідомленні як «Назва: Дані» (температура, вологість, заряд, стан тощо).</p>
-                  </div>
-                  <button type="button" id="btn-add-entity-item" class="btn btn-secondary btn-sm">+ Додати ентіті</button>
-                </div>
-                <div id="entities-list" class="items-list-container" style="margin-top: 12px;"></div>
-              </div>
-
-              <!-- Buttons list (Кнопки дій / керування) -->
-              <div id="block-buttons-section" class="sub-block">
-                <div class="items-header">
-                  <div>
-                    <h4>🔘 Кнопки дій та керування</h4>
-                    <p class="field-hint">Кнопки під повідомленням у Telegram (перемикання крана, світла, реле, запуск скриптів). Можна вказати власний текст.</p>
-                  </div>
-                  <button type="button" id="btn-add-button-item" class="btn btn-secondary btn-sm">+ Додати кнопку</button>
-                </div>
-                <div id="buttons-list" class="items-list-container" style="margin-top: 12px;"></div>
-              </div>
-
               <div class="form-actions" style="margin-top: 20px;">
-                <button id="btn-apply-section" class="btn btn-primary">Застосувати зміни розділу</button>
+                <button id="btn-apply-section" class="btn btn-primary">Застосувати зміни для розділу</button>
               </div>
             </div>
           </section>
@@ -350,32 +321,7 @@
 
   <div id="toast" class="toast">Повідомлення</div>
   <script src="ui/app.js"></script>
-  <!-- Add Button Modal -->
-  <div class="modal" id="modal-button-config">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3>🔘 Налаштування кнопки керування</h3>
-        <button type="button" class="btn-close" id="btn-close-button-config">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label>Сутність / Дія Home Assistant</label>
-          <div style="display: flex; gap: 8px;">
-            <input type="text" id="btn-target-display" class="form-control" readonly placeholder="Сутність не обрана">
-            <button type="button" class="btn btn-secondary" id="btn-choose-btn-target">Обрати...</button>
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="btn-custom-label">Текст на кнопці</label>
-          <input type="text" id="btn-custom-label" class="form-control" placeholder="Наприклад: Ввідний кран або Світло кухня">
-          <small class="field-hint">Цей текст відображатиметься на кнопці в Telegram. Стан (🟢/🔴) додається автоматично.</small>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-primary" id="btn-save-configured-button">Додати кнопку</button>
-      </div>
-    </div>
-  </div>
+
 
 </body>
 </html>
