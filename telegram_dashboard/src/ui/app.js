@@ -240,10 +240,21 @@ function setupNavigation() {
 // --- Icon Picker ---
 function setupIconPicker() {
   btnOpenIconPicker.addEventListener('click', () => {
+    activeIconTarget = 'section';
     iconPickerModal.classList.add('open');
     renderIconCategories();
     renderIconGrid();
   });
+
+  const btnTextIconPicker = $('btn-text-icon-picker');
+  if (btnTextIconPicker) {
+    btnTextIconPicker.addEventListener('click', () => {
+      activeIconTarget = 'text_item';
+      iconPickerModal.classList.add('open');
+      renderIconCategories();
+      renderIconGrid();
+    });
+  }
 
   btnCloseIconPicker.addEventListener('click', () => iconPickerModal.classList.remove('open'));
   iconPickerModal.addEventListener('click', e => {
@@ -298,8 +309,15 @@ function renderIconGrid() {
 
   iconPickerGrid.querySelectorAll('.icon-pick-item').forEach(item => {
     item.addEventListener('click', () => {
-      secIcon.value = item.dataset.icon;
-      secIconDisplay.textContent = item.dataset.icon;
+      if (activeIconTarget === 'text_item') {
+        const textIconInput = $('item-text-icon');
+        const textIconDisplay = $('item-text-icon-display');
+        if (textIconInput) textIconInput.value = item.dataset.icon;
+        if (textIconDisplay) textIconDisplay.textContent = item.dataset.icon;
+      } else {
+        secIcon.value = item.dataset.icon;
+        secIconDisplay.textContent = item.dataset.icon;
+      }
       iconPickerModal.classList.remove('open');
     });
   });
@@ -499,6 +517,7 @@ function renderSectionsPills() {
 
 // --- Section editor ---
 let selectedButtonTarget = null;
+let activeIconTarget = 'section';
 
 function loadSectionIntoEditor(key) {
   if (!config || !config.menu || !config.menu[key]) return;
@@ -541,7 +560,55 @@ function loadSectionIntoEditor(key) {
 
   renderMenuChecklist(sec.sections || sec.menu_sections || []);
 
+  if (!sec.texts) sec.texts = [];
+  renderSectionTexts(sec.texts);
+
+  const formAddText = $('form-add-text');
+  if (formAddText) formAddText.style.display = 'none';
+
   $('btn-delete-section').style.display = isMain ? 'none' : 'inline-flex';
+}
+
+function renderSectionTexts(texts) {
+  const container = $('section-texts-list');
+  if (!container) return;
+  container.innerHTML = '';
+  if (!texts || !texts.length) return;
+
+  texts.forEach((item, idx) => {
+    const el = document.createElement('div');
+    el.className = 'section-text-item';
+    const isHeading = Boolean(item.is_heading);
+    const badgeHtml = isHeading
+      ? '<span class="badge-text-type heading">Заголовок</span>'
+      : '<span class="badge-text-type">Текст</span>';
+    const contentClass = isHeading
+      ? 'section-text-item-content section-text-item-heading'
+      : 'section-text-item-content';
+
+    const safeIcon = escapeHtml(item.icon || '💬');
+    const safeText = escapeHtml(item.text || '');
+
+    el.innerHTML = `
+      <div class="section-text-item-main">
+        <span>${safeIcon}</span>
+        <span class="${contentClass}">${safeText}</span>
+        ${badgeHtml}
+      </div>
+      <button type="button" class="btn-remove-text-item" title="Видалити" data-idx="${idx}">🗑️</button>
+    `;
+
+    el.querySelector('.btn-remove-text-item').addEventListener('click', () => {
+      const sec = config.menu[currentSectionKey];
+      if (sec && sec.texts) {
+        sec.texts.splice(idx, 1);
+        renderSectionTexts(sec.texts);
+        updatePreview();
+      }
+    });
+
+    container.appendChild(el);
+  });
 }
 
 function renderMenuChecklist(selectedKeys) {
@@ -974,6 +1041,85 @@ $('btn-toggle-preview').addEventListener('click', () => {
 
 // --- Live section name/icon sync ---
 function setupEventListeners() {
+
+  // Setup Constructor Section Action Buttons (Text, Entity, Button)
+  const btnActionAddText = $('btn-action-add-text');
+  const btnActionAddEntity = $('btn-action-add-entity');
+  const btnActionAddButton = $('btn-action-add-button');
+  const formAddText = $('form-add-text');
+  const btnConfirmAddText = $('btn-confirm-add-text');
+  const btnCancelAddText = $('btn-cancel-add-text');
+  const itemTextInput = $('item-text-input');
+  const itemTextIcon = $('item-text-icon');
+  const itemTextIconDisplay = $('item-text-icon-display');
+  const itemTextIsHeading = $('item-text-is-heading');
+
+  if (btnActionAddText && formAddText) {
+    btnActionAddText.addEventListener('click', () => {
+      const isHidden = formAddText.style.display === 'none';
+      formAddText.style.display = isHidden ? 'flex' : 'none';
+      if (isHidden && itemTextInput) {
+        itemTextInput.focus();
+      }
+    });
+  }
+
+  if (btnActionAddEntity) {
+    btnActionAddEntity.addEventListener('click', () => {
+      showToast('Додавання ентіті буде доступне незабаром');
+    });
+  }
+
+  if (btnActionAddButton) {
+    btnActionAddButton.addEventListener('click', () => {
+      showToast('Додавання кнопок буде доступне незабаром');
+    });
+  }
+
+  if (btnConfirmAddText) {
+    btnConfirmAddText.addEventListener('click', () => {
+      const textVal = (itemTextInput.value || '').trim();
+      if (!textVal) {
+        showToast('Введіть текст перед збереженням', true);
+        itemTextInput.focus();
+        return;
+      }
+
+      const sec = config.menu[currentSectionKey];
+      if (!sec) return;
+      if (!sec.texts) sec.texts = [];
+
+      sec.texts.push({
+        icon: itemTextIcon ? itemTextIcon.value : '💬',
+        text: textVal,
+        is_heading: itemTextIsHeading ? itemTextIsHeading.checked : false
+      });
+
+      // Reset form
+      itemTextInput.value = '';
+      if (itemTextIsHeading) itemTextIsHeading.checked = false;
+      if (formAddText) formAddText.style.display = 'none';
+
+      renderSectionTexts(sec.texts);
+      updatePreview();
+      showToast('Елемент успішно додано до розділу');
+    });
+
+    itemTextInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        btnConfirmAddText.click();
+      }
+    });
+  }
+
+  if (btnCancelAddText) {
+    btnCancelAddText.addEventListener('click', () => {
+      if (itemTextInput) itemTextInput.value = '';
+      if (itemTextIsHeading) itemTextIsHeading.checked = false;
+      if (formAddText) formAddText.style.display = 'none';
+    });
+  }
 
   // Setup Add Entity & Add Button event listeners
   document.getElementById('btn-add-entity-item')?.addEventListener('click', () => {

@@ -185,6 +185,22 @@ class MessageRenderer:
             rows.append(f"<i>{note}</i>")
         rows.append("──────────────")
 
+        # Configured texts (headings and text items)
+        texts = section.get("texts", [])
+        if texts:
+            for t_item in texts:
+                if not isinstance(t_item, dict):
+                    continue
+                t_text = str(t_item.get("text", "")).strip()
+                if not t_text:
+                    continue
+                t_icon = t_item.get("icon") or "💬"
+                t_heading = bool(t_item.get("is_heading", False))
+                if t_heading:
+                    rows.append(f"<b>{t_icon} {html.escape(t_text)}</b>")
+                else:
+                    rows.append(f"├ {t_icon} {html.escape(t_text)}")
+
         # Configured entities
         entities = section.get("entities")
         if entities is None:
