@@ -13,7 +13,7 @@ startup: application
 boot: auto
 init: false
 homeassistant_api: true
-panel_icon: "mdi:send"
+panel_icon: "mdi:telegram"
 panel_title: "Telegram Dash"
 ingress: true
 ingress_port: 8099
