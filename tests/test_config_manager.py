@@ -9,7 +9,7 @@ def test_default_config_load(tmp_path: Path):
     cfg = cm.load()
     assert "menu" in cfg
     assert "main" in cfg["menu"]
-    assert cfg["version"] == "1.0.1"
+    assert cfg["version"] == "1.0.0"
 
 
 def test_user_management(tmp_path: Path):

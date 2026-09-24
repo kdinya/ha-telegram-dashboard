@@ -5,13 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.1] - 2026-09-24
+## [1.0.0] - 2026-09-24
 
 ### Fixed
-
-- Add-on failed to start with `s6-overlay-suexec: fatal: can only run as pid 1`. The app now runs directly as PID 1 (empty ENTRYPOINT), independent of Docker's `--init` behavior.
-
-## [1.0.0] - 2026-09-24
+- Add-on startup crash with `s6-overlay-suexec: fatal: can only run as pid 1`. The app now runs directly as PID 1 (`ENTRYPOINT []`), independent of Docker `--init` behavior.
+- Added official My Home Assistant one-click installation button to README.
 
 ### Added
 - First public release of Telegram Dashboard Home Assistant Add-on.

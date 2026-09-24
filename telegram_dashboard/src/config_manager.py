@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 
 DEFAULT_CONFIG: dict[str, Any] = {
-    "version": "1.0.1",
+    "version": "1.0.0",
     "menu": {
         "main": {
             "title": "🏠 Smart Home",
