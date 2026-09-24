@@ -150,6 +150,18 @@ class TelegramBotRunner:
                 res = await self.bot_engine.handle_navigation(user_id, sec_key, state, page=page)
                 reply_markup = {"inline_keyboard": res.get("keyboard", [])} if res.get("keyboard") else None
                 await self.edit_message_text(chat_id, msg_id, res.get("text", ""), reply_markup=reply_markup)
+            elif data.startswith("/btn_"):
+                parts = data[5:].split("_", 1)
+                sec_key = parts[0]
+                btn_id = parts[1] if len(parts) > 1 else "0"
+                res = await self.bot_engine.handle_button_click(user_id, sec_key, btn_id, state)
+                toast = res.get("toast")
+                ret_sec = res.get("section_key") or sec_key
+                await asyncio.sleep(0.3)
+                state = await self._current_state()
+                nav = await self.bot_engine.handle_navigation(user_id, ret_sec, state)
+                reply_markup = {"inline_keyboard": nav.get("keyboard", [])} if nav.get("keyboard") else None
+                await self.edit_message_text(chat_id, msg_id, nav.get("text", ""), reply_markup=reply_markup)
             elif data.startswith("/act_"):
                 act_id = data[5:]
                 res = await self.bot_engine.handle_action(user_id, act_id, state)

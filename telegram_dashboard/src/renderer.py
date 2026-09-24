@@ -1,18 +1,19 @@
-"""Beautiful Telegram HTML message renderer."""
+"""Unified Telegram HTML message renderer for Home Assistant."""
 from __future__ import annotations
 
-from datetime import datetime
 import html
 from typing import Any
 
+escape_html = html.escape
+
 
 def battery_bar(level: int, width: int = 10) -> str:
-    """Render a visual progress bar like [▰▰▰▰▰▰▰▰▱▱] 80%."""
+    """Render a visual progress bar like [▰▰▰▰▰▰▰▰▱▱]."""
     try:
-        level_int = max(0, min(100, int(float(level))))
-    except (TypeError, ValueError):
-        level_int = 0
-    filled = round(level_int / 100 * width)
+        level = max(0, min(100, int(level)))
+    except (ValueError, TypeError):
+        level = 0
+    filled = round(level / 100 * width)
     return "[" + "▰" * filled + "▱" * (width - filled) + "]"
 
 
@@ -34,64 +35,93 @@ def friendly_name(entity_id: str) -> str:
 
 
 DOMAIN_ICONS = {
-    "light": "💡", "switch": "🔀", "script": "📜", "automation": "🤖",
+    "light": "💡", "switch": "🔌", "script": "📜", "automation": "🤖",
     "scene": "🎬", "media_player": "🔊", "climate": "🌡️", "cover": "🪟",
     "binary_sensor": "🚨", "sensor": "📈", "input_boolean": "🔘",
     "fan": "🌀", "humidifier": "💧", "vacuum": "🧹", "lock": "🔒",
-    "button": "🔘", "siren": "🚨", "water_heater": "🔥", "number": "🔢",
-    "valve": "🚰",
-}
-
-STATE_TRANSLATIONS = {
-    "on": "🟢 Увімкнено",
-    "off": "🔴 Вимкнено",
-    "open": "🟢 Відкрито",
-    "closed": "🔴 Закрито",
-    "opening": "⬆️ Відкривається",
-    "closing": "⬇️ Закривається",
-    "cool": "❄️ Охолодження",
-    "heat": "🔥 Обігрів",
-    "auto": "🔄 Авто",
-    "idle": "💤 Очікування",
-    "home": "🏠 Вдома",
-    "not_home": "🚶 Поза домом",
-    "unavailable": "⚠️ Недоступно",
-    "unknown": "❓ Невідомо",
+    "button": "🔘", "siren": "🚨", "water_heater": "🔥", "valve": "🚰",
 }
 
 
-def format_state_value(entity_id: str, val: str, unit: str, device_class: str = "") -> str:
-    """Format an entity state into user-friendly Ukrainian text."""
-    domain = entity_id.split(".", 1)[0] if "." in entity_id else ""
-    val_lower = val.lower().strip()
+def format_entity_value(entity_id: str, raw_state: Any, custom_unit: str = "") -> tuple[str, str]:
+    """Format entity state and icon for Telegram HTML display: (icon, formatted_value)."""
+    if raw_state is None:
+        return "❓", "Невідомо"
 
-    if domain == "binary_sensor" or device_class in ("door", "window", "opening", "garage_door"):
-        if device_class in ("door", "window", "opening", "garage_door"):
-            if val_lower == "on":
-                return "⚠️ Відкрито"
-            if val_lower == "off":
-                return "🟢 Закрито"
-        if device_class == "moisture":
-            if val_lower == "on":
-                return "⚠️ ПРОТІКАННЯ"
-            if val_lower == "off":
-                return "🟢 Сухо"
-        if val_lower in STATE_TRANSLATIONS:
-            return STATE_TRANSLATIONS[val_lower]
+    state_str = ""
+    attrs: dict[str, Any] = {}
+    if isinstance(raw_state, dict):
+        state_str = str(raw_state.get("state", ""))
+        attrs = raw_state.get("attributes", {})
+    else:
+        state_str = str(raw_state)
 
-    if val_lower in STATE_TRANSLATIONS:
-        return STATE_TRANSLATIONS[val_lower]
+    state_lower = state_str.lower().strip()
+    domain = entity_id.split(".")[0] if "." in entity_id else ""
+    device_class = attrs.get("device_class", "")
+    unit = custom_unit or attrs.get("unit_of_measurement", "")
 
-    if unit:
-        return f"{val} {unit}"
-    return val
+    # Switches, lights, boolean
+    if domain in ("switch", "light", "input_boolean"):
+        if state_lower in ("on", "true", "1"):
+            return "💡" if domain == "light" else "🔌", "🟢 Увімкнено"
+        elif state_lower in ("off", "false", "0"):
+            return "💡" if domain == "light" else "🔌", "🔴 Вимкнено"
+
+    if domain == "valve" or "valve" in entity_id or "tap" in entity_id or "water" in entity_id:
+        if state_lower in ("open", "on", "opening", "true"):
+            return "🚰", "🟢 Відкрито"
+        elif state_lower in ("closed", "off", "closing", "false"):
+            return "🚰", "🔴 Закрито"
+
+    if domain == "binary_sensor":
+        if device_class in ("moisture", "leak"):
+            return "💧", "🚨 Протікання!" if state_lower in ("on", "true") else "✅ Сухо"
+        if device_class in ("door", "window", "opening"):
+            return "🚪", "🔴 Відчинено" if state_lower in ("on", "true") else "🟢 Зачинено"
+        if device_class == "motion":
+            return "🚶", "🚨 Рух виявлено" if state_lower in ("on", "true") else "Спокійно"
+        if state_lower in ("on", "true"):
+            return "🚨", "Активно"
+        return "✅", "Норма"
+
+    if domain == "climate":
+        temp = attrs.get("current_temperature") or attrs.get("temperature") or state_str
+        return "🌡️", f"{temp} °C"
+
+    # Battery
+    if "battery" in entity_id or device_class == "battery":
+        try:
+            val_num = int(float(state_str))
+            return "🔋", f"{val_num}% <code>{battery_bar(val_num, 6)}</code>"
+        except ValueError:
+            pass
+
+    # Sensor units
+    if device_class == "temperature" or "temp" in entity_id or unit in ("°C", "°F"):
+        return "🌡️", f"{state_str} {unit or '°C'}".strip()
+
+    if device_class == "humidity" or "humidity" in entity_id or unit == "%":
+        return "💧", f"{state_str} %".strip() if not unit else f"{state_str} {unit}".strip()
+
+    if device_class == "power" or unit in ("W", "kW"):
+        return "⚡", f"{state_str} {unit}".strip()
+
+    if state_lower in ("unavailable", "unknown"):
+        return "⚠️", "Недоступно"
+
+    val_display = f"{state_str} {unit}".strip() if unit else state_str
+    return DOMAIN_ICONS.get(domain, "🔹"), val_display or "—"
 
 
 class MessageRenderer:
     """Renders menu sections into styled Telegram HTML messages."""
 
+    def __init__(self, theme: str = "cards"):
+        self.theme = theme
+
     def render_main(self, state: dict[str, Any]) -> str:
-        """Main dashboard card with a tree of sections (legacy fallback)."""
+        """Main dashboard summary view."""
         outside = html.escape(str(state.get("outside_temp", "—")))
         people = html.escape(str(state.get("people_home", "—")))
         climate_rows = []
@@ -107,116 +137,88 @@ class MessageRenderer:
                 f"├ <b>{html.escape(str(name))}:</b> "
                 f"<code>{temp}°C</code> • <code>{humidity}%</code>{extra}"
             )
-        water_rows = []
-        valve = state.get("water_valve", {})
-        valve_label = "🟢 <b>Відкритий</b>" if valve.get("open") else "🔴 <b>Перекритий</b>"
-        water_rows.append(f"├ <b>Ввідний кран:</b> {valve_label}")
-        for name, leak in state.get("leaks", {}).items():
-            icon = "⚠️ <b>ПРОТІКАННЯ</b>" if leak.get("on") else "🟢 Сухо"
-            water_rows.append(
-                f"├ <b>{html.escape(str(name))}:</b> {icon}"
-            )
-        battery_rows = [
-            battery_line(name, values.get("level"))
-            for name, values in state.get("batteries", {}).items()
-        ]
+        climate_block = "\n".join(climate_rows) if climate_rows else "├ <i>Немає даних</i>"
+
+        water_open = bool(state.get("water_valve", {}).get("open", False))
+        water_status = "🟢 <b>Відкритий</b>" if water_open else "🔴 <b>Перекритий</b>"
+
+        leak_alerts = []
+        for loc, data in state.get("leaks", {}).items():
+            if data.get("on"):
+                leak_alerts.append(f"🚨 <b>ПРОТІКАННЯ: {html.escape(str(loc))}</b>")
+        leaks_block = ("\n".join(leak_alerts) + "\n") if leak_alerts else ""
+
+        bat_rows = []
+        for dev, bdata in state.get("batteries", {}).items():
+            bat_rows.append(battery_line(dev, bdata.get("level", 0)))
+        bat_block = "\n".join(bat_rows) if bat_rows else "├ <i>Всі заряди в нормі</i>"
+
         parts = [
             "<blockquote><b>🏠 ДІМ І БЕЗПЕКА</b>",
+            f"<i>За бортом: {outside}°C • {people}</i>",
             "──────────────",
-            f"<b>🌤 На вулиці:</b> <code>{outside}°C</code>",
-            f"<b>👤 Вдома:</b> {people}",
-            "",
-            "<b>🌡 Клімат</b>",
+            "<b>Клімат у кімнатах:</b>",
+            climate_block,
+            "──────────────",
+            "<b>Водопостачання та безпека:</b>",
+            f"├ Ввідний кран: {water_status}",
         ]
-        parts.extend(climate_rows or ["├ <i>—</i>"])
-        parts += ["", "<b>🚰 Водопостачання</b>"]
-        parts.extend(water_rows or ["├ <i>—</i>"])
-        parts += ["", "<b>🔋 Заряд пристроїв</b>"]
-        parts.extend(battery_rows or ["├ <i>—</i>"])
-        parts.append("──────────────")
-        parts.append(
+        if leaks_block:
+            parts.append(leaks_block.strip())
+        parts.extend([
+            "──────────────",
+            "<b>Заряди пристроїв:</b>",
+            bat_block,
+            "──────────────",
             f"<tg-spoiler><i>⏱ Оновлено: {html.escape(str(state.get('updated_at', '—')))}</i></tg-spoiler></blockquote>"
-        )
+        ])
         return "\n".join(parts)
 
-    def render_section(self, section: dict, state: dict[str, Any]) -> str:
-        """Render one menu section by its configured widgets, entities, and actions."""
-        # Backward compatibility for mock state in tests
-        if (
-            section.get("type") in ("main", "menu")
-            and not section.get("widgets")
-            and not section.get("actions")
-            and any(k in state for k in ("outside_temp", "climate", "water_valve", "leaks"))
-        ):
-            return self.render_main(state)
+    def render_section(self, section: dict[str, Any], state: dict[str, Any]) -> str:
+        """Render one section with header, note and 'Назва: Дані' entities."""
+        title = html.escape(str(section.get("title") or "Розділ"))
+        icon = section.get("icon") or "📁"
+        note = html.escape(str(section.get("note") or section.get("description") or ""))
 
-        icon = section.get("icon", "📁")
-        title = html.escape(str(section.get("title", "")))
-        rows = [f"<blockquote><b>{icon} {title}</b>", "──────────────"]
-
-        note = section.get("note") or section.get("description")
+        rows = [f"<blockquote><b>{icon} {title}</b>"]
         if note:
-            rows.append(f"<i>{html.escape(str(note))}</i>")
-            rows.append("")
+            rows.append(f"<i>{note}</i>")
+        rows.append("──────────────")
 
-        widgets = section.get("widgets", [])
-        entities = section.get("entities", [])
-
-        has_items = False
-        if widgets:
-            for widget in widgets:
-                row_str = self._render_widget(widget, state)
-                if row_str:
-                    rows.append(row_str)
-                    has_items = True
+        # Configured entities
+        entities = section.get("entities")
+        if entities is None:
+            # Fallback to widgets
+            widgets = section.get("widgets", [])
+            entities = [
+                {
+                    "entity_id": w.get("entity_id") or w.get("entity"),
+                    "label": w.get("label"),
+                    "unit": w.get("unit", "")
+                }
+                for w in widgets
+                if (w.get("entity_id") or w.get("entity"))
+            ]
 
         if entities:
-            for ent_id in entities:
-                ent_row = self._render_entity_row(ent_id, state)
-                if ent_row:
-                    rows.append(ent_row)
-                    has_items = True
-
-        if not has_items:
-            child_sections = section.get("sections", [])
-            if child_sections:
-                rows.append("<i>Оберіть підрозділ нижче:</i>")
-            else:
-                rows.append("├ <i>Немає доданих показників</i>")
+            for item in entities:
+                if not isinstance(item, dict):
+                    continue
+                eid = item.get("entity_id")
+                if not eid:
+                    continue
+                label = item.get("label") or friendly_name(eid)
+                unit = item.get("unit") or ""
+                raw_st = state.get(eid)
+                ic, val_formatted = format_entity_value(eid, raw_st, unit)
+                rows.append(f"├ {ic} <b>{html.escape(label)}:</b> {val_formatted}")
+        else:
+            rows.append("├ <i>Показники не налаштовані.</i>")
 
         rows.append("──────────────")
-        upd = state.get("updated_at")
-        if not upd:
-            upd = datetime.now().strftime("%H:%M:%S")
-        rows.append(
-            f"<tg-spoiler><i>⏱ Оновлено: {html.escape(str(upd))}</i></tg-spoiler></blockquote>"
-        )
+        updated = html.escape(str(state.get("updated_at", "—")))
+        rows.append(f"<tg-spoiler><i>⏱ Оновлено: {updated}</i></tg-spoiler></blockquote>")
         return "\n".join(rows)
-
-    def _render_entity_row(self, entity_id: str, state: dict[str, Any]) -> str:
-        raw = state.get(entity_id)
-        val = "—"
-        unit = ""
-        device_class = ""
-        name = friendly_name(entity_id)
-
-        if isinstance(raw, dict):
-            val = str(raw.get("state", "—"))
-            attrs = raw.get("attributes", {})
-            unit = str(attrs.get("unit_of_measurement", ""))
-            device_class = str(attrs.get("device_class", ""))
-            name = str(attrs.get("friendly_name", name))
-        elif raw is not None:
-            val = str(raw)
-
-        domain = entity_id.split(".", 1)[0] if "." in entity_id else "sensor"
-        icon = DOMAIN_ICONS.get(domain, "🔘")
-
-        if domain == "sensor" and ("battery" in entity_id or unit == "%"):
-            return battery_line(name, val)
-
-        formatted = format_state_value(entity_id, val, unit, device_class)
-        return f"├ {icon} <b>{html.escape(name)}:</b> <code>{html.escape(formatted)}</code>"
 
     def render_entity_list(self, section: dict, states: dict[str, Any]) -> str:
         """Render an auto-generated entity browser section."""
@@ -236,39 +238,5 @@ class MessageRenderer:
         rows.append(f"<i>Всього: {count}</i></blockquote>")
         return "\n".join(rows)
 
-    def _render_widget(self, widget: dict, state: dict[str, Any]) -> str:
-        kind = widget.get("kind", "sensor")
-        entity_id = widget.get("entity") or widget.get("entity_id", "")
-        label = html.escape(str(widget.get("label") or widget.get("name") or friendly_name(entity_id)))
-        icon = widget.get("icon") or DOMAIN_ICONS.get(entity_id.split(".", 1)[0], "🔘")
 
-        raw = state.get(entity_id) if entity_id else None
-        val = "—"
-        unit = str(widget.get("unit", ""))
-        device_class = ""
-
-        if isinstance(raw, dict):
-            val = str(raw.get("state", "—"))
-            attrs = raw.get("attributes", {})
-            if not unit:
-                unit = str(attrs.get("unit_of_measurement", ""))
-            device_class = str(attrs.get("device_class", ""))
-        elif raw is not None:
-            val = str(raw)
-
-        if kind == "battery" or (entity_id and "battery" in entity_id):
-            return battery_line(label, val)
-
-        if kind == "switch":
-            on = val.lower() in ("on", "true", "1", "open")
-            state_text = widget.get("on_text", "Увімкнено") if on else widget.get("off_text", "Вимкнено")
-            st_icon = "🟢" if on else "🔴"
-            return f"├ {icon} <b>{label}:</b> {st_icon} {html.escape(state_text)}"
-
-        if kind == "leak":
-            on = val.lower() in ("on", "true", "1")
-            st_icon = "⚠️ <b>ПРОТІКАННЯ</b>" if on else "🟢 Сухо"
-            return f"├ {icon} <b>{label}:</b> {st_icon}"
-
-        formatted = format_state_value(entity_id, val, unit, device_class)
-        return f"├ {icon} <b>{label}:</b> <code>{html.escape(formatted)}</code>"
+TelegramRenderer = MessageRenderer

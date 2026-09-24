@@ -97,13 +97,8 @@
                 </div>
               </div>
 
-              <div class="form-group">
-                <label for="sec-type">Тип розділу</label>
-                <select id="sec-type" class="form-control">
-                  <option value="main">Головний (основний екран)</option>
-                  <option value="section">Розділ</option>
-                  <option value="subsection">Підрозділ</option>
-                </select>
+              <div id="main-badge-wrap" style="margin-bottom: 12px; display: none;">
+                <span class="badge-ok" style="font-size: 13px; padding: 4px 10px;">⭐ Головний екран (відкривається при запуску бота)</span>
               </div>
 
               <div class="form-group">
@@ -121,39 +116,34 @@
               </div>
 
               <!-- Menu Sections Picker -->
-              <div id="block-menu-sections" class="sub-block" style="display: none;">
+              <div id="block-menu-sections" class="sub-block">
                 <h4>Кнопки переходу до розділів</h4>
-                <p class="field-hint">Оберіть розділи, які відображатимуться у меню:</p>
+                <p class="field-hint">Оберіть розділи, кнопки переходу до яких відображатимуться у цьому розділі бота:</p>
                 <div id="menu-sections-checklist" class="checkbox-grid"></div>
               </div>
 
-              <!-- Section Devices List -->
-              <div id="block-entities-source" class="sub-block" style="display: none;">
+              <!-- Entities list (Показники: Назва - Дані) -->
+              <div id="block-entities-section" class="sub-block">
                 <div class="items-header">
                   <div>
-                    <h4>📱 Пристрої для відображення в меню</h4>
-                    <p class="field-hint" style="margin-top: 4px;">Оберіть пристрої, які відображатимуться в цьому розділі бота.</p>
+                    <h4>📊 Ентіті та показники (Назва — Дані)</h4>
+                    <p class="field-hint">Додавайте будь-яку кількість ентіті. Відображаються у повідомленні як «Назва: Дані» (температура, вологість, заряд, стан тощо).</p>
                   </div>
-                  <button type="button" id="btn-add-section-device" class="btn btn-secondary btn-sm">+ Додати пристрій зі списку</button>
+                  <button type="button" id="btn-add-entity-item" class="btn btn-secondary btn-sm">+ Додати ентіті</button>
                 </div>
-                <div id="section-devices-list" class="items-list-container" style="margin-top: 12px;"></div>
+                <div id="entities-list" class="items-list-container" style="margin-top: 12px;"></div>
               </div>
 
-              <!-- Widgets & Actions -->
-              <div id="block-section-items" class="sub-block">
-                <!-- Widgets list -->
+              <!-- Buttons list (Кнопки дій / керування) -->
+              <div id="block-buttons-section" class="sub-block">
                 <div class="items-header">
-                  <h4>📊 Віджети та показники датчиків</h4>
-                  <button type="button" id="btn-add-widget" class="btn btn-secondary btn-sm">+ Додати віджет зі списку HA</button>
+                  <div>
+                    <h4>🔘 Кнопки дій та керування</h4>
+                    <p class="field-hint">Кнопки під повідомленням у Telegram (перемикання крана, світла, реле, запуск скриптів). Можна вказати власний текст.</p>
+                  </div>
+                  <button type="button" id="btn-add-button-item" class="btn btn-secondary btn-sm">+ Додати кнопку</button>
                 </div>
-                <div id="widgets-list" class="items-list-container"></div>
-
-                <!-- Actions list -->
-                <div class="items-header" style="margin-top: 24px;">
-                  <h4>⚡ Кнопки дій, автоматизацій та скриптів</h4>
-                  <button type="button" id="btn-add-action" class="btn btn-secondary btn-sm">+ Додати дію зі списку HA</button>
-                </div>
-                <div id="actions-list" class="items-list-container"></div>
+                <div id="buttons-list" class="items-list-container" style="margin-top: 12px;"></div>
               </div>
 
               <div class="form-actions" style="margin-top: 20px;">
@@ -360,5 +350,32 @@
 
   <div id="toast" class="toast">Повідомлення</div>
   <script src="ui/app.js"></script>
+  <!-- Add Button Modal -->
+  <div class="modal" id="modal-button-config">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>🔘 Налаштування кнопки керування</h3>
+        <button type="button" class="btn-close" id="btn-close-button-config">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Сутність / Дія Home Assistant</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="btn-target-display" class="form-control" readonly placeholder="Сутність не обрана">
+            <button type="button" class="btn btn-secondary" id="btn-choose-btn-target">Обрати...</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="btn-custom-label">Текст на кнопці</label>
+          <input type="text" id="btn-custom-label" class="form-control" placeholder="Наприклад: Ввідний кран або Світло кухня">
+          <small class="field-hint">Цей текст відображатиметься на кнопці в Telegram. Стан (🟢/🔴) додається автоматично.</small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" id="btn-save-configured-button">Додати кнопку</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>

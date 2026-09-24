@@ -374,7 +374,24 @@ function renderEntityPickerList() {
       const domain = item.dataset.domain;
       entityPickerModal.classList.remove('open');
 
-      if (entityPickerContext === 'widget') {
+            if (entityPickerContext === 'entity_item') {
+        const sec = config.menu[currentSectionKey];
+        if (!sec.entities) sec.entities = [];
+        sec.entities.push({
+          entity_id: eid,
+          label: name,
+          unit: (availableEntities.find(e => e.entity_id === eid)?.attributes?.unit_of_measurement) || ''
+        });
+        renderEntitiesList(sec.entities);
+        updatePreview();
+        showToast(`Ентіті "${name}" додано`);
+      } else if (entityPickerContext === 'button_target') {
+        selectedButtonTarget = { entityId: eid, friendlyName: name, domain: domain };
+        const disp = document.getElementById('btn-target-display');
+        const lbl = document.getElementById('btn-custom-label');
+        if (disp) disp.value = `${name} (${eid})`;
+        if (lbl && !lbl.value) lbl.value = name;
+      } else if (entityPickerContext === 'widget') {
         pendingWidgetEntity = { entityId: eid, friendlyName: name, domain: domain };
         widgetEntityDisplay.value = `${name} (${eid})`;
         widgetLabelInput.value = name;
@@ -479,7 +496,10 @@ function renderSectionsPills() {
   });
 }
 
+
 // --- Section editor ---
+let selectedButtonTarget = null;
+
 function loadSectionIntoEditor(key) {
   if (!config || !config.menu || !config.menu[key]) return;
   const sec = config.menu[key];
@@ -487,8 +507,12 @@ function loadSectionIntoEditor(key) {
   secTitle.value = stripLeadingEmoji(sec.title || '');
   secIcon.value = sec.icon || '📁';
   secIconDisplay.textContent = sec.icon || '📁';
-  const typeVal = sec.type || (key === 'main' ? 'main' : 'section');
-  secType.value = (typeVal === 'menu') ? 'main' : typeVal;
+  
+  const mainBadge = document.getElementById('main-badge-wrap');
+  const allKeys = Object.keys(config.menu);
+  const isMain = key === 'main' || key === allKeys[0];
+  if (mainBadge) mainBadge.style.display = isMain ? 'block' : 'none';
+
   const secNoteInput = document.getElementById('sec-note');
   if (secNoteInput) secNoteInput.value = sec.note || sec.description || '';
 
@@ -497,129 +521,160 @@ function loadSectionIntoEditor(key) {
   roleMember.checked = roles.includes('member');
   roleGuest.checked = roles.includes('guest');
 
-  handleSectionTypeChange(sec.type || 'section', sec);
-  $('btn-delete-section').style.display = key === 'main' ? 'none' : 'inline-flex';
-}
+  // Migrate legacy data if needed
+  if (!sec.entities && sec.widgets) {
+    sec.entities = sec.widgets.map(w => ({
+      entity_id: w.entity_id || w.entity,
+      label: w.label,
+      unit: w.unit || ''
+    }));
+  }
+  if (!sec.entities) sec.entities = [];
 
-function handleSectionTypeChange(type, sec) {
-  // Always display navigation buttons block and items (widgets/actions) block for all section types
-  blockMenuSections.style.display = 'block';
-  blockSectionItems.style.display = 'block';
-  if (blockEntitiesSource) blockEntitiesSource.style.display = 'none';
+  if (!sec.buttons && sec.actions) {
+    sec.buttons = sec.actions.map(a => ({
+      entity_id: a.entity_id || (a.target && a.target.entity_id),
+      label: a.label
+    }));
+  }
+  if (!sec.buttons) sec.buttons = [];
 
-  renderMenuChecklist(sec ? sec.sections || [] : []);
-  renderWidgetsList(sec ? sec.widgets || [] : []);
-  renderActionsList(sec ? sec.actions || [] : []);
+  renderMenuChecklist(sec.sections || sec.menu_sections || []);
+  renderEntitiesList(sec.entities);
+  renderButtonsList(sec.buttons);
+
+  $('btn-delete-section').style.display = isMain ? 'none' : 'inline-flex';
 }
 
 function renderMenuChecklist(selectedKeys) {
+  const menuSectionsChecklist = document.getElementById('menu-sections-checklist');
+  if (!menuSectionsChecklist) return;
   const allKeys = Object.keys(config.menu).filter(k => k !== currentSectionKey);
   menuSectionsChecklist.innerHTML = allKeys.map(k => {
     const s = config.menu[k];
     const cleanTitle = stripLeadingEmoji(s.title || k);
-    const isChecked = selectedKeys.includes(k) ? 'checked' : '';
+    const isChecked = (selectedKeys || []).includes(k) ? 'checked' : '';
     return `<label><input type="checkbox" value="${k}" ${isChecked}> ${s.icon || '📁'} ${cleanTitle}</label>`;
   }).join('');
 }
 
-// --- Widgets ---
-function renderWidgetsList(widgets) {
-  if (!widgets.length) {
-    widgetsList.innerHTML = '<p class="field-hint">Віджети ще не додані.</p>';
+// --- Entities (Показники: Назва - Дані) ---
+function renderEntitiesList(entities) {
+  const container = document.getElementById('entities-list');
+  if (!container) return;
+  if (!entities || !entities.length) {
+    container.innerHTML = '<p class="field-hint">Ентіті ще не додані. Натисніть «+ Додати ентіті».</p>';
     return;
   }
-  widgetsList.innerHTML = widgets.map((w, index) => `
-    <div class="item-row" data-index="${index}">
-      <div class="item-info">
-        <span style="font-size: 20px;">${w.icon || '📊'}</span>
-        <div>
-          <div class="item-title">${w.label || w.entity_id || 'Віджет'}</div>
-          <div class="item-desc">${w.kind} • ${w.entity_id || w.name || ''}</div>
-        </div>
-      </div>
-      <button type="button" class="btn btn-danger btn-sm btn-remove-widget" data-index="${index}">✕</button>
-    </div>
-  `).join('');
 
-  widgetsList.querySelectorAll('.btn-remove-widget').forEach(btn => {
+  container.innerHTML = entities.map((ent, index) => {
+    const eid = ent.entity_id;
+    const found = availableEntities.find(e => e.entity_id === eid);
+    const currentVal = found ? `${found.state} ${ent.unit || (found.attributes && found.attributes.unit_of_measurement) || ''}`.trim() : '—';
+
+    return `
+      <div class="item-row" data-index="${index}">
+        <div class="item-info" style="flex: 1;">
+          <div style="display: flex; gap: 10px; align-items: center; width: 100%;">
+            <input type="text" class="form-control form-control-sm ent-label-input" data-index="${index}" value="${ent.label || ''}" placeholder="Назва показника" style="max-width: 200px; font-weight: 600;">
+            <div style="font-size: 13px; color: var(--text-muted); flex: 1;">
+              <code>${eid}</code>
+            </div>
+            <div style="font-weight: bold; color: var(--accent); padding: 0 10px; background: rgba(56, 189, 248, 0.1); border-radius: 4px;">
+              ${currentVal}
+            </div>
+          </div>
+        </div>
+        <button type="button" class="btn btn-danger btn-sm btn-remove-entity" data-index="${index}">✕</button>
+      </div>
+    `;
+  }).join('');
+
+  container.querySelectorAll('.ent-label-input').forEach(input => {
+    input.addEventListener('input', (e) => {
+      const idx = parseInt(e.target.dataset.index, 10);
+      const sec = config.menu[currentSectionKey];
+      if (sec && sec.entities && sec.entities[idx]) {
+        sec.entities[idx].label = e.target.value;
+        updatePreview();
+      }
+    });
+  });
+
+  container.querySelectorAll('.btn-remove-entity').forEach(btn => {
     btn.addEventListener('click', () => {
       const idx = parseInt(btn.dataset.index, 10);
       const sec = config.menu[currentSectionKey];
-      if (sec && sec.widgets) {
-        sec.widgets.splice(idx, 1);
-        renderWidgetsList(sec.widgets);
+      if (sec && sec.entities) {
+        sec.entities.splice(idx, 1);
+        renderEntitiesList(sec.entities);
         updatePreview();
       }
     });
   });
 }
 
-function addWidgetFromEntity(entityId, friendlyName, domain) {
-  const kindMap = {
-    'sensor': 'sensor',
-    'binary_sensor': 'sensor',
-    'switch': 'switch',
-    'light': 'switch',
-    'battery': 'battery',
-  };
-  const iconMap = {
-    'sensor': '📈', 'binary_sensor': '🚨', 'switch': '🔌', 'light': '💡',
-    'climate': '🌡️', 'battery': '🔋', 'cover': '🪟', 'media_player': '🔊'
-  };
-
-  const sec = config.menu[currentSectionKey];
-  if (!sec.widgets) sec.widgets = [];
-  sec.widgets.push({
-    kind: kindMap[domain] || 'sensor',
-    label: friendlyName,
-    entity_id: entityId,
-    icon: iconMap[domain] || '📊'
-  });
-  renderWidgetsList(sec.widgets);
-  updatePreview();
-}
-
-$('btn-add-widget').addEventListener('click', () => openEntityPicker('widget', 'Оберіть сутність для віджета'));
-
-// --- Actions ---
-function renderActionsList(actions) {
-  if (!actions.length) {
-    actionsList.innerHTML = '<p class="field-hint">Кнопки дій ще не додані.</p>';
+// --- Buttons (Кнопки дій / керування) ---
+function renderButtonsList(buttons) {
+  const container = document.getElementById('buttons-list');
+  if (!container) return;
+  if (!buttons || !buttons.length) {
+    container.innerHTML = '<p class="field-hint">Кнопки ще не додані. Натисніть «+ Додати кнопку».</p>';
     return;
   }
-  actionsList.innerHTML = actions.map((a, index) => `
-    <div class="item-row" data-index="${index}">
-      <div class="item-info">
-        <span style="font-size: 18px;">⚡</span>
-        <div>
-          <div class="item-title">${a.label || 'Дія'}</div>
-          <div class="item-desc">${a.service || ''} • ${a.target?.entity_id || a.entity_id || ''}</div>
-        </div>
-      </div>
-      <button type="button" class="btn btn-danger btn-sm btn-remove-action" data-index="${index}">✕</button>
-    </div>
-  `).join('');
 
-  actionsList.querySelectorAll('.btn-remove-action').forEach(btn => {
+  container.innerHTML = buttons.map((btn, index) => {
+    const eid = btn.entity_id || '';
+    const found = availableEntities.find(e => e.entity_id === eid);
+    const stateStr = found ? (found.state || '') : '';
+    let stateBadge = '';
+    if (stateStr.toLowerCase() in { 'on': 1, 'open': 1, 'true': 1 }) {
+      stateBadge = '<span class="badge-ok">🟢 Увімк</span>';
+    } else if (stateStr.toLowerCase() in { 'off': 1, 'closed': 1, 'false': 1 }) {
+      stateBadge = '<span class="badge-warn">🔴 Вимк</span>';
+    } else if (stateStr) {
+      stateBadge = `<span class="badge-ok">${stateStr}</span>`;
+    }
+
+    return `
+      <div class="item-row" data-index="${index}">
+        <div class="item-info" style="flex: 1;">
+          <div style="display: flex; gap: 10px; align-items: center; width: 100%;">
+            <input type="text" class="form-control form-control-sm btn-label-input" data-index="${index}" value="${btn.label || ''}" placeholder="Текст на кнопці" style="max-width: 220px; font-weight: 600;">
+            <div style="font-size: 13px; color: var(--text-muted); flex: 1;">
+              <code>${eid}</code>
+            </div>
+            ${stateBadge}
+          </div>
+        </div>
+        <button type="button" class="btn btn-danger btn-sm btn-remove-button" data-index="${index}">✕</button>
+      </div>
+    `;
+  }).join('');
+
+  container.querySelectorAll('.btn-label-input').forEach(input => {
+    input.addEventListener('input', (e) => {
+      const idx = parseInt(e.target.dataset.index, 10);
+      const sec = config.menu[currentSectionKey];
+      if (sec && sec.buttons && sec.buttons[idx]) {
+        sec.buttons[idx].label = e.target.value;
+        updatePreview();
+      }
+    });
+  });
+
+  container.querySelectorAll('.btn-remove-button').forEach(btn => {
     btn.addEventListener('click', () => {
       const idx = parseInt(btn.dataset.index, 10);
       const sec = config.menu[currentSectionKey];
-      if (sec && sec.actions) {
-        sec.actions.splice(idx, 1);
-        renderActionsList(sec.actions);
+      if (sec && sec.buttons) {
+        sec.buttons.splice(idx, 1);
+        renderButtonsList(sec.buttons);
         updatePreview();
       }
     });
   });
 }
-
-$('btn-add-action').addEventListener('click', () => {
-  selectedActionEntity = '';
-  actionEntityDisplay.value = '';
-  actionServiceSelect.innerHTML = '<option value="">Спершу оберіть сутність</option>';
-  actionLabelInput.value = '';
-  actionConfigModal.classList.add('open');
-});
 
 // --- Section creation: title only, slug and icon guessed ---
 $('btn-add-section').addEventListener('click', () => {
@@ -680,7 +735,6 @@ $('btn-apply-section').addEventListener('click', () => {
 
   sec.title = stripLeadingEmoji(secTitle.value.trim()) || 'Розділ';
   sec.icon = secIcon.value.trim() || '📁';
-  sec.type = secType.value;
   const secNoteInput = document.getElementById('sec-note');
   if (secNoteInput) sec.note = secNoteInput.value.trim();
 
@@ -692,7 +746,7 @@ $('btn-apply-section').addEventListener('click', () => {
 
   // Save selected sub-sections for navigation
   const checked = [];
-  menuSectionsChecklist.querySelectorAll('input:checked').forEach(i => checked.push(i.value));
+  document.getElementById('menu-sections-checklist')?.querySelectorAll('input:checked').forEach(i => checked.push(i.value));
   sec.sections = checked;
 
   renderSectionsPills();
@@ -924,6 +978,48 @@ $('btn-toggle-preview').addEventListener('click', () => {
 
 // --- Live section name/icon sync ---
 function setupEventListeners() {
+
+  // Setup Add Entity & Add Button event listeners
+  document.getElementById('btn-add-entity-item')?.addEventListener('click', () => {
+    openEntityPicker('entity_item', 'Оберіть ентіті Home Assistant для показу даних');
+  });
+
+  document.getElementById('btn-add-button-item')?.addEventListener('click', () => {
+    selectedButtonTarget = null;
+    const disp = document.getElementById('btn-target-display');
+    const lbl = document.getElementById('btn-custom-label');
+    if (disp) disp.value = '';
+    if (lbl) lbl.value = '';
+    document.getElementById('modal-button-config')?.classList.add('open');
+  });
+
+  document.getElementById('btn-close-button-config')?.addEventListener('click', () => {
+    document.getElementById('modal-button-config')?.classList.remove('open');
+  });
+
+  document.getElementById('btn-choose-btn-target')?.addEventListener('click', () => {
+    openEntityPicker('button_target', 'Оберіть сутність для кнопки керування');
+  });
+
+  document.getElementById('btn-save-configured-button')?.addEventListener('click', () => {
+    if (!selectedButtonTarget) {
+      showToast('Спершу оберіть сутність', true);
+      return;
+    }
+    const lbl = document.getElementById('btn-custom-label')?.value.trim() || selectedButtonTarget.friendlyName;
+    const sec = config.menu[currentSectionKey];
+    if (!sec.buttons) sec.buttons = [];
+    sec.buttons.push({
+      entity_id: selectedButtonTarget.entityId,
+      label: lbl,
+      action: 'toggle'
+    });
+    renderButtonsList(sec.buttons);
+    updatePreview();
+    document.getElementById('modal-button-config')?.classList.remove('open');
+    showToast('Кнопку додано');
+  });
+
   secTitle.addEventListener('input', () => {
     const sec = config.menu[currentSectionKey];
     if (sec) sec.title = secTitle.value;
