@@ -20,4 +20,5 @@ COPY src/ /app/src/
 
 EXPOSE 8099
 
+ENTRYPOINT []
 CMD ["python3", "-m", "src.main"]
