@@ -2,14 +2,11 @@
  * Telegram Dashboard Web UI Client
  */
 
-// --- Global State ---
 let config = null;
 let currentSectionKey = 'main';
 let currentSimulatedRole = 'admin';
-let isPhonePreviewHidden = false;
 let availableEntities = [];
 
-// --- Transliteration for Ukrainian/Cyrillic to slug ---
 const cyrillicMap = {
   'а':'a','б':'b','в':'v','г':'h','ґ':'g','д':'d','е':'e','є':'ye','ж':'zh','з':'z',
   'и':'y','і':'i','ї':'yi','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p',
@@ -20,75 +17,171 @@ const cyrillicMap = {
 function slugify(text) {
   return text.toLowerCase()
     .split('')
-    .map(char => cyrillicMap[char] !== undefined ? cyrillicMap[char] : char)
+    .map(c => cyrillicMap[c] !== undefined ? cyrillicMap[c] : c)
     .join('')
     .replace(/[^a-z0-9_]/g, '')
     .replace(/_+/g, '_')
     .replace(/^_+|_+$/g, '');
 }
 
-// --- Smart Home Icon Database ---
+/** Strip leading emoji so icon + title don't duplicate */
+function stripLeadingEmoji(text) {
+  if (!text) return text;
+  return text.replace(/^[^\p{L}\p{N}]+/u, '').trim();
+}
+
+// --- Icon database: clean category names without icons, searchable ---
 const ICON_DATABASE = {
-  'Клімат та погода': ['🌡️', '❄️', '🔥', '☀️', '⛅', '🌧️', '💨', '💧', '♨️', '🌪️', '🌫️'],
-  'Освітлення': ['💡', '🔦', '🕯️', '🔆', '🏮', '✨', '🌈', '🪩', '🎇'],
-  'Безпека та дім': ['🏠', '🏡', '🚪', '🔒', '🔓', '🛡️', '🚨', '🚰', '🧯', '🔔', '📹', '🔑'],
-  'Кімнати': ['🛋️', '🛏️', '🍳', '🚿', '🛁', '🪴', '🧺', '👶', '🚗', '🏊'],
-  'Прилади та гаджети': ['⚡', '🔋', '🔌', '🧹', '📺', '🔊', '📻', '☕', '💻', '🎮', '🖨️'],
-  'Керування та статус': ['⚙️', '📊', '▶️', '⏸️', '⏹️', '🔄', '✔️', '❌', 'ℹ️', '📱', '👤']
+  'Клімат': ['🌡️', '❄️', '🔥', '☀️', '⛅', '🌧️', '💨', '💧', '♨️', '🌫️', '🌫️', '🥶', '🥵'],
+  'Освітлення': ['💡', '🔦', '🕯️', '🔆', '🏮', '✨', '🌈', '🪩', '🎇', '🌟'],
+  'Безпека': ['🚪', '🔒', '🔓', '🛡️', '🚨', '🚰', '🧯', '🔔', '📹', '🔑', '⚠️', '🆘'],
+  'Кімнати': ['🏠', '🏡', '🛋️', '🛏️', '🍳', '🚿', '🛁', '🪴', '🧺', '👶', '🚗', '🏊', '🌳'],
+  'Прилади': ['⚡', '🔋', '🔌', '🧹', '📺', '🔊', '📻', '☕', '💻', '🎮', '🖨️', '📱', '⌚'],
+  'Статуси': ['📊', '📈', '✅', '❌', '⏳', '🔄', '▶️', '⏸️', '⏹️', 'ℹ️', '📌', '🗓️'],
+  'Люди': ['👤', '👥', '👨', '👩', '🧑', '👶', '🙋', '🤝', '🚶'],
+  'Дії': ['🎛️', '🎚️', '⬆️', '⬇️', '🔊', '🔉', '🔕', '🔀', '🔁', '📝', '🎯', '🚀']
 };
 
-// --- DOM Elements ---
+// Suggested services by entity domain (HA standard services)
+const DOMAIN_SERVICES = {
+  'light': [
+    { service: 'light.turn_on', label: 'Увімкнути світло' },
+    { service: 'light.turn_off', label: 'Вимкнути світло' },
+    { service: 'light.toggle', label: 'Перемкнути світло' },
+  ],
+  'switch': [
+    { service: 'switch.turn_on', label: 'Увімкнути' },
+    { service: 'switch.turn_off', label: 'Вимкнути' },
+    { service: 'switch.toggle', label: 'Перемкнути' },
+  ],
+  'climate': [
+    { service: 'climate.turn_on', label: 'Увімкнути клімат' },
+    { service: 'climate.turn_off', label: 'Вимкнути клімат' },
+    { service: 'climate.set_temperature', label: 'Встановити температуру' },
+  ],
+  'cover': [
+    { service: 'cover.open_cover', label: 'Відкрити штори' },
+    { service: 'cover.close_cover', label: 'Закрити штори' },
+    { service: 'cover.stop_cover', label: 'Зупинити' },
+  ],
+  'media_player': [
+    { service: 'media_player.play_pause', label: 'Пуск / Пауза' },
+    { service: 'media_player.volume_up', label: 'Гучніше' },
+    { service: 'media_player.volume_down', label: 'Тихіше' },
+  ],
+  'fan': [
+    { service: 'fan.turn_on', label: 'Увімкнути вентилятор' },
+    { service: 'fan.turn_off', label: 'Вимкнути вентилятор' },
+  ],
+  'vacuum': [
+    { service: 'vacuum.start', label: 'Почати прибирання' },
+    { service: 'vacuum.return_to_base', label: 'Повернутись на базу' },
+  ],
+  'lock': [
+    { service: 'lock.lock', label: 'Заблокувати' },
+    { service: 'lock.unlock', label: 'Розблокувати' },
+  ],
+  'water_heater': [
+    { service: 'water_heater.turn_on', label: 'Увімкнути водонагрівач' },
+    { service: 'water_heater.turn_off', label: 'Вимкнути водонагрівач' },
+  ]
+};
+
+// Universal fallback actions for every entity
+const UNIVERSAL_SERVICES = (entity_id) => {
+  const domain = (entity_id || '').split('.')[0];
+  const out = [];
+  if (DOMAIN_SERVICES[domain]) out.push(...DOMAIN_SERVICES[domain]);
+  out.push(
+    { service: `homeassistant.toggle`, label: 'Перемкнути стан' },
+    { service: `homeassistant.turn_on`, label: 'Увімкнути' },
+    { service: `homeassistant.turn_off`, label: 'Вимкнути' },
+  );
+  return out;
+};
+
+// --- DOM ---
+const $ = (id) => document.getElementById(id);
 const navItems = document.querySelectorAll('.nav-item');
 const tabPanes = document.querySelectorAll('.tab-pane');
-const sectionsList = document.getElementById('sections-list');
-const sectionEditor = document.getElementById('section-editor');
-const editorSectionKey = document.getElementById('editor-section-key');
-const secTitle = document.getElementById('sec-title');
-const secIcon = document.getElementById('sec-icon');
-const secIconDisplay = document.getElementById('sec-icon-display');
-const btnOpenIconPicker = document.getElementById('btn-open-icon-picker');
-const secType = document.getElementById('sec-type');
-const roleAdmin = document.getElementById('role-admin');
-const roleMember = document.getElementById('role-member');
-const roleGuest = document.getElementById('role-guest');
-const blockMenuSections = document.getElementById('block-menu-sections');
-const blockEntitiesSource = document.getElementById('block-entities-source');
-const blockSectionItems = document.getElementById('block-section-items');
-const menuSectionsChecklist = document.getElementById('menu-sections-checklist');
-const entSourceMode = document.getElementById('ent-source-mode');
-const entSourceValWrap = document.getElementById('ent-source-val-wrap');
-const entSourceVal = document.getElementById('ent-source-val');
-const widgetsList = document.getElementById('widgets-list');
-const actionsList = document.getElementById('actions-list');
-const btnAddWidget = document.getElementById('btn-add-widget');
-const btnAddAction = document.getElementById('btn-add-action');
-const btnAddSection = document.getElementById('btn-add-section');
-const btnDeleteSection = document.getElementById('btn-delete-section');
-const btnApplySection = document.getElementById('btn-apply-section');
-const btnSave = document.getElementById('btn-save');
-const btnTogglePreview = document.getElementById('btn-toggle-preview');
-const btnBackToEditor = document.getElementById('btn-back-to-editor');
-const previewPane = document.getElementById('preview-pane');
-const previewText = document.getElementById('preview-text');
-const previewButtons = document.getElementById('preview-buttons');
-const previewRoleSelect = document.getElementById('preview-role-select');
-const usersTbody = document.getElementById('users-tbody');
-const btnAddUser = document.getElementById('btn-add-user');
-const btnSyncUsers = document.getElementById('btn-sync-users');
-const settingBotToken = document.getElementById('setting-bot-token');
-const settingTheme = document.getElementById('setting-theme');
-const settingDefaultRole = document.getElementById('setting-default-role');
-const toastEl = document.getElementById('toast');
-const iconPickerModal = document.getElementById('icon-picker-modal');
-const btnCloseIconPicker = document.getElementById('btn-close-icon-picker');
-const iconCategoriesTabs = document.getElementById('icon-categories-tabs');
-const iconPickerGrid = document.getElementById('icon-picker-grid');
-const haEntitiesDatalist = document.getElementById('ha-entities-datalist');
+const sectionsList = $('sections-list');
+const editorSectionKey = $('editor-section-key');
+const secTitle = $('sec-title');
+const secIcon = $('sec-icon');
+const secIconDisplay = $('sec-icon-display');
+const secType = $('sec-type');
+const roleAdmin = $('role-admin');
+const roleMember = $('role-member');
+const roleGuest = $('role-guest');
+const blockMenuSections = $('block-menu-sections');
+const blockEntitiesSource = $('block-entities-source');
+const blockSectionItems = $('block-section-items');
+const menuSectionsChecklist = $('menu-sections-checklist');
+const entSourceMode = $('ent-source-mode');
+const entSourceValWrap = $('ent-source-val-wrap');
+const entSourceVal = $('ent-source-val');
+const widgetsList = $('widgets-list');
+const actionsList = $('actions-list');
+const usersTbody = $('users-tbody');
+const toastEl = $('toast');
+const previewPane = $('preview-pane');
+const previewText = $('preview-text');
+const previewButtons = $('preview-buttons');
+const haEntitiesDatalist = $('ha-entities-datalist');
 
-// --- Init & Fetch ---
+// Icon picker elements
+const iconPickerModal = $('icon-picker-modal');
+const btnOpenIconPicker = $('btn-open-icon-picker');
+const btnCloseIconPicker = $('btn-close-icon-picker');
+const iconSearchInput = $('icon-search-input');
+const iconCategoriesTabs = $('icon-categories-tabs');
+const iconPickerGrid = $('icon-picker-grid');
+
+// Entity picker elements
+const entityPickerModal = $('entity-picker-modal');
+const btnCloseEntityPicker = $('btn-close-entity-picker');
+const entitySearchInput = $('entity-search-input');
+const domainFiltersTabs = $('domain-filters-tabs');
+const entityPickerList = $('entity-picker-list');
+const entityPickerTitle = $('entity-picker-title');
+
+// Action config modal elements
+const actionConfigModal = $('action-config-modal');
+const btnCloseActionConfig = $('btn-close-action-config');
+const actionEntityDisplay = $('action-entity-display');
+const btnActionChooseEntity = $('btn-action-choose-entity');
+const actionServiceSelect = $('action-service-select');
+const actionLabelInput = $('action-label-input');
+const btnSaveConfiguredAction = $('btn-save-configured-action');
+
+// Picker state
+let entityPickerContext = 'widget'; // 'widget' | 'action'
+let selectedActionEntity = '';
+
+// --- Utils ---
+function showToast(message, isError = false) {
+  toastEl.textContent = message;
+  toastEl.style.backgroundColor = isError ? '#ef4444' : '#38bdf8';
+  toastEl.style.color = isError ? '#fff' : '#0f172a';
+  toastEl.classList.add('show');
+  setTimeout(() => toastEl.classList.remove('show'), 3000);
+}
+
+async function api(path, opts = {}) {
+  const res = await fetch(path, opts);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Невідома помилка' }));
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+// --- Init ---
 async function init() {
   setupNavigation();
   setupIconPicker();
+  setupEntityPicker();
+  setupActionConfig();
   await fetchEntities();
   await loadConfig();
   setupEventListeners();
@@ -96,16 +189,11 @@ async function init() {
 
 async function fetchEntities() {
   try {
-    const res = await fetch('api/entities');
-    if (res.ok) {
-      const data = await res.json();
-      if (data.entities) {
-        availableEntities = data.entities;
-        haEntitiesDatalist.innerHTML = availableEntities
-          .map(e => `<option value="${e.entity_id}">${e.friendly_name} (${e.entity_id})</option>`)
-          .join('');
-      }
-    }
+    const data = await api('api/entities');
+    availableEntities = data.entities || [];
+    haEntitiesDatalist.innerHTML = availableEntities
+      .map(e => `<option value="${e.entity_id}">${e.friendly_name} (${e.entity_id})</option>`)
+      .join('');
   } catch (e) {
     console.warn('Could not fetch entities:', e);
   }
@@ -113,8 +201,7 @@ async function fetchEntities() {
 
 async function loadConfig() {
   try {
-    const res = await fetch('api/config');
-    config = await res.json();
+    config = await api('api/config');
     renderSectionsPills();
     loadSectionIntoEditor(currentSectionKey);
     renderUsers();
@@ -125,7 +212,7 @@ async function loadConfig() {
   }
 }
 
-// --- Navigation Tabs ---
+// --- Navigation ---
 function setupNavigation() {
   navItems.forEach(item => {
     item.addEventListener('click', () => {
@@ -138,16 +225,13 @@ function setupNavigation() {
         tabPanes.forEach(p => p.classList.remove('active'));
       } else {
         previewPane.classList.remove('mobile-active');
-        tabPanes.forEach(p => {
-          p.classList.toggle('active', p.id === `tab-${targetTab}`);
-        });
+        tabPanes.forEach(p => p.classList.toggle('active', p.id === `tab-${targetTab}`));
       }
     });
   });
 
-  btnBackToEditor?.addEventListener('click', () => {
-    const builderNav = document.querySelector('[data-tab="builder"]');
-    builderNav?.click();
+  $('btn-back-to-editor')?.addEventListener('click', () => {
+    document.querySelector('[data-tab="builder"]')?.click();
   });
 }
 
@@ -155,49 +239,207 @@ function setupNavigation() {
 function setupIconPicker() {
   btnOpenIconPicker.addEventListener('click', () => {
     iconPickerModal.classList.add('open');
+    renderIconCategories();
+    renderIconGrid();
   });
 
-  btnCloseIconPicker.addEventListener('click', () => {
-    iconPickerModal.classList.remove('open');
-  });
-
-  iconPickerModal.addEventListener('click', (e) => {
+  btnCloseIconPicker.addEventListener('click', () => iconPickerModal.classList.remove('open'));
+  iconPickerModal.addEventListener('click', e => {
     if (e.target === iconPickerModal) iconPickerModal.classList.remove('open');
   });
+  iconSearchInput.addEventListener('input', renderIconGrid);
+}
 
-  const categories = Object.keys(ICON_DATABASE);
-  iconCategoriesTabs.innerHTML = categories.map((cat, i) => `
-    <button class="icon-cat-btn ${i === 0 ? 'active' : ''}" data-cat="${cat}">${cat}</button>
+function renderIconCategories() {
+  const cats = ['Всі', ...Object.keys(ICON_DATABASE)];
+  iconCategoriesTabs.innerHTML = cats.map((cat, i) => `
+    <button class="icon-cat-btn ${cat === 'Всі' ? 'active' : ''}" data-cat="${cat}">${cat}</button>
   `).join('');
 
-  renderIconGrid(categories[0]);
-
-  iconCategoriesTabs.addEventListener('click', (e) => {
-    const btn = e.target.closest('.icon-cat-btn');
-    if (!btn) return;
-    document.querySelectorAll('.icon-cat-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    renderIconGrid(btn.dataset.cat);
+  iconCategoriesTabs.querySelectorAll('.icon-cat-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      iconCategoriesTabs.querySelectorAll('.icon-cat-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderIconGrid();
+    });
   });
 }
 
-function renderIconGrid(category) {
-  const icons = ICON_DATABASE[category] || [];
-  iconPickerGrid.innerHTML = icons.map(icon => `
-    <button type="button" class="icon-pick-item" data-icon="${icon}">${icon}</button>
-  `).join('');
+function renderIconGrid() {
+  const search = (iconSearchInput.value || '').toLowerCase();
+  const activeCat = iconCategoriesTabs.querySelector('.icon-cat-btn.active')?.dataset.cat || 'Всі';
+
+  let pool = [];
+  if (activeCat === 'Всі') {
+    Object.values(ICON_DATABASE).forEach(arr => pool.push(...arr));
+  } else {
+    pool = ICON_DATABASE[activeCat] || [];
+  }
+
+  // Deduplicate
+  pool = [...new Set(pool)];
+
+  let filtered = pool;
+  if (search) {
+    // Match by category name or the emoji itself
+    filtered = pool.filter(icon => {
+      const catOf = Object.keys(ICON_DATABASE).find(c => ICON_DATABASE[c].includes(icon)) || '';
+      return catOf.toLowerCase().includes(search) || icon === search;
+    });
+    // If nothing matched by name, show all icons (user might just scroll)
+    if (!filtered.length) filtered = pool;
+  }
+
+  iconPickerGrid.innerHTML = filtered.map(icon =>
+    `<button type="button" class="icon-pick-item" data-icon="${icon}">${icon}</button>`
+  ).join('');
 
   iconPickerGrid.querySelectorAll('.icon-pick-item').forEach(item => {
     item.addEventListener('click', () => {
-      const chosen = item.dataset.icon;
-      secIcon.value = chosen;
-      secIconDisplay.textContent = chosen;
+      secIcon.value = item.dataset.icon;
+      secIconDisplay.textContent = item.dataset.icon;
       iconPickerModal.classList.remove('open');
     });
   });
 }
 
-// --- Section Pill List ---
+// --- Entity Picker Modal ---
+function setupEntityPicker() {
+  btnCloseEntityPicker.addEventListener('click', () => entityPickerModal.classList.remove('open'));
+  entityPickerModal.addEventListener('click', e => {
+    if (e.target === entityPickerModal) entityPickerModal.classList.remove('open');
+  });
+  entitySearchInput.addEventListener('input', renderEntityPickerList);
+  domainFiltersTabs.addEventListener('click', e => {
+    const btn = e.target.closest('.domain-tab-btn');
+    if (!btn) return;
+    domainFiltersTabs.querySelectorAll('.domain-tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderEntityPickerList();
+  });
+}
+
+function openEntityPicker(context, title) {
+  entityPickerContext = context;
+  entityPickerTitle.textContent = title || 'Оберіть сутність Home Assistant';
+  entitySearchInput.value = '';
+  domainFiltersTabs.querySelectorAll('.domain-tab-btn').forEach((b, i) => b.classList.toggle('active', i === 0));
+  entityPickerModal.classList.add('open');
+  renderEntityPickerList();
+}
+
+function renderEntityPickerList() {
+  const search = (entitySearchInput.value || '').toLowerCase();
+  const activeDomain = domainFiltersTabs.querySelector('.domain-tab-btn.active')?.dataset.domain || 'all';
+
+  let list = availableEntities;
+  if (activeDomain !== 'all') list = list.filter(e => e.domain === activeDomain);
+  if (search) {
+    list = list.filter(e =>
+      (e.friendly_name || '').toLowerCase().includes(search) ||
+      (e.entity_id || '').toLowerCase().includes(search)
+    );
+  }
+
+  if (!list.length) {
+    entityPickerList.innerHTML = '<p class="field-hint" style="padding: 20px;">Нічого не знайдено. Спробуйте інший пошук або фільтр.</p>';
+    return;
+  }
+
+  // Group by area if present
+  const groups = {};
+  list.forEach(e => {
+    const area = e.area || 'Інші пристрої';
+    if (!groups[area]) groups[area] = [];
+    groups[area].push(e);
+  });
+
+  entityPickerList.innerHTML = Object.keys(groups).map(area => `
+    <div class="entity-group">
+      <h5 class="entity-group-title">${area}</h5>
+      ${groups[area].map(e => `
+        <button type="button" class="entity-item" data-id="${e.entity_id}" data-name="${e.friendly_name}" data-domain="${e.domain}">
+          <span class="entity-item-domain">${e.domain}</span>
+          <div class="entity-item-info">
+            <span class="entity-item-name">${e.friendly_name}</span>
+            <span class="entity-item-id">${e.entity_id}</span>
+          </div>
+          <span class="entity-item-state">${e.state || ''}</span>
+        </button>
+      `).join('')}
+    </div>
+  `).join('');
+
+  entityPickerList.querySelectorAll('.entity-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const eid = item.dataset.id;
+      const name = item.dataset.name;
+      const domain = item.dataset.domain;
+      entityPickerModal.classList.remove('open');
+
+      if (entityPickerContext === 'widget') {
+        addWidgetFromEntity(eid, name, domain);
+      } else if (entityPickerContext === 'action') {
+        selectedActionEntity = eid;
+        actionEntityDisplay.value = `${name} (${eid})`;
+        renderActionServiceOptions(domain, eid);
+      }
+    });
+  });
+}
+
+// --- Action Config Modal ---
+function setupActionConfig() {
+  btnCloseActionConfig.addEventListener('click', () => actionConfigModal.classList.remove('open'));
+  actionConfigModal.addEventListener('click', e => {
+    if (e.target === actionConfigModal) actionConfigModal.classList.remove('open');
+  });
+
+  btnActionChooseEntity.addEventListener('click', () => {
+    openEntityPicker('action', 'Оберіть пристрій для дії');
+  });
+
+  btnSaveConfiguredAction.addEventListener('click', () => {
+    if (!selectedActionEntity) {
+      showToast('Спершу оберіть сутність', true);
+      return;
+    }
+    const service = actionServiceSelect.value;
+    const label = actionLabelInput.value.trim() || 'Дія';
+    const sec = config.menu[currentSectionKey];
+    if (!sec.actions) sec.actions = [];
+    sec.actions.push({
+      label: label,
+      service: service,
+      target: { entity_id: selectedActionEntity }
+    });
+    renderActionsList(sec.actions);
+    updatePreview();
+    actionConfigModal.classList.remove('open');
+    showToast('Дію додано');
+  });
+}
+
+function renderActionServiceOptions(domain, entityId) {
+  const services = UNIVERSAL_SERVICES(entityId);
+
+  // Append automations / scripts as executable actions
+  availableEntities.filter(e => e.domain === 'automation' || e.domain === 'script').forEach(e => {
+    services.push({
+      service: e.domain === 'automation' ? 'automation.trigger' : 'script.turn_on',
+      label: `⚡ ${e.friendly_name} (${e.domain === 'automation' ? 'автоматизація' : 'скрипт'})`
+    });
+  });
+
+  actionServiceSelect.innerHTML = services.map(s =>
+    `<option value="${s.service}">${s.label}</option>`
+  ).join('');
+
+  // Auto-fill button label with first suggestion
+  if (services.length) actionLabelInput.value = services[0].label;
+}
+
+// --- Sections Pills ---
 function renderSectionsPills() {
   if (!config || !config.menu) return;
   sectionsList.innerHTML = '';
@@ -205,7 +447,8 @@ function renderSectionsPills() {
     const sec = config.menu[key];
     const pill = document.createElement('div');
     pill.className = `section-pill ${key === currentSectionKey ? 'active' : ''}`;
-    pill.innerHTML = `<span>${sec.icon || '📁'}</span> <span>${sec.title || key}</span>`;
+    const cleanTitle = stripLeadingEmoji(sec.title || key);
+    pill.innerHTML = `<span>${sec.icon || '📁'}</span> <span>${cleanTitle}</span>`;
     pill.addEventListener('click', () => {
       currentSectionKey = key;
       renderSectionsPills();
@@ -216,12 +459,12 @@ function renderSectionsPills() {
   });
 }
 
-// --- Load Section in Editor ---
+// --- Section editor ---
 function loadSectionIntoEditor(key) {
   if (!config || !config.menu || !config.menu[key]) return;
   const sec = config.menu[key];
   editorSectionKey.textContent = key;
-  secTitle.value = sec.title || '';
+  secTitle.value = stripLeadingEmoji(sec.title || '');
   secIcon.value = sec.icon || '📁';
   secIconDisplay.textContent = sec.icon || '📁';
   secType.value = sec.type || 'section';
@@ -232,7 +475,7 @@ function loadSectionIntoEditor(key) {
   roleGuest.checked = roles.includes('guest');
 
   handleSectionTypeChange(sec.type || 'section', sec);
-  btnDeleteSection.style.display = key === 'main' ? 'none' : 'inline-flex';
+  $('btn-delete-section').style.display = key === 'main' ? 'none' : 'inline-flex';
 }
 
 function handleSectionTypeChange(type, sec) {
@@ -253,28 +496,20 @@ function handleSectionTypeChange(type, sec) {
   }
 }
 
-secType.addEventListener('change', () => {
-  handleSectionTypeChange(secType.value, config.menu[currentSectionKey]);
-});
-
-entSourceMode.addEventListener('change', () => {
-  entSourceValWrap.style.display = entSourceMode.value === 'all' ? 'none' : 'block';
-});
-
-// --- Menu Checklist ---
 function renderMenuChecklist(selectedKeys) {
   const allKeys = Object.keys(config.menu).filter(k => k !== currentSectionKey);
   menuSectionsChecklist.innerHTML = allKeys.map(k => {
     const s = config.menu[k];
+    const cleanTitle = stripLeadingEmoji(s.title || k);
     const isChecked = selectedKeys.includes(k) ? 'checked' : '';
-    return `<label><input type="checkbox" value="${k}" ${isChecked}> ${s.icon || '📁'} ${s.title || k}</label>`;
+    return `<label><input type="checkbox" value="${k}" ${isChecked}> ${s.icon || '📁'} ${cleanTitle}</label>`;
   }).join('');
 }
 
-// --- Widgets Editor ---
+// --- Widgets ---
 function renderWidgetsList(widgets) {
   if (!widgets.length) {
-    widgetsList.innerHTML = '<p class="field-hint">Віджети ще не додані. Натисніть "+ Додати віджет".</p>';
+    widgetsList.innerHTML = '<p class="field-hint">Віджети ще не додані.</p>';
     return;
   }
   widgetsList.innerHTML = widgets.map((w, index) => `
@@ -291,7 +526,7 @@ function renderWidgetsList(widgets) {
   `).join('');
 
   widgetsList.querySelectorAll('.btn-remove-widget').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', () => {
       const idx = parseInt(btn.dataset.index, 10);
       const sec = config.menu[currentSectionKey];
       if (sec && sec.widgets) {
@@ -303,30 +538,37 @@ function renderWidgetsList(widgets) {
   });
 }
 
-btnAddWidget.addEventListener('click', () => {
-  const label = prompt('Введіть назву показника (наприклад: Температура у залі):', '');
-  if (!label) return;
-  const entityId = prompt('Введіть entity_id Home Assistant (або оберіть зі списку):', 'sensor.');
-  if (!entityId) return;
-  const kind = prompt('Оберіть тип віджета (sensor, switch, battery, leak):', 'sensor') || 'sensor';
-  const icon = prompt('Іконка віджета:', '🌡️') || '📊';
+function addWidgetFromEntity(entityId, friendlyName, domain) {
+  const kindMap = {
+    'sensor': 'sensor',
+    'binary_sensor': 'sensor',
+    'switch': 'switch',
+    'light': 'switch',
+    'battery': 'battery',
+  };
+  const iconMap = {
+    'sensor': '📈', 'binary_sensor': '🚨', 'switch': '🔌', 'light': '💡',
+    'climate': '🌡️', 'battery': '🔋', 'cover': '🪟', 'media_player': '🔊'
+  };
 
   const sec = config.menu[currentSectionKey];
   if (!sec.widgets) sec.widgets = [];
   sec.widgets.push({
-    kind: kind,
-    label: label,
+    kind: kindMap[domain] || 'sensor',
+    label: friendlyName,
     entity_id: entityId,
-    icon: icon
+    icon: iconMap[domain] || '📊'
   });
   renderWidgetsList(sec.widgets);
   updatePreview();
-});
+}
 
-// --- Actions Editor ---
+$('btn-add-widget').addEventListener('click', () => openEntityPicker('widget', 'Оберіть сутність для віджета'));
+
+// --- Actions ---
 function renderActionsList(actions) {
   if (!actions.length) {
-    actionsList.innerHTML = '<p class="field-hint">Кнопки дій ще не додані. Натисніть "+ Додати дію".</p>';
+    actionsList.innerHTML = '<p class="field-hint">Кнопки дій ще не додані.</p>';
     return;
   }
   actionsList.innerHTML = actions.map((a, index) => `
@@ -335,7 +577,7 @@ function renderActionsList(actions) {
         <span style="font-size: 18px;">⚡</span>
         <div>
           <div class="item-title">${a.label || 'Дія'}</div>
-          <div class="item-desc">${a.service || a.action || ''} • ${a.entity_id || ''}</div>
+          <div class="item-desc">${a.service || ''} • ${a.target?.entity_id || a.entity_id || ''}</div>
         </div>
       </div>
       <button type="button" class="btn btn-danger btn-sm btn-remove-action" data-index="${index}">✕</button>
@@ -343,7 +585,7 @@ function renderActionsList(actions) {
   `).join('');
 
   actionsList.querySelectorAll('.btn-remove-action').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', () => {
       const idx = parseInt(btn.dataset.index, 10);
       const sec = config.menu[currentSectionKey];
       if (sec && sec.actions) {
@@ -355,48 +597,38 @@ function renderActionsList(actions) {
   });
 }
 
-btnAddAction.addEventListener('click', () => {
-  const label = prompt('Текст на кнопці (наприклад: Увімкнути світло):', '');
-  if (!label) return;
-  const service = prompt('Служба HA (наприклад: light.turn_on або switch.toggle):', 'switch.toggle');
-  if (!service) return;
-  const entityId = prompt('Цільовий entity_id Home Assistant:', 'switch.');
-
-  const sec = config.menu[currentSectionKey];
-  if (!sec.actions) sec.actions = [];
-  sec.actions.push({
-    label: label,
-    service: service,
-    target: { entity_id: entityId }
-  });
-  renderActionsList(sec.actions);
-  updatePreview();
+$('btn-add-action').addEventListener('click', () => {
+  selectedActionEntity = '';
+  actionEntityDisplay.value = '';
+  actionServiceSelect.innerHTML = '<option value="">Спершу оберіть сутність</option>';
+  actionLabelInput.value = '';
+  actionConfigModal.classList.add('open');
 });
 
-// --- Section Creation: Asking ONLY Title and generating slug ---
-btnAddSection.addEventListener('click', () => {
+// --- Section creation: title only, slug and icon guessed ---
+$('btn-add-section').addEventListener('click', () => {
   const title = prompt('Введіть назву нового розділу:');
   if (!title || !title.trim()) return;
 
-  const rawSlug = slugify(title.trim()) || 'section';
+  const cleanTitle = stripLeadingEmoji(title.trim());
+  const rawSlug = slugify(cleanTitle) || 'section';
   let slug = rawSlug;
   let counter = 1;
-  while (config.menu[slug]) {
-    slug = `${rawSlug}_${counter++}`;
-  }
+  while (config.menu[slug]) slug = `${rawSlug}_${counter++}`;
 
-  // Guess icon from title
   let guessedIcon = '📁';
-  const lower = title.toLowerCase();
+  const lower = cleanTitle.toLowerCase();
   if (lower.includes('клімат') || lower.includes('температур')) guessedIcon = '🌡️';
   else if (lower.includes('світл') || lower.includes('ламп')) guessedIcon = '💡';
   else if (lower.includes('розетк') || lower.includes('вимикач')) guessedIcon = '🔌';
   else if (lower.includes('безпек') || lower.includes('сигнал')) guessedIcon = '🛡️';
   else if (lower.includes('камер')) guessedIcon = '📹';
   else if (lower.includes('вод')) guessedIcon = '🚰';
+  else if (lower.includes('замок') || lower.includes('двер')) guessedIcon = '🔒';
+  else if (lower.includes('штор')) guessedIcon = '🪟';
 
   config.menu[slug] = {
-    title: title.trim(),
+    title: cleanTitle,
     icon: guessedIcon,
     type: 'section',
     roles: ['admin', 'member'],
@@ -408,15 +640,15 @@ btnAddSection.addEventListener('click', () => {
   renderSectionsPills();
   loadSectionIntoEditor(slug);
   updatePreview();
-  showToast(`Розділ "${title}" створено з ідентифікатором "${slug}"`);
+  showToast(`Розділ "${cleanTitle}" створено (id: ${slug})`);
 });
 
-btnDeleteSection.addEventListener('click', () => {
+$('btn-delete-section').addEventListener('click', () => {
   if (currentSectionKey === 'main') {
     alert('Головний розділ (main) не можна видалити.');
     return;
   }
-  if (!confirm(`Ви дійсно бажаєте видалити розділ "${currentSectionKey}"?`)) return;
+  if (!confirm(`Видалити розділ "${currentSectionKey}"?`)) return;
   delete config.menu[currentSectionKey];
   currentSectionKey = 'main';
   renderSectionsPills();
@@ -425,12 +657,12 @@ btnDeleteSection.addEventListener('click', () => {
   showToast('Розділ видалено');
 });
 
-// --- Apply Section Form Changes ---
-btnApplySection.addEventListener('click', () => {
+// --- Apply section ---
+$('btn-apply-section').addEventListener('click', () => {
   const sec = config.menu[currentSectionKey];
   if (!sec) return;
 
-  sec.title = secTitle.value.trim();
+  sec.title = stripLeadingEmoji(secTitle.value.trim()) || 'Розділ';
   sec.icon = secIcon.value.trim() || '📁';
   sec.type = secType.value;
 
@@ -456,7 +688,7 @@ btnApplySection.addEventListener('click', () => {
   showToast('Зміни розділу застосовано');
 });
 
-// --- Users Management ---
+// --- Users ---
 function renderUsers() {
   if (!config || !config.users) return;
   usersTbody.innerHTML = '';
@@ -464,8 +696,8 @@ function renderUsers() {
     const tr = document.createElement('tr');
     const isGuest = user.role === 'guest';
     const statusBadge = isGuest
-      ? '<span style="background: rgba(234, 179, 8, 0.2); color: #eab308; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">Очікує підтвердження</span>'
-      : '<span style="background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">Підтверджено</span>';
+      ? '<span class="badge-warn">Очікує підтвердження</span>'
+      : '<span class="badge-ok">Підтверджено</span>';
 
     tr.innerHTML = `
       <td><code>${user.telegram_id}</code></td>
@@ -486,7 +718,6 @@ function renderUsers() {
     usersTbody.appendChild(tr);
   });
 
-  // Event handlers
   usersTbody.querySelectorAll('.user-role-select').forEach(sel => {
     sel.addEventListener('change', async () => {
       const id = parseInt(sel.dataset.id, 10);
@@ -515,88 +746,83 @@ function renderUsers() {
   usersTbody.querySelectorAll('.btn-delete-user').forEach(btn => {
     btn.addEventListener('click', async () => {
       const id = parseInt(btn.dataset.id, 10);
-      if (confirm(`Видалити користувача з ID ${id}?`)) {
-        await deleteUser(id);
-      }
+      if (confirm(`Видалити користувача ${id}?`)) await deleteUser(id);
     });
   });
 }
 
 async function saveUser(user) {
   try {
-    await fetch('api/users', {
+    await api('api/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(user)
     });
     showToast('Користувача оновлено');
   } catch (e) {
-    showToast('Помилка оновлення користувача', true);
+    showToast(`Помилка: ${e.message}`, true);
   }
 }
 
 async function deleteUser(id) {
   try {
-    const res = await fetch(`api/users/${id}`, { method: 'DELETE' });
-    if (res.ok) {
-      config.users = config.users.filter(u => u.telegram_id !== id);
-      renderUsers();
-      showToast('Користувача видалено');
-    }
+    await api(`api/users/${id}`, { method: 'DELETE' });
+    config.users = config.users.filter(u => u.telegram_id !== id);
+    renderUsers();
+    showToast('Користувача видалено');
   } catch (e) {
     showToast('Помилка видалення', true);
   }
 }
 
-btnAddUser.addEventListener('click', async () => {
+$('btn-add-user').addEventListener('click', async () => {
   const tid = prompt('Введіть Telegram ID користувача (число):');
   if (!tid || isNaN(tid)) return;
-  const name = prompt('Введіть ім\'я або юзернейм:') || 'Користувач';
+  const name = prompt("Введіть ім'я або юзернейм:") || 'Користувач';
   const role = prompt('Оберіть роль (admin, member, guest):', 'member') || 'member';
-
-  const user = { telegram_id: parseInt(tid, 10), name: name, role: role };
+  const user = { telegram_id: parseInt(tid, 10), name, role };
   await saveUser(user);
   config.users.push(user);
   renderUsers();
 });
 
-btnSyncUsers.addEventListener('click', async () => {
-  btnSyncUsers.disabled = true;
-  btnSyncUsers.textContent = '⏳ Синхронізація...';
+$('btn-sync-users').addEventListener('click', async () => {
+  const btn = $('btn-sync-users');
+  btn.disabled = true;
+  btn.textContent = '⏳ Синхронізація...';
   try {
-    const res = await fetch('api/users/sync', { method: 'POST' });
-    const data = await res.json();
+    const data = await api('api/users/sync', { method: 'POST' });
     if (data.users) {
       config.users = data.users;
       renderUsers();
-      showToast(`Синхронізацію завершено. Нових: ${data.discovered || 0}`);
+      showToast(`Синхронізовано. Нових користувачів: ${data.discovered || 0}`);
     }
   } catch (e) {
-    showToast('Помилка синхронізації з Telegram Bot', true);
+    showToast(`Помилка синхронізації: ${e.message}`, true);
   } finally {
-    btnSyncUsers.disabled = false;
-    btnSyncUsers.textContent = '🔄 Синхронізувати з Telegram Bot';
+    btn.disabled = false;
+    btn.textContent = '🔄 Оновити / Синхронізувати';
   }
 });
 
-// --- Settings Tab ---
+// --- Settings ---
 function loadSettings() {
   if (!config) return;
-  settingBotToken.value = config.telegram_token || '';
-  settingTheme.value = config.theme || 'cards';
-  settingDefaultRole.value = config.default_role || 'guest';
+  $('setting-bot-token').value = config.telegram_token || '';
+  $('setting-theme').value = config.theme || 'cards';
+  $('setting-default-role').value = config.default_role || 'guest';
 }
 
 function applySettings() {
   if (!config) return;
-  config.telegram_token = settingBotToken.value.trim();
-  config.theme = settingTheme.value;
-  config.default_role = settingDefaultRole.value;
+  config.telegram_token = $('setting-bot-token').value.trim();
+  config.theme = $('setting-theme').value;
+  config.default_role = $('setting-default-role').value;
 }
 
-// --- Save Config via API ---
-btnSave.addEventListener('click', async () => {
-  btnApplySection.click();
+// --- Save config ---
+$('btn-save').addEventListener('click', async () => {
+  $('btn-apply-section').click();
   applySettings();
   try {
     const res = await fetch('api/config', {
@@ -616,7 +842,7 @@ btnSave.addEventListener('click', async () => {
   }
 });
 
-// --- Realtime Simulator Preview ---
+// --- Realtime Preview ---
 async function updatePreview() {
   if (!config || !config.menu) return;
   try {
@@ -624,8 +850,8 @@ async function updatePreview() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        menu: config.menu,
         section_key: currentSectionKey,
-        section: config.menu[currentSectionKey],
         role: currentSimulatedRole
       })
     });
@@ -635,14 +861,13 @@ async function updatePreview() {
       renderTelegramKeyboard(data.keyboard || []);
     }
   } catch (e) {
-    previewText.textContent = 'Помилка рендеру прев\'ю';
+    previewText.textContent = 'Помилка рендеру превʼю: ' + e.message;
   }
 }
 
 function renderTelegramKeyboard(keyboard) {
   previewButtons.innerHTML = '';
   if (!keyboard || !keyboard.length) return;
-
   keyboard.forEach(row => {
     const rowEl = document.createElement('div');
     rowEl.className = 'tg-btn-row';
@@ -651,9 +876,7 @@ function renderTelegramKeyboard(keyboard) {
       button.className = 'tg-button';
       button.textContent = btn.text;
       button.title = btn.callback_data;
-      button.addEventListener('click', () => {
-        handlePreviewButtonClick(btn.callback_data);
-      });
+      button.addEventListener('click', () => handlePreviewButtonClick(btn.callback_data));
       rowEl.appendChild(button);
     });
     previewButtons.appendChild(rowEl);
@@ -671,30 +894,23 @@ function handlePreviewButtonClick(callbackData) {
       updatePreview();
     }
   } else if (callbackData.startsWith('/act_') || callbackData.startsWith('/tog_')) {
-    showToast(`Натиснуто дію: ${callbackData}`);
+    showToast(`Натиснуто: ${callbackData}`);
   }
 }
 
-// --- Preview Controls ---
-previewRoleSelect.addEventListener('change', (e) => {
+$('preview-role-select').addEventListener('change', e => {
   currentSimulatedRole = e.target.value;
   updatePreview();
 });
 
-btnTogglePreview.addEventListener('click', () => {
-  isPhonePreviewHidden = !isPhonePreviewHidden;
-  previewPane.style.display = isPhonePreviewHidden ? 'none' : 'flex';
-  btnTogglePreview.querySelector('.preview-toggle-label').textContent = isPhonePreviewHidden ? 'Показати' : 'Прев\'ю';
+$('btn-toggle-preview').addEventListener('click', () => {
+  const pane = previewPane;
+  const hidden = pane.style.display === 'none';
+  pane.style.display = hidden ? 'flex' : 'none';
+  $('btn-toggle-preview').querySelector('.preview-toggle-label').textContent = hidden ? 'Превʼю' : 'Показати';
 });
 
-function showToast(message, isError = false) {
-  toastEl.textContent = message;
-  toastEl.style.backgroundColor = isError ? 'var(--danger)' : 'var(--primary)';
-  toastEl.style.color = isError ? '#ffffff' : '#0f172a';
-  toastEl.classList.add('show');
-  setTimeout(() => toastEl.classList.remove('show'), 3000);
-}
-
+// --- Live section name/icon sync ---
 function setupEventListeners() {
   secTitle.addEventListener('input', () => {
     const sec = config.menu[currentSectionKey];
@@ -703,7 +919,12 @@ function setupEventListeners() {
   secIcon.addEventListener('input', () => {
     secIconDisplay.textContent = secIcon.value || '📁';
   });
+  secType.addEventListener('change', () => {
+    handleSectionTypeChange(secType.value, config.menu[currentSectionKey]);
+  });
+  entSourceMode.addEventListener('change', () => {
+    entSourceValWrap.style.display = entSourceMode.value === 'all' ? 'none' : 'block';
+  });
 }
 
-// Start
 document.addEventListener('DOMContentLoaded', init);

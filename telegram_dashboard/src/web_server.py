@@ -1,12 +1,15 @@
 """Ingress Web UI and REST API server using aiohttp."""
 from __future__ import annotations
 
+import json
 import logging
 from pathlib import Path
 from typing import Any
+import aiohttp
 from aiohttp import web
 from .config_manager import ConfigManager
 from .renderer import MessageRenderer
+from .access_controller import AccessController
 
 logger = logging.getLogger("telegram_dashboard.web")
 
@@ -84,73 +87,137 @@ class WebApp:
         return web.json_response({"ok": deleted})
 
     async def sync_users(self, request: web.Request) -> web.Response:
-        """Sync users from Home Assistant Telegram Bot integration and notify services."""
-        discovered = []
+        """Sync users from Telegram API getUpdates and Home Assistant integration."""
+        discovered = 0
         default_role = self.cm.config.get("default_role", "guest")
+        token = self.cm.config.get("telegram_token", "")
 
+        # 1. Direct Telegram Bot API getUpdates
+        if token:
+            try:
+                async with aiohttp.ClientSession() as session:
+                    url = f"https://api.telegram.org/bot{token}/getUpdates"
+                    async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                        if resp.status == 200:
+                            data = await resp.json()
+                            for upd in data.get("result", []):
+                                user_info = None
+                                if "message" in upd and "from" in upd["message"]:
+                                    user_info = upd["message"]["from"]
+                                elif "callback_query" in upd and "from" in upd["callback_query"]:
+                                    user_info = upd["callback_query"]["from"]
+                                elif "my_chat_member" in upd and "from" in upd["my_chat_member"]:
+                                    user_info = upd["my_chat_member"]["from"]
+
+                                if user_info and "id" in user_info:
+                                    tid = int(user_info["id"])
+                                    parts = [user_info.get("first_name", ""), user_info.get("last_name", "")]
+                                    name = " ".join(p for p in parts if p).strip()
+                                    if not name and user_info.get("username"):
+                                        name = f"@{user_info['username']}"
+                                    if not name:
+                                        name = f"User {tid}"
+
+                                    existing = any(u.get("telegram_id") == tid for u in self.cm.config.get("users", []))
+                                    self.cm.auto_discover_user(tid, name, default_role)
+                                    if not existing:
+                                        discovered += 1
+            except Exception as e:
+                logger.warning("Telegram getUpdates sync failed: %s", e)
+
+        # 2. Check Home Assistant person/notify entities
         if self.ha_client:
             try:
-                # Query HA template for notify.telegram and allowed_chat_ids
-                template = """
-                {% set found = [] %}
-                {% for s in states.notify %}
-                  {% if 'telegram' in s.entity_id %}
-                    {% set _ = found.append({'entity_id': s.entity_id, 'name': s.name}) %}
-                  {% endif %}
-                {% endfor %}
-                {% for p in states.person %}
-                  {% set _ = found.append({'entity_id': p.entity_id, 'name': p.name}) %}
-                {% endfor %}
-                {{ found | to_json }}
-                """
-                res = await self.ha_client.render_template(template)
-                if isinstance(res, str):
-                    import json
-                    try:
-                        items = json.loads(res)
-                        for item in items:
-                            name = item.get("name", "Telegram User")
-                            # If person or notify entity has custom chat_id or name
-                            eid = item.get("entity_id", "")
-                            state = await self.ha_client.get_state(eid)
-                            if state and state.get("attributes"):
-                                attrs = state["attributes"]
-                                cid = attrs.get("chat_id") or attrs.get("user_id")
-                                if cid and str(cid).isdigit():
-                                    user = self.cm.auto_discover_user(int(cid), name, default_role)
-                                    discovered.append(user)
-                    except Exception as err:
-                        logger.warning("Error parsing HA telegram template: %s", err)
+                states = await self.ha_client.get_states()
+                for s in states:
+                    eid = s.get("entity_id", "")
+                    attrs = s.get("attributes", {})
+                    if "telegram" in eid or eid.startswith("person."):
+                        cid = attrs.get("chat_id") or attrs.get("user_id")
+                        if cid and str(cid).isdigit():
+                            tid = int(cid)
+                            name = attrs.get("friendly_name") or eid
+                            existing = any(u.get("telegram_id") == tid for u in self.cm.config.get("users", []))
+                            self.cm.auto_discover_user(tid, name, default_role)
+                            if not existing:
+                                discovered += 1
             except Exception as e:
-                logger.warning("HA Telegram sync error: %s", e)
+                logger.warning("HA Telegram sync failed: %s", e)
 
-        return web.json_response({"ok": True, "users": self.cm.config.get("users", []), "discovered": len(discovered)})
+        return web.json_response({
+            "ok": True,
+            "users": self.cm.config.get("users", []),
+            "discovered": discovered,
+        })
 
     async def preview_render(self, request: web.Request) -> web.Response:
         data = await request.json()
-        section = data.get("section", {})
+        menu = data.get("menu") or self.cm.config.get("menu", {})
         section_key = data.get("section_key", "main")
         user_role = data.get("role", "admin")
-        state = data.get("state", {
-            "outside_temp": 18.5,
-            "people_home": "2 людей",
-            "climate": {"Зал": {"temperature": 22.4, "humidity": 45, "ac_on": False, "window_open": True}},
+        section = data.get("section") or menu.get(section_key, {})
+
+        # Build mock state
+        state = {
+            "outside_temp": 19.2,
+            "people_home": "2 вдома",
+            "climate": {"Зал": {"temperature": 22.0, "humidity": 48, "ac_on": False, "window_open": False}},
             "water_valve": {"open": True},
             "leaks": {"Кухня": {"on": False}, "Ванна": {"on": False}},
-            "batteries": {"Зал (клімат)": {"level": 85}, "Кухня (протічка)": {"level": 18}},
-            "updated_at": "17:45:00",
-        })
+            "batteries": {"Зал": {"level": 88}, "Кухня": {"level": 64}},
+            "updated_at": "12:00:00",
+        }
 
-        if self.bot_engine:
-            simulated_uid = 1 if user_role == "admin" else (2 if user_role == "member" else 3)
-            res = await self.bot_engine.handle_navigation(simulated_uid, section_key, state)
+        # Check access
+        allowed_roles = section.get("roles", ["admin", "member", "guest"])
+        if user_role not in allowed_roles:
             return web.json_response({
-                "html": res.get("text", ""),
-                "keyboard": res.get("keyboard", []),
+                "html": "⛔ <i>У вас немає доступу до цього розділу.</i>",
+                "keyboard": [[{"text": "⬅️ Назад", "callback_data": "/sec_main"}]],
             })
 
+        # Render HTML
         text = self.renderer.render_section(section, state)
-        return web.json_response({"html": text, "keyboard": []})
+
+        # Build preview keyboard
+        keyboard: list[list[dict[str, str]]] = []
+        sec_type = section.get("type", "section")
+
+        if sec_type == "menu" or section_key == "main":
+            row: list[dict[str, str]] = []
+            sections = section.get("sections")
+            if sections is None:
+                sections = [k for k in menu.keys() if k != "main"]
+            for sub_key in sections:
+                sub = menu.get(sub_key, {})
+                sub_roles = sub.get("roles", ["admin", "member", "guest"])
+                if user_role in sub_roles:
+                    title = sub.get("title", sub_key)
+                    icon = sub.get("icon", "📁")
+                    btn_text = f"{icon} {title}"
+                    row.append({"text": btn_text, "callback_data": f"/sec_{sub_key}"})
+                    if len(row) == 2:
+                        keyboard.append(row)
+                        row = []
+            if row:
+                keyboard.append(row)
+        elif sec_type == "section":
+            # Action buttons
+            for act in section.get("actions", []):
+                btn_text = act.get("label", "Дія")
+                keyboard.append([{"text": f"⚡ {btn_text}", "callback_data": f"/act_{btn_text}"}])
+            # Back button
+            if section_key != "main":
+                keyboard.append([{"text": "⬅️ До меню", "callback_data": "/sec_main"}])
+        elif sec_type == "entities":
+            keyboard.append([
+                {"text": "💡 Світло: Увімкнено", "callback_data": "/tog_1"},
+                {"text": "🔀 Бойлер: Вимкнено", "callback_data": "/tog_2"}
+            ])
+            if section_key != "main":
+                keyboard.append([{"text": "⬅️ До меню", "callback_data": "/sec_main"}])
+
+        return web.json_response({"html": text, "keyboard": keyboard})
 
     async def get_catalog(self, request: web.Request) -> web.Response:
         """Full HA catalog: entities grouped by area, domain and label."""
@@ -168,36 +235,69 @@ class WebApp:
     async def get_entities(self, request: web.Request) -> web.Response:
         """List of individual entities for UI autocompletion and selection."""
         if self.ha_client is None:
-            # Return sample entities for rich offline development/preview
             sample_entities = [
-                {"entity_id": "light.living_room", "friendly_name": "Світло у вітальні", "domain": "light"},
-                {"entity_id": "light.kitchen", "friendly_name": "Світло на кухні", "domain": "light"},
-                {"entity_id": "switch.boiler", "friendly_name": "Бойлер", "domain": "switch"},
-                {"entity_id": "climate.hall", "friendly_name": "Кондиціонер", "domain": "climate"},
                 {
-                    "entity_id": "sensor.living_room_temperature",
-                    "friendly_name": "Температура у залі",
-                    "domain": "sensor",
+                    "entity_id": "light.living_room",
+                    "friendly_name": "Світло у вітальні",
+                    "domain": "light",
+                    "area": "Вітальня",
+                    "state": "on",
                 },
                 {
-                    "entity_id": "sensor.living_room_humidity",
-                    "friendly_name": "Вологість у залі",
+                    "entity_id": "light.kitchen",
+                    "friendly_name": "Світло на кухні",
+                    "domain": "light",
+                    "area": "Кухня",
+                    "state": "off",
+                },
+                {
+                    "entity_id": "switch.boiler",
+                    "friendly_name": "Бойлер",
+                    "domain": "switch",
+                    "area": "Ванна",
+                    "state": "on",
+                },
+                {
+                    "entity_id": "climate.hall",
+                    "friendly_name": "Кондиціонер",
+                    "domain": "climate",
+                    "area": "Вітальня",
+                    "state": "cool",
+                },
+                {
+                    "entity_id": "sensor.living_room_temperature",
+                    "friendly_name": "Температура у вітальні",
                     "domain": "sensor",
+                    "area": "Вітальня",
+                    "state": "22.5 °C",
                 },
                 {
                     "entity_id": "binary_sensor.kitchen_leak",
                     "friendly_name": "Датчик протікання кухня",
                     "domain": "binary_sensor",
+                    "area": "Кухня",
+                    "state": "off",
                 },
                 {
-                    "entity_id": "sensor.battery_hall_climate",
-                    "friendly_name": "Батарея датчика залу",
-                    "domain": "sensor",
+                    "entity_id": "automation.night_mode",
+                    "friendly_name": "Нічний режим",
+                    "domain": "automation",
+                    "area": "Дім",
+                    "state": "on",
                 },
                 {
-                    "entity_id": "media_player.living_room_speaker",
-                    "friendly_name": "Колонка",
-                    "domain": "media_player",
+                    "entity_id": "script.turn_off_all_lights",
+                    "friendly_name": "Вимкнути все світло",
+                    "domain": "script",
+                    "area": "Дім",
+                    "state": "off",
+                },
+                {
+                    "entity_id": "cover.living_room_curtains",
+                    "friendly_name": "Штори у вітальні",
+                    "domain": "cover",
+                    "area": "Вітальня",
+                    "state": "open",
                 },
             ]
             return web.json_response({"ok": True, "entities": sample_entities})
@@ -209,10 +309,12 @@ class WebApp:
                 attrs = s.get("attributes", {})
                 fn = attrs.get("friendly_name", eid)
                 domain = eid.split(".", 1)[0]
+                area = attrs.get("area_id") or ""
                 entities.append({
                     "entity_id": eid,
                     "friendly_name": fn,
                     "domain": domain,
+                    "area": area,
                     "state": s.get("state", ""),
                 })
             return web.json_response({"ok": True, "entities": entities})

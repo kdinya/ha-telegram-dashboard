@@ -11,7 +11,7 @@
 </head>
 <body>
   <div class="app-layout">
-    <!-- Navigation Sidebar / Mobile Nav -->
+    <!-- Sidebar -->
     <aside class="sidebar">
       <div class="brand">
         <div class="logo-icon">📱</div>
@@ -36,19 +36,20 @@
       </nav>
       <div class="sidebar-footer">
         <span class="status-indicator online"></span>
-        <span id="ha-status-text">Home Assistant активний</span>
+        <span id="ha-status-text">Home Assistant онлайн</span>
       </div>
     </aside>
 
-    <!-- Main Workspace -->
+    <!-- Main Content -->
     <main class="content-area">
+      <!-- Non-overlapping Top Bar -->
       <header class="top-header">
         <div class="header-title">
-          <h1 id="page-title">Конструктор меню Telegram</h1>
+          <h1>Конструктор меню Telegram</h1>
           <p class="subtitle">Керування розділами, сутностями, віджетами та діями</p>
         </div>
         <div class="header-actions">
-          <button id="btn-toggle-preview" class="btn btn-secondary desktop-toggle-preview" title="Сховати або показати телефон">
+          <button id="btn-toggle-preview" class="btn btn-secondary desktop-toggle-preview" title="Сховати або показати прев'ю">
             <span class="preview-toggle-icon">📱</span> <span class="preview-toggle-label">Прев'ю</span>
           </button>
           <button id="btn-save" class="btn btn-primary">💾 Зберегти зміни</button>
@@ -66,7 +67,7 @@
                 <button id="btn-add-section" class="btn btn-secondary btn-sm">+ Додати розділ</button>
               </div>
               <div id="sections-list" class="sections-container">
-                <!-- Injected via JS -->
+                <!-- Pills -->
               </div>
             </div>
 
@@ -79,11 +80,11 @@
                 <button id="btn-delete-section" class="btn btn-danger btn-sm">🗑️ Видалити</button>
               </div>
 
-              <!-- Main Meta -->
+              <!-- Meta -->
               <div class="form-row">
                 <div class="form-group flex-1">
                   <label for="sec-title">Назва розділу</label>
-                  <input type="text" id="sec-title" class="form-control" placeholder="Наприклад: 🌡 Клімат">
+                  <input type="text" id="sec-title" class="form-control" placeholder="Наприклад: Клімат">
                 </div>
                 <div class="form-group form-group-icon">
                   <label for="sec-icon">Іконка</label>
@@ -100,8 +101,8 @@
                 <label for="sec-type">Тип розділу</label>
                 <select id="sec-type" class="form-control">
                   <option value="section">Інформаційний розділ (датчики, віджети та кнопки дій)</option>
-                  <option value="entities">Каталог сутностей (авто-перемикачі за кімнатами або доменами)</option>
-                  <option value="menu">Головне меню (список кнопок-підрозділів)</option>
+                  <option value="entities">Каталог пристроїв (список перемикачів за доменом або кімнатою)</option>
+                  <option value="menu">Головне меню (кнопки переходу між розділами)</option>
                 </select>
               </div>
 
@@ -114,29 +115,27 @@
                 </div>
               </div>
 
-              <!-- Sub-view 1: Menu Sections Picker -->
+              <!-- Menu Sections Picker -->
               <div id="block-menu-sections" class="sub-block" style="display: none;">
                 <h4>Кнопки переходу до розділів</h4>
-                <p class="field-hint">Оберіть розділи, які будуть показані у вигляді кнопок:</p>
-                <div id="menu-sections-checklist" class="checkbox-grid">
-                  <!-- Injected via JS -->
-                </div>
+                <p class="field-hint">Оберіть розділи, які відображатимуться у меню:</p>
+                <div id="menu-sections-checklist" class="checkbox-grid"></div>
               </div>
 
-              <!-- Sub-view 2: Entities Source Mode -->
+              <!-- Entities Source -->
               <div id="block-entities-source" class="sub-block" style="display: none;">
-                <h4>Джерело пристроїв / сутностей</h4>
+                <h4>Джерело пристроїв Home Assistant</h4>
                 <div class="form-row">
                   <div class="form-group flex-1">
-                    <label>Режим фільтрації</label>
+                    <label>Фільтрувати</label>
                     <select id="ent-source-mode" class="form-control">
-                      <option value="all">Всі доступні пристрої</option>
+                      <option value="all">Всі пристрої</option>
                       <option value="domain">За доменом (тип пристрою)</option>
-                      <option value="area">За зоною (кімната / поверх)</option>
+                      <option value="area">За зоною (кімната / простір)</option>
                     </select>
                   </div>
                   <div class="form-group flex-1" id="ent-source-val-wrap">
-                    <label>Значення фільтра</label>
+                    <label>Значення</label>
                     <select id="ent-source-val" class="form-control">
                       <option value="light">💡 Освітлення (light)</option>
                       <option value="switch">🔀 Перемикачі (switch)</option>
@@ -151,25 +150,21 @@
                 </div>
               </div>
 
-              <!-- Sub-view 3: Section Widgets & Actions -->
+              <!-- Widgets & Actions -->
               <div id="block-section-items" class="sub-block">
                 <!-- Widgets list -->
                 <div class="items-header">
                   <h4>📊 Віджети та показники датчиків</h4>
-                  <button type="button" id="btn-add-widget" class="btn btn-secondary btn-sm">+ Додати віджет</button>
+                  <button type="button" id="btn-add-widget" class="btn btn-secondary btn-sm">+ Додати віджет зі списку HA</button>
                 </div>
-                <div id="widgets-list" class="items-list-container">
-                  <!-- Injected via JS -->
-                </div>
+                <div id="widgets-list" class="items-list-container"></div>
 
                 <!-- Actions list -->
-                <div class="items-header" style="margin-top: 20px;">
-                  <h4>⚡ Кнопки дій та керування</h4>
-                  <button type="button" id="btn-add-action" class="btn btn-secondary btn-sm">+ Додати дію</button>
+                <div class="items-header" style="margin-top: 24px;">
+                  <h4>⚡ Кнопки дій, автоматизацій та скриптів</h4>
+                  <button type="button" id="btn-add-action" class="btn btn-secondary btn-sm">+ Додати дію зі списку HA</button>
                 </div>
-                <div id="actions-list" class="items-list-container">
-                  <!-- Injected via JS -->
-                </div>
+                <div id="actions-list" class="items-list-container"></div>
               </div>
 
               <div class="form-actions" style="margin-top: 20px;">
@@ -184,11 +179,11 @@
               <div class="panel-header">
                 <div>
                   <h3>👥 Користувачі бота</h3>
-                  <p class="section-desc">Користувачі автоматично додаються при взаємодії з ботом у Telegram або синхронізуються з Home Assistant.</p>
+                  <p class="section-desc">Користувачі автоматично додаються при повідомленні боту. Тут ви підтверджуєте їх та призначаєте ролі.</p>
                 </div>
                 <div class="header-actions">
-                  <button id="btn-sync-users" class="btn btn-secondary btn-sm" title="Отримати користувачів з Telegram Bot integration">
-                    🔄 Синхронізувати з Telegram Bot
+                  <button id="btn-sync-users" class="btn btn-secondary btn-sm">
+                    🔄 Оновити / Синхронізувати
                   </button>
                   <button id="btn-add-user" class="btn btn-primary btn-sm">+ Додати вручну</button>
                 </div>
@@ -200,13 +195,11 @@
                       <th>Telegram ID</th>
                       <th>Ім'я / Юзернейм</th>
                       <th>Роль</th>
-                      <th>Рівень доступу</th>
+                      <th>Статус доступу</th>
                       <th>Дії</th>
                     </tr>
                   </thead>
-                  <tbody id="users-tbody">
-                    <!-- Injected via JS -->
-                  </tbody>
+                  <tbody id="users-tbody"></tbody>
                 </table>
               </div>
             </div>
@@ -224,7 +217,7 @@
               <div class="form-group">
                 <label for="setting-theme">Стиль повідомлень</label>
                 <select id="setting-theme" class="form-control">
-                  <option value="cards">Сучасний (HTML Картки з цитатами)</option>
+                  <option value="cards">Сучасний (HTML Картки)</option>
                   <option value="minimal">Мінімалістичний</option>
                   <option value="tree">Деревовидний із прогрес-барами</option>
                 </select>
@@ -232,8 +225,8 @@
               <div class="form-group">
                 <label for="setting-default-role">Роль за замовчуванням для нових людей</label>
                 <select id="setting-default-role" class="form-control">
-                  <option value="guest">Гість (тільки перегляд дозволеного)</option>
-                  <option value="member">Член родини (стандартні прилади)</option>
+                  <option value="guest">Гість (очікує підтвердження)</option>
+                  <option value="member">Член родини (одразу активний)</option>
                   <option value="admin">Адміністратор</option>
                 </select>
               </div>
@@ -258,16 +251,12 @@
             </div>
             <div class="tg-messages-area">
               <div class="tg-message-bubble">
-                <div id="preview-text" class="tg-rendered-content">
-                  <!-- Realtime preview rendered here -->
-                </div>
-                <div id="preview-buttons" class="tg-inline-keyboard">
-                  <!-- Inline buttons rendered here -->
-                </div>
+                <div id="preview-text" class="tg-rendered-content"></div>
+                <div id="preview-buttons" class="tg-inline-keyboard"></div>
               </div>
             </div>
             <div class="preview-role-picker">
-              <span>Симуляція від:</span>
+              <span>Симуляція ролі:</span>
               <select id="preview-role-select" class="form-control form-control-sm">
                 <option value="admin">Адміністратор</option>
                 <option value="member">Член родини</option>
@@ -287,21 +276,73 @@
         <h3>База іконок для розумного дому</h3>
         <button type="button" class="btn-close-modal" id="btn-close-icon-picker">✕</button>
       </div>
-      <div class="icon-categories-tabs" id="icon-categories-tabs">
-        <!-- Injected via JS -->
+      <div class="modal-search-wrap">
+        <input type="text" id="icon-search-input" class="form-control" placeholder="🔍 Пошук іконки (наприклад: лампа, клімат, замок)...">
       </div>
-      <div class="icon-picker-grid" id="icon-picker-grid">
-        <!-- Injected via JS -->
+      <div class="icon-categories-tabs" id="icon-categories-tabs"></div>
+      <div class="icon-picker-grid" id="icon-picker-grid"></div>
+    </div>
+  </div>
+
+  <!-- Home Assistant Entity Picker Modal -->
+  <div id="entity-picker-modal" class="modal-overlay">
+    <div class="modal-card modal-card-lg">
+      <div class="modal-header">
+        <h3 id="entity-picker-title">Оберіть сутність Home Assistant</h3>
+        <button type="button" class="btn-close-modal" id="btn-close-entity-picker">✕</button>
+      </div>
+      <div class="modal-search-wrap">
+        <input type="text" id="entity-search-input" class="form-control" placeholder="🔍 Пошук за назвою або entity_id (наприклад: кухня, light, boiler)...">
+      </div>
+      <div class="domain-filters-tabs" id="domain-filters-tabs">
+        <button class="domain-tab-btn active" data-domain="all">Всі</button>
+        <button class="domain-tab-btn" data-domain="light">💡 Світло</button>
+        <button class="domain-tab-btn" data-domain="switch">🔀 Перемикачі</button>
+        <button class="domain-tab-btn" data-domain="climate">🌡 Клімат</button>
+        <button class="domain-tab-btn" data-domain="sensor">📈 Сенсори</button>
+        <button class="domain-tab-btn" data-domain="binary_sensor">🚨 Датчики</button>
+        <button class="domain-tab-btn" data-domain="automation">⚡ Автоматизації</button>
+        <button class="domain-tab-btn" data-domain="script">📜 Скрипти</button>
+        <button class="domain-tab-btn" data-domain="media_player">🔊 Мультимедіа</button>
+        <button class="domain-tab-btn" data-domain="cover">🪟 Штори</button>
+      </div>
+      <div class="entity-picker-list" id="entity-picker-list">
+        <!-- Entities list injected here -->
       </div>
     </div>
   </div>
 
-  <!-- Toast notification -->
+  <!-- Action Configure Modal -->
+  <div id="action-config-modal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>⚡ Налаштування дії</h3>
+        <button type="button" class="btn-close-modal" id="btn-close-action-config">✕</button>
+      </div>
+      <div style="padding: 20px;">
+        <div class="form-group">
+          <label>Обрана сутність / пристрій</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="action-entity-display" class="form-control" readonly placeholder="Оберіть сутність...">
+            <button type="button" id="btn-action-choose-entity" class="btn btn-secondary">Вибрати</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="action-service-select">Доступна дія з Home Assistant</label>
+          <select id="action-service-select" class="form-control"></select>
+        </div>
+        <div class="form-group">
+          <label for="action-label-input">Текст на кнопці в Telegram</label>
+          <input type="text" id="action-label-input" class="form-control" placeholder="Наприклад: Увімкнути світло">
+        </div>
+        <div class="form-actions" style="margin-top: 20px;">
+          <button type="button" id="btn-save-configured-action" class="btn btn-primary" style="width: 100%;">Додати дію до розділу</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast">Повідомлення</div>
-
-  <!-- Datalist for HA Entities -->
-  <datalist id="ha-entities-datalist"></datalist>
-
   <script src="ui/app.js"></script>
 </body>
 </html>

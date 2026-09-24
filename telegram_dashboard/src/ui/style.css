@@ -773,3 +773,171 @@ body {
     height: 580px;
   }
 }
+
+/* ---- Modal additions & entity picker ---- */
+.modal-card-lg {
+  max-width: 640px;
+}
+
+.modal-search-wrap {
+  padding: 12px 20px 4px;
+}
+
+.modal-card-lg .modal-search-wrap {
+  padding-top: 14px;
+}
+
+.domain-filters-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 10px 20px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-app);
+}
+
+.domain-tab-btn {
+  padding: 6px 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.domain-tab-btn.active {
+  background: var(--primary);
+  color: #0f172a;
+  border-color: var(--primary);
+  font-weight: 600;
+}
+
+.entity-picker-list {
+  overflow-y: auto;
+  max-height: 420px;
+  padding: 12px 20px 20px;
+}
+
+.entity-group {
+  margin-bottom: 16px;
+}
+
+.entity-group-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+.entity-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  margin-bottom: 6px;
+  text-align: left;
+}
+
+.entity-item:hover {
+  border-color: var(--primary);
+  background: rgba(56, 189, 248, 0.08);
+}
+
+.entity-item-domain {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary);
+  background: rgba(56, 189, 248, 0.12);
+  padding: 3px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  font-family: 'JetBrains Mono', monospace;
+  flex-shrink: 0;
+}
+
+.entity-item-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.entity-item-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.entity-item-id {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entity-item-state {
+  font-size: 12px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.badge-ok,
+.badge-warn {
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-ok {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+}
+
+.badge-warn {
+  background: rgba(234, 179, 8, 0.2);
+  color: #eab308;
+}
+
+/* ---- Header: prevent overlap in HA Ingress frame ---- */
+.top-header {
+  height: auto;
+  min-height: 72px;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px 24px;
+}
+
+@media (max-width: 768px) {
+  .top-header {
+    padding: 12px 16px;
+  }
+  .header-title h1 {
+    font-size: 17px;
+  }
+  .form-row {
+    flex-direction: column;
+  }
+  .form-group-icon {
+    width: 100%;
+  }
+  .icon-input-wrap {
+    width: 100%;
+  }
+  .form-group-icon .icon-input-wrap .form-control {
+    flex: 1;
+  }
+}
