@@ -1,5 +1,4 @@
 """Application entry point for Home Assistant Add-on container."""
-import asyncio
 import json
 import logging
 import os
@@ -78,6 +77,7 @@ def main() -> None:
         ha_call_service=ha_call_service,
         get_ha_state=get_ha_state,
         get_all_states=get_all_states,
+        config_manager=cm,
     )
 
     # Telegram token from options, env or config
@@ -96,7 +96,6 @@ def main() -> None:
     web_app = WebApp(cm, renderer, ha_client=ha_client, bot_engine=bot_engine)
 
     async def on_startup(app) -> None:
-        # Pre-load catalog into bot engine if HA is connected
         if ha_client:
             try:
                 catalog = await ha_client.collect_catalog()

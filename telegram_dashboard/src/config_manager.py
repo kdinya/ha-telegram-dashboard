@@ -172,6 +172,25 @@ class ConfigManager:
         self.save()
         return {"telegram_id": telegram_id, "name": name, "role": role}
 
+    def auto_discover_user(self, telegram_id: int, name: str, default_role: str = "guest") -> dict[str, Any]:
+        """Automatically register or update a user interacting with the Telegram bot."""
+        users = self.config.setdefault("users", [])
+        for user in users:
+            if user.get("telegram_id") == telegram_id:
+                if name and (not user.get("name") or user.get("name").startswith("User ")):
+                    user["name"] = name
+                    self.save()
+                return user
+        role = default_role if default_role in REQUIRED_ROLES else "guest"
+        new_user = {
+            "telegram_id": telegram_id,
+            "name": name or f"User {telegram_id}",
+            "role": role,
+        }
+        users.append(new_user)
+        self.save()
+        return new_user
+
     def remove_user(self, telegram_id: int) -> bool:
         users = self.config.get("users", [])
         for index, user in enumerate(users):

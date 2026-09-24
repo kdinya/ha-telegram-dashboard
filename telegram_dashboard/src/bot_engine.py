@@ -23,6 +23,7 @@ class BotEngine:
         get_ha_state: Callable[[], Awaitable[dict[str, Any]]] | None = None,
         get_all_states: Callable[[], Awaitable[dict[str, str]]] | None = None,
         get_catalog: Callable[[], Awaitable[dict[str, Any]]] | None = None,
+        config_manager: Any | None = None,
     ) -> None:
         self.config = config
         self.access = access_controller
@@ -31,7 +32,34 @@ class BotEngine:
         self.get_ha_state = get_ha_state
         self.get_all_states = get_all_states
         self.get_catalog = get_catalog
+        self.cm = config_manager
         self.catalog: dict[str, Any] = {}
+
+    def auto_discover_user(self, telegram_id: int, name: str) -> None:
+        """Auto-register user from incoming Telegram update."""
+        default_role = self.config.get("default_role", "guest")
+        if self.cm and hasattr(self.cm, "auto_discover_user"):
+            user = self.cm.auto_discover_user(telegram_id, name, default_role)
+            self.config = self.cm.config
+        else:
+            users = self.config.setdefault("users", [])
+            for u in users:
+                if u.get("telegram_id") == telegram_id:
+                    if name and not u.get("name"):
+                        u["name"] = name
+                    user = u
+                    break
+            else:
+                user = {
+                    "telegram_id": telegram_id,
+                    "name": name or f"User {telegram_id}",
+                    "role": default_role,
+                }
+                users.append(user)
+
+        # Update access controller in-memory state
+        if hasattr(self.access, "users"):
+            self.access.users[telegram_id] = user
 
     def set_catalog(self, catalog: dict[str, Any]) -> None:
         self.catalog = catalog or {}
@@ -217,6 +245,7 @@ class BotEngine:
             except Exception as e:
                 logger.error("TTS failed: %s", e)
                 return {"ok": False, "toast": "Помилка озвучки"}
+
         if atype == "volume":
             speaker = str(target_action.get("entity_id", ""))
             speaker_decision = self.access.check_entity(
@@ -237,39 +266,47 @@ class BotEngine:
                 logger.error("Volume change failed: %s", e)
                 return {"ok": False, "toast": "Помилка зміни гучності"}
 
-        domain = target_action.get("domain")
-        service = target_action.get("service")
-        target = target_action.get("target")
+        domain = target_action.get("domain", "homeassistant")
+        service = target_action.get("service", "toggle")
+        target_entity = target_action.get("entity_id")
+        if target_entity:
+            entity_decision = self.access.check_entity(
+                user_id, target_entity, area=area_of.get(target_entity), domain=domain_of.get(target_entity)
+            )
+            if not entity_decision.allowed:
+                return {"ok": False, "toast": f"⛔ Відмовлено: {entity_decision.reason}"}
+            payload = {"entity_id": [target_entity]}
+        else:
+            payload = None
 
-        if self.ha_call_service and domain and service:
-            try:
-                await self.ha_call_service(domain, service, target)
-                return {"ok": True, "toast": f"✅ Виконано: {target_action.get('label', '')}"}
-            except Exception as e:
-                logger.error("Failed to execute HA service: %s", e)
-                return {"ok": False, "toast": "Помилка виклику сервісу"}
-
-        return {"ok": True, "toast": "Симуляція: дію виконано"}
-
-    async def handle_entity_toggle(self, user_id: int, section_key: str, index: int) -> dict[str, Any]:
-        """Toggle one entity from an 'entities' section by its list index."""
-        section = self.config.get("menu", {}).get(section_key, {})
-        decision = self.access.check_section(user_id, section_key, section)
-        if not decision.allowed:
-            return {"ok": False, "toast": "⛔ Доступ обмежено"}
-        visible = self._visible_entities(section, user_id)
-        if index < 0 or index >= len(visible):
-            return {"ok": False, "toast": "Сутність не знайдено"}
-        entity_id = visible[index]
-        area_of, domain_of = self._entity_maps()
-        ent_decision = self.access.check_entity(
-            user_id, entity_id, area=area_of.get(entity_id), domain=domain_of.get(entity_id)
-        )
-        if not ent_decision.allowed:
-            return {"ok": False, "toast": f"⛔ Відмовлено: {ent_decision.reason}"}
         try:
-            await self._run_service("homeassistant", "toggle", {"entity_id": entity_id})
-            return {"ok": True, "toast": f"✅ {friendly_name(entity_id)}: перемкнено"}
+            await self._run_service(domain, service, payload)
+            return {"ok": True, "toast": "✅ Виконано"}
         except Exception as e:
-            logger.error("Toggle failed for %s: %s", entity_id, e)
+            logger.error("Action execution failed: %s", e)
+            return {"ok": False, "toast": "Помилка виконання дії"}
+
+    async def handle_entity_toggle(self, user_id: int, section_key: str, entity_index: int) -> dict[str, Any]:
+        """Toggle an entity shown on an 'entities' screen."""
+        menu = self.config.get("menu", {})
+        section = menu.get(section_key, {})
+        visible = self._visible_entities(section, user_id)
+
+        if entity_index < 0 or entity_index >= len(visible):
+            return {"ok": False, "toast": "Сутність не знайдена"}
+
+        target_entity = visible[entity_index]
+        area_of, domain_of = self._entity_maps()
+        decision = self.access.check_entity(
+            user_id, target_entity, area=area_of.get(target_entity), domain=domain_of.get(target_entity)
+        )
+        if not decision.allowed:
+            return {"ok": False, "toast": f"⛔ Відмовлено: {decision.reason}"}
+
+        domain = target_entity.split(".", 1)[0]
+        try:
+            await self._run_service(domain, "toggle", {"entity_id": [target_entity]})
+            return {"ok": True, "toast": f"🔘 {friendly_name(target_entity)} змінено"}
+        except Exception as e:
+            logger.error("Entity toggle failed: %s", e)
             return {"ok": False, "toast": "Помилка перемикання"}

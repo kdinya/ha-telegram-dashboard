@@ -75,17 +75,39 @@ class TelegramBotRunner:
                 logger.error("Failed to fetch state for bot: %s", e)
         return {}
 
+    def _extract_user_info(self, from_user: dict[str, Any]) -> tuple[int | None, str]:
+        user_id = from_user.get("id")
+        if not user_id:
+            return None, ""
+        first = (from_user.get("first_name") or "").strip()
+        last = (from_user.get("last_name") or "").strip()
+        username = (from_user.get("username") or "").strip()
+        full_name = f"{first} {last}".strip()
+        if full_name and username:
+            display_name = f"{full_name} (@{username})"
+        elif full_name:
+            display_name = full_name
+        elif username:
+            display_name = f"@{username}"
+        else:
+            display_name = f"User {user_id}"
+        return int(user_id), display_name
+
     async def _process_update(self, update: dict[str, Any]) -> None:
         state = await self._current_state()
 
         if "message" in update:
             msg = update["message"]
-            user_id = msg.get("from", {}).get("id")
+            from_user = msg.get("from") or {}
+            user_id, display_name = self._extract_user_info(from_user)
             chat_id = msg.get("chat", {}).get("id")
             text = (msg.get("text") or "").strip()
 
             if not user_id or not chat_id:
                 return
+
+            if hasattr(self.bot_engine, "auto_discover_user"):
+                self.bot_engine.auto_discover_user(user_id, display_name)
 
             if text in ("/start", "/menu", "/home"):
                 res = await self.bot_engine.handle_navigation(user_id, "main", state)
@@ -100,7 +122,8 @@ class TelegramBotRunner:
         elif "callback_query" in update:
             cb = update["callback_query"]
             cb_id = cb.get("id")
-            user_id = cb.get("from", {}).get("id")
+            from_user = cb.get("from") or {}
+            user_id, display_name = self._extract_user_info(from_user)
             data = cb.get("data", "")
             msg = cb.get("message")
             chat_id = msg.get("chat", {}).get("id") if msg else None
@@ -110,6 +133,9 @@ class TelegramBotRunner:
                 if cb_id:
                     await self.answer_callback_query(cb_id)
                 return
+
+            if hasattr(self.bot_engine, "auto_discover_user"):
+                self.bot_engine.auto_discover_user(user_id, display_name)
 
             toast = None
             if data.startswith("/sec_"):
@@ -134,7 +160,6 @@ class TelegramBotRunner:
                 idx = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
                 res = await self.bot_engine.handle_entity_toggle(user_id, sec_key, idx)
                 toast = res.get("toast")
-                # Refresh navigation
                 nav = await self.bot_engine.handle_navigation(user_id, sec_key, state)
                 reply_markup = {"inline_keyboard": nav.get("keyboard", [])} if nav.get("keyboard") else None
                 await self.edit_message_text(chat_id, msg_id, nav.get("text", ""), reply_markup=reply_markup)
