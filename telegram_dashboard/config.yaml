@@ -11,6 +11,7 @@ arch:
   - i386
 startup: application
 boot: auto
+init: false
 homeassistant_api: true
 panel_icon: "mdi:telegram"
 panel_title: "Telegram Dash"
