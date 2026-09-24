@@ -374,7 +374,7 @@ function renderEntityPickerList() {
             <span class="entity-item-name">${e.friendly_name}</span>
             <span class="entity-item-id">${e.entity_id}</span>
           </div>
-          <span class="entity-item-state">${e.state || ''}</span>
+          <span class="entity-item-state">${(e.area ? '📍 ' + e.area + ' &middot; ' : '')}${e.state || ''}</span>
         </button>
       `).join('')}
     </div>
@@ -410,6 +410,10 @@ function setupActionConfig() {
   });
 
   btnSaveConfiguredAction.addEventListener('click', () => {
+    if (!selectedActionEntity && actionEntityDisplay.value) {
+      const m = actionEntityDisplay.value.match(/\(([a-z0-9_]+\.[a-z0-9_]+)\)\s*$/i);
+      if (m) selectedActionEntity = m[1];
+    }
     if (!selectedActionEntity) {
       showToast('Спершу оберіть сутність', true);
       return;

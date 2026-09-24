@@ -950,3 +950,36 @@ body {
   flex-wrap: wrap;
   overflow-x: visible;
 }
+
+/* v1.0.1: panel headers must wrap, buttons never overflow */
+.panel-header,
+.items-header {
+  flex-wrap: wrap;
+  row-gap: 8px;
+}
+
+/* v1.0.1: lock background scroll while a modal is open */
+body:has(.modal-overlay.open) {
+  overflow: hidden;
+}
+.modal-overlay {
+  overscroll-behavior: contain;
+}
+
+/* v1.0.1: entity picker items show full info without truncation */
+.entity-item-name,
+.entity-item-id {
+  white-space: normal;
+  word-break: break-word;
+  overflow: visible;
+  text-overflow: unset;
+}
+.entity-item {
+  align-items: flex-start;
+}
+.entity-item-domain {
+  text-transform: lowercase;
+  background: rgba(56, 189, 248, 0.15);
+  border-radius: 6px;
+  padding: 2px 6px;
+}
