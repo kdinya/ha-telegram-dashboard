@@ -1,5 +1,7 @@
 # 🏠 Telegram Dashboard for Home Assistant
 
+> ⚠️ **BETA**: проєкт у активній розробці. Можливі зміни структури конфігурації та поведінки. Повідомляйте про проблеми в Issues.
+
 [![Home Assistant Add-on](https://img.shields.io/badge/Home%20Assistant-Add--on-blue.svg)](https://www.home-assistant.io/)
 [![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](https://github.com/kdinya/ha-telegram-dashboard/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)

@@ -9,6 +9,7 @@ from .config_manager import ConfigManager
 from .access_controller import AccessController
 from .renderer import MessageRenderer
 from .web_server import WebApp
+from .ha_client import HAClient
 
 logging.basicConfig(
     level=logging.INFO,
@@ -25,7 +26,14 @@ def main() -> None:
     cm = ConfigManager(config_path)
     cm.load()
     renderer = MessageRenderer()
-    web_app = WebApp(cm, renderer)
+    supervisor_token = os.environ.get("SUPERVISOR_TOKEN", "")
+    ha_client = None
+    if supervisor_token:
+        ha_client = HAClient("http://supervisor/core/api", supervisor_token)
+        logger.info("Home Assistant API client configured via Supervisor")
+    else:
+        logger.warning("SUPERVISOR_TOKEN missing: HA catalog and service calls are disabled")
+    web_app = WebApp(cm, renderer, ha_client=ha_client)
 
     port = int(os.environ.get("INGRESS_PORT", 8099))
     logger.info("Starting Telegram Dashboard Ingress Server on port %s...", port)

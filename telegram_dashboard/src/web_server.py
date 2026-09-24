@@ -11,9 +11,10 @@ from .access_controller import AccessController
 
 
 class WebApp:
-    def __init__(self, config_manager: ConfigManager, renderer: MessageRenderer) -> None:
+    def __init__(self, config_manager: ConfigManager, renderer: MessageRenderer, ha_client: Any | None = None) -> None:
         self.cm = config_manager
         self.renderer = renderer
+        self.ha_client = ha_client
         self.app = web.Application()
         self._setup_routes()
 
@@ -26,6 +27,7 @@ class WebApp:
         self.app.router.add_post("/api/users", self.upsert_user)
         self.app.router.add_delete("/api/users/{id}", self.delete_user)
         self.app.router.add_post("/api/preview", self.preview_render)
+        self.app.router.add_get("/api/catalog", self.get_catalog)
         if ui_path.exists():
             self.app.router.add_static("/ui", ui_path)
 
@@ -78,3 +80,16 @@ class WebApp:
         })
         text = self.renderer.render_section(section, state)
         return web.json_response({"html": text})
+
+    async def get_catalog(self, request: web.Request) -> web.Response:
+        """Full HA catalog: entities grouped by area, domain and label."""
+        if self.ha_client is None:
+            return web.json_response(
+                {"ok": False, "error": "Home Assistant client is not configured"},
+                status=503,
+            )
+        try:
+            catalog = await self.ha_client.collect_catalog()
+            return web.json_response({"ok": True, "catalog": catalog})
+        except Exception as e:
+            return web.json_response({"ok": False, "error": str(e)}, status=502)

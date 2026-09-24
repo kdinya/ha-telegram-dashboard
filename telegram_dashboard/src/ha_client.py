@@ -49,6 +49,48 @@ class HAClient:
             payload["target"] = target
         return await self._post(f"/api/services/{domain}/{service}", payload)
 
+    async def render_template(self, template: str) -> Any:
+        """Render a Jinja template through the HA REST API (/api/template)."""
+        return await self._post("/api/template", {"template": template})
+
+    async def collect_catalog(self) -> dict[str, Any]:
+        """Collect the full entity catalog grouped by area, domain and label.
+
+        Uses a single HA template for areas+domains (fast, one round trip).
+        Labels are optional: on older HA versions the call fails and an
+        empty mapping is returned instead of breaking the catalog.
+        """
+        catalog: dict[str, Any] = {}
+        core = (
+            "{% set c = {'areas': {}, 'domains': {}} %}"
+            "{% for a in areas() %}"
+            "{% set _ = c['areas'].update({a: area_entities(a) | list}) %}"
+            "{% endfor %}"
+            "{% for grp in states | groupby('domain') %}"
+            "{% set _ = c['domains'].update({grp[0]: grp[1] | map(attribute='entity_id') | list}) %}"
+            "{% endfor %}"
+            "{{ c | to_json }}"
+        )
+        core_result = await self.render_template(core)
+        if isinstance(core_result, str):
+            core_result = json.loads(core_result)
+        catalog.update(core_result or {})
+        try:
+            labels_template = (
+                "{% set c = {} %}"
+                "{% for l in labels() %}"
+                "{% set _ = c.update({l: label_entities(l) | list}) %}"
+                "{% endfor %}"
+                "{{ c | to_json }}"
+            )
+            labels_result = await self.render_template(labels_template)
+            if isinstance(labels_result, str):
+                labels_result = json.loads(labels_result)
+            catalog["labels"] = labels_result or {}
+        except RuntimeError:
+            catalog["labels"] = {}
+        return catalog
+
     async def collect_dashboard_state(self, entities: dict[str, list[str]]) -> dict[str, Any]:
         """Fetch a snapshot of states for entities referenced by the menu."""
         snapshot: dict[str, Any] = {}

@@ -21,6 +21,11 @@ class AccessController:
 
     A user is looked up in the configured user list by ``telegram_id``.
     Unknown users fall back to ``default_role`` (usually ``guest``).
+
+    Per-user restriction lists (optional):
+      - ``allowed_domains`` / ``allowed_areas`` / ``allowed_labels`` /
+        ``allowed_entities``: whitelist; absent or null means unrestricted.
+      - ``blocked_entities``: always denied, even for members.
     """
 
     def __init__(self, users: list[dict], default_role: str = DEFAULT_ROLE) -> None:
@@ -36,6 +41,9 @@ class AccessController:
         if user is None:
             return self._default_role
         return str(user.get("role", self._default_role))
+
+    def user_record(self, telegram_id: int) -> dict:
+        return self._users.get(int(telegram_id), {})
 
     def is_registered(self, telegram_id: int) -> bool:
         return int(telegram_id) in self._users
@@ -54,6 +62,41 @@ class AccessController:
                 f"but your role is '{role}'."
             ),
         )
+
+    def check_entity(
+        self,
+        telegram_id: int,
+        entity_id: str,
+        area: str | None = None,
+        domain: str | None = None,
+        labels: list[str] | None = None,
+    ) -> AccessDecision:
+        """Entity-level gate honoring per-user domain/area/label/entity limits."""
+        role = self.role_of(telegram_id)
+        if role == "admin":
+            return AccessDecision(True, role)
+        user = self.user_record(telegram_id)
+        if entity_id in set(user.get("blocked_entities", []) or []):
+            return AccessDecision(False, role, reason=f"Сутність {entity_id} заблокована для вас.")
+
+        def whitelist(key: str) -> list | None:
+            value = user.get(key)
+            return value if isinstance(value, list) else None
+
+        allowed_entities = whitelist("allowed_entities")
+        if allowed_entities is not None and entity_id not in allowed_entities:
+            return AccessDecision(False, role, reason=f"Сутність {entity_id} не дозволена для вас.")
+        allowed_domains = whitelist("allowed_domains")
+        if allowed_domains is not None and domain is not None and domain not in allowed_domains:
+            return AccessDecision(False, role, reason=f"Категорія '{domain}' не дозволена для вас.")
+        allowed_areas = whitelist("allowed_areas")
+        if allowed_areas is not None and area is not None and area not in allowed_areas:
+            return AccessDecision(False, role, reason=f"Зона '{area}' не дозволена для вас.")
+        allowed_labels = whitelist("allowed_labels")
+        if allowed_labels is not None and labels:
+            if not any(label in allowed_labels for label in labels):
+                return AccessDecision(False, role, reason="Категорія не дозволена для вас.")
+        return AccessDecision(True, role)
 
     def filter_actions(self, telegram_id: int, actions: list[dict]) -> list[dict]:
         """Return only the actions the user is allowed to trigger."""

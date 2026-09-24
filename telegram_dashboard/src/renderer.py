@@ -24,6 +24,20 @@ def battery_line(label: str, level: Any, low_threshold: int = 20) -> str:
     return f"├ {icon} {escaped}: <code>{bar} {level_int}%</code>"
 
 
+def friendly_name(entity_id: str) -> str:
+    """Human-friendly name derived from an entity_id."""
+    return entity_id.split(".", 1)[-1].replace("_", " ").strip().capitalize()
+
+
+DOMAIN_ICONS = {
+    "light": "💡", "switch": "🔀", "script": "📜", "automation": "🤖",
+    "scene": "🎬", "media_player": "🔊", "climate": "🌡", "cover": "🪟",
+    "binary_sensor": "🚨", "sensor": "📈", "input_boolean": "🔘",
+    "fan": "🌀", "humidifier": "💧", "vacuum": "🧹", "lock": "🔒",
+    "button": "🔘", "siren": "🚨", "water_heater": "🔥", "number": "🔢",
+}
+
+
 class MessageRenderer:
     """Renders menu sections into styled Telegram HTML messages."""
 
@@ -88,6 +102,27 @@ class MessageRenderer:
         rows.append(
             f"<tg-spoiler><i>⏱ Оновлено: {html.escape(str(state.get('updated_at', '—')))}</i></tg-spoiler></blockquote>"
         )
+        return "\n".join(rows)
+
+    def render_entity_list(self, section: dict, states: dict[str, Any]) -> str:
+        """Render an auto-generated entity browser section."""
+        title = html.escape(str(section.get("title", "")))
+        rows = [f"<blockquote><b>{title}</b>", "──────────────"]
+        source = section.get("source") or {}
+        engine_view = source.get("mode", "all")
+        _ = engine_view  # entities come pre-filtered via states keys
+        count = 0
+        for entity_id, value in sorted(states.items()):
+            icon = DOMAIN_ICONS.get(entity_id.split(".", 1)[0], "🔘")
+            rows.append(
+                f"├ {icon} <b>{html.escape(friendly_name(entity_id))}:</b> "
+                f"<code>{html.escape(str(value))}</code>"
+            )
+            count += 1
+        if count == 0:
+            rows.append("├ <i>Немає доступних сутностей</i>")
+        rows.append("──────────────")
+        rows.append(f"<i>Всього: {count}</i></blockquote>")
         return "\n".join(rows)
 
     def _render_widget(self, widget: dict, state: dict[str, Any]) -> str:
