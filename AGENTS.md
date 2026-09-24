@@ -29,7 +29,7 @@
    - Maintain minimal diffs: touch only lines strictly related to the task.
    - Never overwrite user configurations or introduce breaking changes without warning.
    - Git commits should be concise, following conventional commit format (`fix:`, `feat:`, `docs:`, `perf:`, `test:`, `chore:`).
-   - Commit author identity: `kdinya <tomchik2@gmail.com>`.
+   - Commit author identity: `kdinya <kdinya@users.noreply.github.com>` (GitHub profile email, never a real mailbox).
 
 ---
 
@@ -44,6 +44,7 @@
    - Every Telegram incoming update (command or callback query) must pass through `AccessController`.
    - Never expose administrative or destructive actions (such as PC reboot/shutdown, main valve manipulation, AC state toggle) to unauthenticated users or users without the required role (`admin`, `member`, `guest`).
    - Unregistered users must be denied or routed to a restricted guest view based on configuration.
+   - Per-user restrictions (`allowed_domains`, `allowed_areas`, `allowed_labels`, `blocked_entities`) must be enforced on every entity-level action, not only on menu sections.
 
 3. **Message Rendering & Typography**:
    - Telegram message rendering uses standard Telegram HTML parse mode (`<b>`, `<code>`, `<i>`, `<blockquote>`, `<pre>`).
@@ -54,7 +55,25 @@
    - Dynamic user settings and menu schemas reside in `/data/config.json`.
    - When running outside of HA (e.g. standalone test mode), fallback to local `config.json` without crashing.
    - Always validate JSON against the schema on load and create atomic backups before saving.
+   - Any code change must ensure user settings, menu schemas, and user lists are never reset or wiped during add-on updates, restarts, or config migrations; storage schemas must stay backwards-compatible across versions.
 
-5. **Test Invariant**:
-   - All business logic (RBAC, Message Renderer, Config Manager, HA Connector) must have 100% passing tests in `tests/`.
+5. **Full Catalog Access**:
+   - The bot and the builder UI must be able to reach the whole Home Assistant instance: all devices and entities, all domains (lights, switches, climate, covers, media players, ...), all scripts, automations (trigger/enable/disable), scenes, and individual services per entity.
+   - Grouping must support areas (rooms), labels (categories), and domains; no entity may be unreachable through the UI builder.
+   - Speech output to smart speakers (TTS) must target `media_player` entities and use a configurable TTS service; speaker actions (speak, volume up/down/set, mute) are first-class action types.
+
+6. **Localization**:
+   - All user-facing texts in the bot messages and the builder UI are Ukrainian and stored consistently; hardcoded one-off strings in code must not duplicate translatable texts.
+
+7. **Test Invariant**:
+   - All business logic (RBAC, Message Renderer, Config Manager, HA Connector, Bot Engine) must have 100% passing tests in `tests/`.
    - Run `pytest` before every release and commit.
+
+---
+
+## 3. Pre-Flight Verification Checklist
+
+Before pushing any commit or releasing:
+1. **Lint**: `flake8 telegram_dashboard/src tests --max-line-length=120 --ignore=E203,W503,F401` — zero errors.
+2. **Unit Tests**: `python -m pytest tests/ -v` — 100% passing.
+3. **Clean Working Tree**: no temporary artifacts or unstaged files remain.
