@@ -1,0 +1,26 @@
+name: "Telegram Dashboard"
+slug: "telegram_dashboard"
+description: "Interactive visual Telegram bot dashboard with role-based access control and beautiful message styling"
+version: "1.0.0"
+url: "https://github.com/kdinya/ha-telegram-dashboard"
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
+startup: application
+boot: auto
+homeassistant_api: true
+panel_icon: "mdi:telegram"
+panel_title: "Telegram Dash"
+ingress: true
+ingress_port: 8099
+schema:
+  telegram_token: password
+  log_level: list(debug|info|warning|error)?
+  default_role: list(guest|member|admin)?
+options:
+  telegram_token: ""
+  log_level: "info"
+  default_role: "guest"
