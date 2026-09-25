@@ -209,6 +209,12 @@ class BotEngine:
                 keyboard.append([{"text": raw_label, "callback_data": f"/act_{act_id}"}])
 
         # 4. Standard footer buttons
+        from datetime import datetime
+        now_time = state.get("updated_at")
+        if not now_time or now_time == "—":
+            now_time = datetime.now().strftime("%H:%M:%S")
+            state["updated_at"] = now_time
+
         if section_key == first_key:
             keyboard.append([{"text": "🔄 Оновити", "callback_data": f"/sec_{section_key}"}])
         else:
@@ -216,6 +222,9 @@ class BotEngine:
                 {"text": "🔄 Оновити", "callback_data": f"/sec_{section_key}"},
                 {"text": "⬅️ Головна", "callback_data": f"/sec_{first_key}"},
             ])
+
+        # Bottom-most info button under all buttons
+        keyboard.append([{"text": f"⏱ Оновлено: {now_time}", "callback_data": f"/sec_{section_key}"}])
 
         return keyboard
 
@@ -251,6 +260,11 @@ class BotEngine:
             text = self.renderer.render_entity_list(section, all_states)
             keyboard = self.build_keyboard(section_key, user_id, page=page, state=state)
             return {"text": text, "keyboard": keyboard, "parse_mode": "HTML"}
+
+        from datetime import datetime
+        if not state.get("updated_at") or state.get("updated_at") == "—":
+            state["updated_at"] = datetime.now().strftime("%H:%M:%S")
+        state["telegram_msg_width"] = self.config.get("telegram_msg_width", 100)
 
         text = self.renderer.render_section(section, state)
         keyboard = self.build_keyboard(section_key, user_id, page=page, state=state)

@@ -2025,6 +2025,9 @@ function loadSettings() {
   $('setting-bot-token').value = config.telegram_token || '';
   $('setting-theme').value = config.theme || 'cards';
   $('setting-default-role').value = config.default_role || 'guest';
+  if (config.telegram_msg_width) {
+    localStorage.setItem('preview_slider_msg_width', String(config.telegram_msg_width));
+  }
 }
 
 function applySettings() {
@@ -2035,6 +2038,8 @@ function applySettings() {
   config.telegram_token = $('setting-bot-token').value.trim();
   config.theme = $('setting-theme').value;
   config.default_role = $('setting-default-role').value;
+  const msgWVal = $('setting-tg-msg-width') ? parseInt($('setting-tg-msg-width').value, 10) : 100;
+  config.telegram_msg_width = msgWVal || 100;
 }
 
 // --- Save config ---
@@ -2170,6 +2175,9 @@ function setupEventListeners() {
     if (save) {
       localStorage.setItem('preview_slider_width', String(w));
       localStorage.setItem('preview_slider_msg_width', String(msgW));
+      if (config) {
+        config.telegram_msg_width = msgW;
+      }
     }
   }
 
