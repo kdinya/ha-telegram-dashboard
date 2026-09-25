@@ -170,7 +170,7 @@ class MessageRenderer:
             "<b>Заряди пристроїв:</b>",
             bat_block,
             "────────────────────────────",
-            f"<tg-spoiler><i>⏱ Оновлено: {html.escape(str(state.get('updated_at', '—')))}</i></tg-spoiler></blockquote>"
+            f"<i>⏱ Оновлено: {html.escape(str(state.get('updated_at', '—')))}</i></blockquote>"
         ])
         return "\n".join(parts)
 
@@ -264,7 +264,7 @@ class MessageRenderer:
 
         rows.append("────────────────────────────")
         updated = html.escape(str(state.get("updated_at", "—")))
-        rows.append(f"<tg-spoiler><i>⏱ Оновлено: {updated}</i></tg-spoiler></blockquote>")
+        rows.append(f"<i>⏱ Оновлено: {updated}</i></blockquote>")
         return "\n".join(rows)
 
     def render_entity_list(self, section: dict, states: dict[str, Any]) -> str:

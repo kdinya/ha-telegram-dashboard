@@ -1715,3 +1715,88 @@ body:has(.modal-overlay.open) {
   font-weight: 600;
   color: var(--tg-text, #fff);
 }
+
+
+/* App logo icon */
+.app-logo-img {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: block;
+  object-fit: cover;
+}
+
+/* Menu section button ordering */
+.menu-sections-order-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.menu-section-order-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.menu-section-order-item.is-checked {
+  background: rgba(56, 189, 248, 0.08);
+  border-color: rgba(56, 189, 248, 0.3);
+}
+
+.menu-section-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+}
+
+.menu-section-icon {
+  font-size: 16px;
+}
+
+.menu-section-name {
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.menu-section-order-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-order-arrow {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  border-radius: 4px;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-order-arrow:hover:not(:disabled) {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}

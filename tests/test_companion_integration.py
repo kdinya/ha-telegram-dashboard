@@ -8,7 +8,7 @@ def test_companion_manifest():
     assert manifest_file.exists()
     manifest = json.loads(manifest_file.read_text(encoding="utf-8"))
     assert manifest["domain"] == "telegram_dashboard"
-    assert manifest["version"] == "1.0.7"
+    assert manifest["version"] == "1.0.8"
 
 
 def test_companion_services_yaml():

@@ -1,3 +1,14 @@
+## 1.0.8
+
+### Fixed
+- Fixed UI startup initialization failure caused by stale icon picker event listener reference.
+- Telegram message rendering: removed spoiler overlay from update timestamp so the time is immediately visible without clicking.
+- Synchronized add-on version across all UI badges, manifests, and documentation.
+
+### Added
+- Navigation section buttons: added interactive up/down arrow controls to reorder buttons per section with live preview and Telegram message parity.
+- Modern high-resolution add-on icon and logo for Home Assistant supervisor store and add-on UI header.
+
 ## 1.0.1
 
 - Fix: correct Home Assistant API base URL so the entity picker and bot states work (entities are no longer empty).

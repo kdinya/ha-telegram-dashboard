@@ -416,18 +416,20 @@ function setupNavigation() {
 
 // --- Icon Picker ---
 function setupIconPicker() {
-  btnOpenIconPicker.addEventListener('click', () => {
-    activeIconTarget = 'section';
-    iconPickerModal.classList.add('open');
-    renderIconCategories();
-    renderIconGrid();
-  });
+  if (btnOpenIconPicker) {
+    btnOpenIconPicker.addEventListener('click', () => {
+      activeIconTarget = 'section';
+      iconPickerModal?.classList.add('open');
+      renderIconCategories();
+      renderIconGrid();
+    });
+  }
 
-  btnCloseIconPicker.addEventListener('click', () => iconPickerModal.classList.remove('open'));
-  iconPickerModal.addEventListener('click', e => {
+  btnCloseIconPicker?.addEventListener('click', () => iconPickerModal?.classList.remove('open'));
+  iconPickerModal?.addEventListener('click', e => {
     if (e.target === iconPickerModal) iconPickerModal.classList.remove('open');
   });
-  iconSearchInput.addEventListener('input', renderIconGrid);
+  iconSearchInput?.addEventListener('input', renderIconGrid);
 
   const btnClearIcon = document.getElementById('btn-clear-icon-selection');
   if (btnClearIcon) {
@@ -1530,20 +1532,88 @@ function renderSectionTexts(texts) {
 
 function renderMenuChecklist(selectedKeys) {
   const menuSectionsChecklist = document.getElementById('menu-sections-checklist');
-  if (!menuSectionsChecklist) return;
-  const allKeys = Object.keys(config.menu).filter(k => k !== currentSectionKey);
-  menuSectionsChecklist.innerHTML = allKeys.map(k => {
-    const s = config.menu[k];
-    const cleanTitle = stripLeadingEmoji(s.title || k);
-    const isChecked = (selectedKeys || []).includes(k) ? 'checked' : '';
-    return `<label><input type="checkbox" value="${k}" ${isChecked}> ${s.icon || '📁'} ${cleanTitle}</label>`;
-  }).join('');
+  if (!menuSectionsChecklist || !config || !config.menu) return;
 
-  menuSectionsChecklist.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+  const sec = config.menu[currentSectionKey];
+  if (!sec) return;
+
+  const validMenuKeys = Object.keys(config.menu).filter(k => k !== currentSectionKey);
+  const currentSelected = Array.isArray(selectedKeys) ? [...selectedKeys].filter(k => validMenuKeys.includes(k)) : [];
+  const unselected = validMenuKeys.filter(k => !currentSelected.includes(k));
+  const fullOrderedList = [...currentSelected, ...unselected];
+
+  menuSectionsChecklist.innerHTML = '';
+  menuSectionsChecklist.className = 'menu-sections-order-list';
+
+  fullOrderedList.forEach((k) => {
+    const s = config.menu[k] || {};
+    const cleanTitle = stripLeadingEmoji(s.title || k);
+    const isChecked = currentSelected.includes(k);
+    const itemEl = document.createElement('div');
+    itemEl.className = `menu-section-order-item ${isChecked ? 'is-checked' : ''}`;
+    itemEl.dataset.key = k;
+
+    const checkedIndex = currentSelected.indexOf(k);
+    const canMoveUp = isChecked && checkedIndex > 0;
+    const canMoveDown = isChecked && checkedIndex < currentSelected.length - 1;
+
+    itemEl.innerHTML = `
+      <label class="menu-section-label">
+        <input type="checkbox" value="${k}" ${isChecked ? 'checked' : ''}>
+        <span class="menu-section-icon">${s.icon || '📁'}</span>
+        <span class="menu-section-name">${escapeHtml(cleanTitle)}</span>
+      </label>
+      <div class="menu-section-order-controls">
+        <button type="button" class="btn-order-arrow btn-order-up" title="${t('btn_move_up') || 'Вгору'}" ${canMoveUp ? '' : 'disabled style="opacity: 0.2; pointer-events: none;"'}>▲</button>
+        <button type="button" class="btn-order-arrow btn-order-down" title="${t('btn_move_down') || 'Вниз'}" ${canMoveDown ? '' : 'disabled style="opacity: 0.2; pointer-events: none;"'}>▼</button>
+      </div>
+    `;
+
+    const cb = itemEl.querySelector('input[type="checkbox"]');
     cb.addEventListener('change', () => {
+      let updatedSelected = Array.isArray(sec.sections) ? [...sec.sections] : [];
+      if (cb.checked) {
+        if (!updatedSelected.includes(k)) updatedSelected.push(k);
+      } else {
+        updatedSelected = updatedSelected.filter(itemKey => itemKey !== k);
+      }
+      sec.sections = updatedSelected;
+      renderMenuChecklist(sec.sections);
       syncCurrentSectionFromForm();
       updatePreview();
     });
+
+    const btnUp = itemEl.querySelector('.btn-order-up');
+    btnUp.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!canMoveUp) return;
+      let updatedSelected = [...currentSelected];
+      const temp = updatedSelected[checkedIndex - 1];
+      updatedSelected[checkedIndex - 1] = updatedSelected[checkedIndex];
+      updatedSelected[checkedIndex] = temp;
+      sec.sections = updatedSelected;
+      renderMenuChecklist(sec.sections);
+      syncCurrentSectionFromForm();
+      updatePreview();
+    });
+
+    const btnDown = itemEl.querySelector('.btn-order-down');
+    btnDown.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!canMoveDown) return;
+      let updatedSelected = [...currentSelected];
+      const temp = updatedSelected[checkedIndex + 1];
+      updatedSelected[checkedIndex + 1] = updatedSelected[checkedIndex];
+      updatedSelected[checkedIndex] = temp;
+      sec.sections = updatedSelected;
+      renderMenuChecklist(sec.sections);
+      syncCurrentSectionFromForm();
+      updatePreview();
+    });
+
+    menuSectionsChecklist.appendChild(itemEl);
   });
 }
 
