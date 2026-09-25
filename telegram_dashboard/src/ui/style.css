@@ -1800,3 +1800,52 @@ body:has(.modal-overlay.open) {
   color: #fff;
   border-color: var(--primary);
 }
+
+/* Ensure icon picker is on a higher layer than other modals (e.g. section editor modal) */
+#icon-picker-modal {
+  z-index: 1200;
+}
+
+/* Telegram blockquote formatting in preview */
+.tg-rendered-content blockquote {
+  margin: 0;
+  padding: 0 0 0 6px;
+  border-left: 2px solid rgba(255, 255, 255, 0.25);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Telegram preview size toolbar */
+.preview-size-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  max-width: 320px;
+  margin-bottom: 8px;
+  padding: 4px 8px;
+  background: var(--bg-surface, #1e293b);
+  border: 1px solid var(--border-color, #334155);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--text-secondary, #94a3b8);
+}
+
+.preview-size-bar label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.preview-size-select {
+  padding: 2px 6px;
+  font-size: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #334155);
+  background: var(--bg-card, #0f172a);
+  color: var(--text-primary, #f8fafc);
+  cursor: pointer;
+}

@@ -200,7 +200,18 @@
             <span class="preview-title" data-i18n="preview_mobile_title">📱 Telegram Simulator</span>
             <button id="btn-back-to-editor" class="btn btn-secondary btn-sm" data-i18n="preview_back_btn">⬅️ Back to editor</button>
           </div>
-          <div class="phone-frame">
+          <div class="preview-size-bar">
+            <label for="preview-size-select">
+              <span>📏</span> <span data-i18n="preview_size_label">Розмір прев'ю:</span>
+            </label>
+            <select id="preview-size-select" class="preview-size-select">
+              <option value="compact" data-i18n="preview_size_compact">Компактний (290px)</option>
+              <option value="standard" selected data-i18n="preview_size_standard">Стандартний (320px)</option>
+              <option value="large" data-i18n="preview_size_large">Великий (360px)</option>
+              <option value="wide" data-i18n="preview_size_wide">Широкий (400px)</option>
+            </select>
+          </div>
+          <div class="phone-frame" id="phone-frame">
             <div class="phone-notch"></div>
             <div class="tg-chat-header">
               <div class="tg-avatar">🏠</div>
@@ -353,7 +364,7 @@
       </div>
       <div class="modal-footer" style="padding: 12px 20px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border-color);">
         <button type="button" class="btn btn-ghost btn-sm" id="btn-cancel-edit-section" data-i18n="btn_cancel">Cancel</button>
-        <button type="button" class="btn btn-primary btn-sm" id="btn-save-edit-section" data-i18n="btn_save">Save</button>
+        <button type="button" class="btn btn-primary btn-sm" id="btn-save-edit-section" data-i18n="btn_save_section_meta">Зберегти</button>
       </div>
     </div>
   </div>

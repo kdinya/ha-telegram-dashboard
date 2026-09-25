@@ -1327,7 +1327,7 @@ function renderSectionElements(items) {
       // Divider / Horizontal spacer item
       const style = item.style || 'line';
       let styleLabel = t('divider_style_line') || 'Суцільна лінія';
-      let stylePreview = '────────────────────────────';
+      let stylePreview = '────────────────────────';
       if (style === 'space') {
         styleLabel = t('divider_style_space') || 'Порожній відступ';
         stylePreview = '␣ (порожній відступ)';
@@ -2038,6 +2038,41 @@ $('btn-toggle-preview').addEventListener('click', () => {
 
 // --- Live section name/icon sync ---
 function setupEventListeners() {
+
+  // Preview size controls
+  const previewSizeSelect = $('preview-size-select');
+  const phoneFrame = $('phone-frame');
+  const sizeMap = {
+    compact: { width: '290px', height: '560px' },
+    standard: { width: '320px', height: '600px' },
+    large: { width: '360px', height: '640px' },
+    wide: { width: '400px', height: '680px' }
+  };
+
+  function applyPreviewSize(sizeKey) {
+    const size = sizeMap[sizeKey] || sizeMap.standard;
+    if (phoneFrame) {
+      phoneFrame.style.width = size.width;
+      phoneFrame.style.height = size.height;
+    }
+    const previewSizeBar = document.querySelector('.preview-size-bar');
+    if (previewSizeBar) {
+      previewSizeBar.style.maxWidth = size.width;
+    }
+  }
+
+  if (previewSizeSelect) {
+    const savedSize = localStorage.getItem('preview_frame_size') || 'standard';
+    previewSizeSelect.value = savedSize;
+    applyPreviewSize(savedSize);
+
+    previewSizeSelect.addEventListener('change', (e) => {
+      const selected = e.target.value;
+      localStorage.setItem('preview_frame_size', selected);
+      applyPreviewSize(selected);
+    });
+  }
+
   // Setup Section Meta Modal (Title & Icon)
   if (btnEditSectionMeta) {
     btnEditSectionMeta.addEventListener('click', () => {

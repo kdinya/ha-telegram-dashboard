@@ -102,6 +102,14 @@
 
       // Preview
       preview_mobile_title: "📱 Telegram Simulator",
+      preview_size_label: "Preview size:",
+      preview_size_compact: "Compact (290px)",
+      preview_size_standard: "Standard (320px)",
+      preview_size_large: "Large (360px)",
+      preview_size_wide: "Wide (400px)",
+      btn_save_section_meta: "Save",
+      btn_save: "Save",
+
       preview_back_btn: "⬅️ Back to editor",
       preview_sim_role: "Role simulation:",
 
@@ -302,6 +310,14 @@
 
       // Preview
       preview_mobile_title: "📱 Симулятор Telegram",
+      preview_size_label: "Розмір прев'ю:",
+      preview_size_compact: "Компактний (290px)",
+      preview_size_standard: "Стандартний (320px)",
+      preview_size_large: "Великий (360px)",
+      preview_size_wide: "Широкий (400px)",
+      btn_save_section_meta: "Зберегти",
+      btn_save: "Зберегти",
+
       preview_back_btn: "⬅️ До налаштувань",
       preview_sim_role: "Симуляція ролі:",
 

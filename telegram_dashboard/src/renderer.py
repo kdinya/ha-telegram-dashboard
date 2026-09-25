@@ -183,7 +183,6 @@ class MessageRenderer:
         rows = [f"<blockquote><b>{icon} {title}</b>"]
         if note:
             rows.append(f"<i>{note}</i>")
-        rows.append("────────────────────────────")
 
         # Unified ordered items: texts and entities rendered in saved order
         items = section.get("items")
@@ -253,16 +252,15 @@ class MessageRenderer:
                 if style == "space":
                     rows.append("")
                 elif style == "dashed":
-                    rows.append("┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
+                    rows.append("┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
                 elif style == "dotted":
-                    rows.append("····························")
+                    rows.append("························")
                 else:
-                    rows.append("────────────────────────────")
+                    rows.append("────────────────────────")
 
         if not has_items:
             rows.append("<i>Показники не налаштовані.</i>")
 
-        rows.append("────────────────────────────")
         updated = html.escape(str(state.get("updated_at", "—")))
         rows.append(f"<i>⏱ Оновлено: {updated}</i></blockquote>")
         return "\n".join(rows)
