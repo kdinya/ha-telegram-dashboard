@@ -195,11 +195,10 @@ class BotEngine:
                     ent_raw = state[target_entity]
                     ent_st = (ent_raw.get("state") if isinstance(ent_raw, dict) else str(ent_raw)) or ""
                     ent_st_lower = ent_st.lower()
-                    domain = target_entity.split(".")[0]
                     if ent_st_lower in ("on", "open", "true"):
-                        btn_text = f"🟢 {raw_label}" if domain in ("switch", "light", "valve") else f"🟢 {raw_label}"
+                        btn_text = f"🟢 {raw_label}"
                     elif ent_st_lower in ("off", "closed", "false"):
-                        btn_text = f"🔴 {raw_label}" if domain in ("switch", "light", "valve") else f"🔴 {raw_label}"
+                        btn_text = f"🔴 {raw_label}"
                 keyboard.append([{"text": btn_text, "callback_data": f"/btn_{section_key}_{idx}"}])
         else:
             actions = section.get("actions", [])

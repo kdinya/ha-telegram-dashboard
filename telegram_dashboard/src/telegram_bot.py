@@ -181,16 +181,14 @@ class TelegramBotRunner:
                 reply_markup = {"inline_keyboard": res.get("keyboard", [])} if res.get("keyboard") else None
                 await self.edit_message_text(chat_id, msg_id, res.get("text", ""), reply_markup=reply_markup)
             elif data.startswith("/ent_"):
-                parts = data[5:].split("_")
-                sec_key = parts[0]
-                page = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
+                sec_key, _, tail = data[5:].rpartition("_")
+                page = int(tail) if tail.isdigit() else 0
                 res = await self.bot_engine.handle_navigation(user_id, sec_key, state, page=page)
                 reply_markup = {"inline_keyboard": res.get("keyboard", [])} if res.get("keyboard") else None
                 await self.edit_message_text(chat_id, msg_id, res.get("text", ""), reply_markup=reply_markup)
             elif data.startswith("/btn_"):
-                parts = data[5:].split("_", 1)
-                sec_key = parts[0]
-                btn_id = parts[1] if len(parts) > 1 else "0"
+                sec_key, _, tail = data[5:].rpartition("_")
+                btn_id = tail if tail else "0"
                 res = await self.bot_engine.handle_button_click(user_id, sec_key, btn_id, state)
                 toast = res.get("toast")
                 ret_sec = res.get("section_key") or sec_key
@@ -210,9 +208,8 @@ class TelegramBotRunner:
                 reply_markup = {"inline_keyboard": nav.get("keyboard", [])} if nav.get("keyboard") else None
                 await self.edit_message_text(chat_id, msg_id, nav.get("text", ""), reply_markup=reply_markup)
             elif data.startswith("/tog_"):
-                parts = data[5:].split("_")
-                sec_key = parts[0]
-                idx = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
+                sec_key, _, tail = data[5:].rpartition("_")
+                idx = int(tail) if tail.isdigit() else 0
                 res = await self.bot_engine.handle_entity_toggle(user_id, sec_key, idx)
                 toast = res.get("toast")
                 nav = await self.bot_engine.handle_navigation(user_id, sec_key, state)
