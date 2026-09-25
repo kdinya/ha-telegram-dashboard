@@ -2190,3 +2190,312 @@ function setupEventListeners() {
       msgArea.scrollTop = scrollTop - walk;
     });
   }
+
+
+  // Setup Section Meta Modal (Title & Icon)
+  if (btnEditSectionMeta) {
+    btnEditSectionMeta.addEventListener('click', () => {
+      const sec = config && config.menu ? config.menu[currentSectionKey] : null;
+      if (!sec) return;
+      if (editSecIcon) editSecIcon.value = sec.icon || '📁';
+      if (editSectionIconDisplay) editSectionIconDisplay.textContent = sec.icon || '📁';
+      if (editSecTitle) {
+        editSecTitle.value = stripLeadingEmoji(sec.title || '');
+      }
+      modalEditSection?.classList.add('open');
+      // Do not automatically autofocus title to prevent unwanted virtual keyboard popup on mobile
+    });
+  }
+
+  const closeEditSectionModal = () => {
+    modalEditSection?.classList.remove('open');
+  };
+  btnCloseEditSectionModal?.addEventListener('click', closeEditSectionModal);
+  btnCancelEditSection?.addEventListener('click', closeEditSectionModal);
+
+  const saveEditSectionMeta = () => {
+    const sec = config && config.menu ? config.menu[currentSectionKey] : null;
+    if (!sec) return;
+    if (editSecTitle) {
+      sec.title = stripLeadingEmoji(editSecTitle.value.trim()) || 'Розділ';
+    }
+    if (editSecIcon) {
+      sec.icon = editSecIcon.value.trim() || '📁';
+    }
+    if (editorSectionIcon) editorSectionIcon.textContent = sec.icon || '📁';
+    if (editorSectionTitle) editorSectionTitle.textContent = sec.title;
+    closeEditSectionModal();
+    renderSectionsPills();
+    renderMenuChecklist(sec.sections || sec.menu_sections || []);
+    updatePreview();
+    showToast(t('toast_section_updated'));
+  };
+
+  btnSaveEditSection?.addEventListener('click', saveEditSectionMeta);
+  editSecTitle?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveEditSectionMeta();
+    }
+  });
+
+  btnEditSectionIconPicker?.addEventListener('click', () => {
+    activeIconTarget = 'edit_section_meta';
+    iconPickerModal?.classList.add('open');
+    renderIconCategories();
+    renderIconGrid();
+  });
+
+  // Language selector live switch
+  const langSelect = $('setting-language');
+  if (langSelect) {
+    langSelect.addEventListener('change', (e) => {
+      const chosenLang = e.target.value;
+      if (window.I18N) {
+        window.I18N.setLanguage(chosenLang, true);
+      }
+      if (config) {
+        config.language = chosenLang;
+      }
+    });
+  }
+
+  window.onDashboardLanguageChanged = function(lang) {
+    if (config) {
+      renderSectionsPills();
+      loadSectionIntoEditor(currentSectionKey);
+      renderUsers();
+      updatePreview();
+    }
+  };
+
+
+  // Setup Constructor Section Action Buttons (Text, Entity, Button)
+  const btnActionAddText = $('btn-action-add-text');
+  const btnActionAddEntity = $('btn-action-add-entity');
+  const btnActionAddDivider = $('btn-action-add-divider');
+  const btnActionAddButton = $('btn-action-add-button');
+
+  if (btnActionAddDivider) {
+    btnActionAddDivider.addEventListener('click', () => {
+      const sec = config && config.menu ? config.menu[currentSectionKey] : null;
+      if (!sec) return;
+      ensureSectionItems(sec);
+      sec.items.push({
+        type: 'divider',
+        style: 'line'
+      });
+      syncSectionLegacyCollections(sec);
+      editingItemIdx = null;
+      addingItemType = null;
+      renderSectionElements(sec.items);
+      updatePreview();
+      showToast(t('toast_divider_added'));
+    });
+  }
+
+  if (btnActionAddText) {
+    btnActionAddText.addEventListener('click', () => {
+      const sec = config && config.menu ? config.menu[currentSectionKey] : null;
+      if (!sec) return;
+      ensureSectionItems(sec);
+      editingItemIdx = null;
+      addingItemType = (addingItemType === 'text') ? null : 'text';
+      renderSectionElements(sec.items);
+    });
+  }
+
+  if (btnActionAddEntity) {
+    btnActionAddEntity.addEventListener('click', () => {
+      const sec = config && config.menu ? config.menu[currentSectionKey] : null;
+      if (!sec) return;
+      ensureSectionItems(sec);
+      editingItemIdx = null;
+      addingItemType = (addingItemType === 'entity') ? null : 'entity';
+      renderSectionElements(sec.items);
+    });
+  }
+
+  if (btnActionAddButton) {
+    btnActionAddButton.addEventListener('click', () => {
+      showToast(t('toast_buttons_coming_soon'));
+    });
+  }
+
+  // Setup Add Entity & Add Button event listeners
+  document.getElementById('btn-add-entity-item')?.addEventListener('click', () => {
+    openEntityPicker('entity_item', 'Оберіть ентіті Home Assistant для показу даних');
+  });
+
+  document.getElementById('btn-add-button-item')?.addEventListener('click', () => {
+    selectedButtonTarget = null;
+    const disp = document.getElementById('btn-target-display');
+    const lbl = document.getElementById('btn-custom-label');
+    if (disp) disp.value = '';
+    if (lbl) lbl.value = '';
+    document.getElementById('modal-button-config')?.classList.add('open');
+  });
+
+  document.getElementById('btn-close-button-config')?.addEventListener('click', () => {
+    document.getElementById('modal-button-config')?.classList.remove('open');
+  });
+
+  document.getElementById('btn-choose-btn-target')?.addEventListener('click', () => {
+    openEntityPicker('button_target', 'Оберіть сутність для кнопки керування');
+  });
+
+  document.getElementById('btn-save-configured-button')?.addEventListener('click', () => {
+    if (!selectedButtonTarget) {
+      showToast(t('toast_select_entity_first'), true);
+      return;
+    }
+    const lbl = document.getElementById('btn-custom-label')?.value.trim() || selectedButtonTarget.friendlyName;
+    const sec = config.menu[currentSectionKey];
+    if (!sec.buttons) sec.buttons = [];
+    sec.buttons.push({
+      entity_id: selectedButtonTarget.entityId,
+      label: lbl,
+      action: 'toggle'
+    });
+    renderButtonsList(sec.buttons);
+    updatePreview();
+    document.getElementById('modal-button-config')?.classList.remove('open');
+    showToast('Кнопку додано');
+  });
+
+  secTitle?.addEventListener('input', () => {
+    syncCurrentSectionFromForm();
+    renderSectionsPills();
+    updatePreview();
+  });
+  secIcon?.addEventListener('input', () => {
+    if (secIconDisplay) secIconDisplay.textContent = secIcon.value || '📁';
+    syncCurrentSectionFromForm();
+    renderSectionsPills();
+    updatePreview();
+  });
+  [roleAdmin, roleMember, roleGuest].forEach(cb => {
+    cb?.addEventListener('change', () => {
+      syncCurrentSectionFromForm();
+      updatePreview();
+    });
+  });
+  if (secType) {
+    secType.addEventListener('change', () => {
+      handleSectionTypeChange(secType.value, config.menu[currentSectionKey]);
+    });
+  }
+  if (btnAddSectionDevice) {
+    btnAddSectionDevice.addEventListener('click', () => {
+      openEntityPicker('section_device', 'Оберіть пристрій для відображення');
+    });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', init);
+
+function renderSectionDevicesList(entities) {
+  if (!sectionDevicesList) return;
+  if (!entities.length) {
+    sectionDevicesList.innerHTML = '<p class="field-hint">Пристрої ще не додані. Натисніть "+ Додати пристрій зі списку".</p>';
+    return;
+  }
+  sectionDevicesList.innerHTML = entities.map((eid, index) => {
+    const found = availableEntities.find(e => e.entity_id === eid);
+    const name = found ? found.friendly_name : eid;
+    const domain = eid.split('.')[0];
+    return `
+      <div class="item-row" data-index="${index}">
+        <div class="item-info">
+          <span style="font-size: 16px; font-weight: 600; color: #38bdf8;">${domain}</span>
+          <div>
+            <div class="item-title">${name}</div>
+            <div class="item-desc">${eid}</div>
+          </div>
+        </div>
+        <button type="button" class="btn btn-danger btn-sm btn-remove-device" data-index="${index}">✕</button>
+      </div>
+    `;
+  }).join('');
+
+  sectionDevicesList.querySelectorAll('.btn-remove-device').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const confirmed = await showCustomConfirm(
+        t('confirm_dialog_title'),
+        t('confirm_delete_device'),
+        t('btn_delete'),
+        true
+      );
+      if (!confirmed) return;
+      const idx = parseInt(btn.dataset.index, 10);
+      const sec = config.menu[currentSectionKey];
+      if (sec && sec.entities) {
+        sec.entities.splice(idx, 1);
+        renderSectionDevicesList(sec.entities);
+        updatePreview();
+      }
+    });
+  });
+}
+
+function addDeviceToSection(eid) {
+  const sec = config.menu[currentSectionKey];
+  if (!sec) return;
+  if (!sec.entities) sec.entities = [];
+  if (!sec.entities.includes(eid)) {
+    sec.entities.push(eid);
+  }
+  renderSectionDevicesList(sec.entities);
+  updatePreview();
+  showToast('Пристрій додано');
+}
+
+// Widget configuration modal elements
+const widgetConfigModal = document.getElementById('widget-config-modal');
+const btnCloseWidgetConfig = document.getElementById('btn-close-widget-config');
+const widgetEntityDisplay = document.getElementById('widget-entity-display');
+const widgetLabelInput = document.getElementById('widget-label-input');
+const widgetUnitInput = document.getElementById('widget-unit-input');
+const btnSaveConfiguredWidget = document.getElementById('btn-save-configured-widget');
+let pendingWidgetEntity = null;
+
+function setupWidgetConfig() {
+  if (btnCloseWidgetConfig) {
+    btnCloseWidgetConfig.addEventListener('click', () => widgetConfigModal.classList.remove('open'));
+  }
+  if (widgetConfigModal) {
+    widgetConfigModal.addEventListener('click', e => {
+      if (e.target === widgetConfigModal) widgetConfigModal.classList.remove('open');
+    });
+  }
+  if (btnSaveConfiguredWidget) {
+    btnSaveConfiguredWidget.addEventListener('click', () => {
+      if (!pendingWidgetEntity) return;
+      const sec = config.menu[currentSectionKey];
+      if (!sec.widgets) sec.widgets = [];
+      const customLabel = widgetLabelInput.value.trim() || pendingWidgetEntity.friendlyName;
+      const customUnit = widgetUnitInput.value.trim();
+
+      const kindMap = {
+        'sensor': 'sensor', 'binary_sensor': 'sensor', 'switch': 'switch',
+        'light': 'switch', 'battery': 'battery', 'climate': 'sensor'
+      };
+      const iconMap = {
+        'sensor': '📈', 'binary_sensor': '🚨', 'switch': '🔌', 'light': '💡',
+        'climate': '🌡️', 'battery': '🔋', 'cover': '🪟', 'media_player': '🔊'
+      };
+
+      sec.widgets.push({
+        kind: kindMap[pendingWidgetEntity.domain] || 'sensor',
+        label: customLabel,
+        entity_id: pendingWidgetEntity.entityId,
+        unit: customUnit,
+        icon: iconMap[pendingWidgetEntity.domain] || '📊'
+      });
+      renderWidgetsList(sec.widgets);
+      updatePreview();
+      widgetConfigModal.classList.remove('open');
+      showToast('Показник додано');
+    });
+  }
+}
