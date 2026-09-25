@@ -10,6 +10,7 @@ from typing import Any
 
 DEFAULT_CONFIG: dict[str, Any] = {
     "version": "1.0.0",
+    "language": "en",
     "menu": {
         "main": {
             "title": "🏠 Smart Home",

@@ -62,8 +62,11 @@
    - Grouping must support areas (rooms), labels (categories), and domains; no entity may be unreachable through the UI builder.
    - Speech output to smart speakers (TTS) must target `media_player` entities and use a configurable TTS service; speaker actions (speak, volume up/down/set, mute) are first-class action types.
 
-6. **Localization**:
-   - All user-facing texts in the bot messages and the builder UI are Ukrainian and stored consistently; hardcoded one-off strings in code must not duplicate translatable texts.
+6. **Localization & Multi-Language Support**:
+   - The add-on interface supports English (`en`, default) and Ukrainian (`uk`) with live instant language switching and persistent preference storage.
+   - When adding, modifying, or removing any elements in the add-on UI (buttons, labels, headings, tooltips, placeholders, modals, toasts, or statuses), they must be fully integrated into the translation system (`i18n.js` / translation dictionary) in both English and Ukrainian (`en` and `uk`).
+   - Hardcoded UI strings without localization keys are strictly prohibited.
+   - Custom user-defined objects and names (such as custom section names, user-typed text items, user names, and Home Assistant entity names/states) are preserved as-is and are not subjected to static dictionary translation.
 
 7. **Test Invariant**:
    - All business logic (RBAC, Message Renderer, Config Manager, HA Connector, Bot Engine) must have 100% passing tests in `tests/`.

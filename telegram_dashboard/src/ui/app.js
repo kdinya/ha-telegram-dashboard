@@ -1,6 +1,90 @@
 
+function openAddSectionModal() {
+  const modal = document.getElementById('modal-add-section');
+  const input = document.getElementById('new-section-title-input');
+  const btnConfirm = document.getElementById('btn-confirm-add-section');
+  const btnCancel = document.getElementById('btn-cancel-add-section');
+  const btnClose = document.getElementById('btn-close-add-section-modal');
+  if (!modal || !input) return;
+
+  input.value = '';
+  modal.classList.add('open');
+  input.focus();
+
+  const cleanup = () => {
+    modal.classList.remove('open');
+    if (btnConfirm) btnConfirm.removeEventListener('click', onConfirm);
+    if (btnCancel) btnCancel.removeEventListener('click', onCancel);
+    if (btnClose) btnClose.removeEventListener('click', onCancel);
+    input.removeEventListener('keydown', onKeyDown);
+  };
+
+  const onConfirm = () => {
+    const title = input.value.trim();
+    if (!title) {
+      showToast(t('toast_enter_section_name'), true);
+      return;
+    }
+    cleanup();
+    createSectionWithTitle(title);
+  };
+
+  const onCancel = () => cleanup();
+
+  const onKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      onConfirm();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      onCancel();
+    }
+  };
+
+  if (btnConfirm) btnConfirm.addEventListener('click', onConfirm);
+  if (btnCancel) btnCancel.addEventListener('click', onCancel);
+  if (btnClose) btnClose.addEventListener('click', onCancel);
+  input.addEventListener('keydown', onKeyDown);
+}
+
+function createSectionWithTitle(title) {
+  const cleanTitle = stripLeadingEmoji(title.trim());
+  const rawSlug = slugify(cleanTitle) || 'section';
+  let slug = rawSlug;
+  let counter = 1;
+  while (config.menu[slug]) slug = `${rawSlug}_${counter++}`;
+
+  let guessedIcon = '📁';
+  const lower = cleanTitle.toLowerCase();
+  if (lower.includes('клімат') || lower.includes('температур') || lower.includes('climat') || lower.includes('temp')) guessedIcon = '🌡️';
+  else if (lower.includes('світл') || lower.includes('ламп') || lower.includes('light') || lower.includes('lamp')) guessedIcon = '💡';
+  else if (lower.includes('розетк') || lower.includes('вимикач') || lower.includes('switch') || lower.includes('plug')) guessedIcon = '🔌';
+  else if (lower.includes('безпек') || lower.includes('сигнал') || lower.includes('security') || lower.includes('alarm')) guessedIcon = '🛡️';
+  else if (lower.includes('камер') || lower.includes('cam')) guessedIcon = '📹';
+  else if (lower.includes('вод') || lower.includes('water')) guessedIcon = '🚰';
+  else if (lower.includes('замок') || lower.includes('двер') || lower.includes('lock') || lower.includes('door')) guessedIcon = '🔒';
+  else if (lower.includes('штор') || lower.includes('blind') || lower.includes('curtain')) guessedIcon = '🪟';
+
+  config.menu[slug] = {
+    title: cleanTitle,
+    icon: guessedIcon,
+    type: 'section',
+    roles: ['admin', 'member'],
+    widgets: [],
+    actions: []
+  };
+
+  currentSectionKey = slug;
+  renderSectionsPills();
+  loadSectionIntoEditor(slug);
+  updatePreview();
+  showToast(t('toast_section_created', { title: cleanTitle, slug }));
+}
+
+const t = (key, params) => (window.I18N && window.I18N.t ? window.I18N.t(key, params) : (params ? Object.keys(params).reduce((s, k) => s.replace('{' + k + '}', params[k]), key) : key));
+
 // --- Custom Modal Helpers ---
-function showCustomConfirm(title, message, confirmText = 'Видалити', isDanger = true) {
+function showCustomConfirm(title, message, confirmText = (window.t ? window.t('btn_delete') : 'Delete'), isDanger = true) {
   return new Promise((resolve) => {
     const modal = document.getElementById('modal-confirm-dialog');
     const titleEl = document.getElementById('confirm-dialog-title');
@@ -257,7 +341,7 @@ async function loadConfig() {
     updatePreview();
   } catch (e) {
     console.error('Помилка завантаження конфігурації або ініціалізації редактора:', e);
-    showToast('Помилка завантаження конфігурації', true);
+    showToast(t('toast_cfg_load_error'), true);
   }
 }
 
@@ -306,7 +390,7 @@ function setupIconPicker() {
         const textIconInput = document.querySelector('#inline-edit-row .item-icon-val');
         const textIconDisplay = document.querySelector('#inline-edit-row .item-icon-display');
         if (textIconInput) textIconInput.value = '';
-        if (textIconDisplay) textIconDisplay.innerHTML = '<span class="icon-empty-slot" title="Без іконки">∅</span>';
+        if (textIconDisplay) textIconDisplay.innerHTML = `<span class="icon-empty-slot" title="${t('empty_icon_title')}">∅</span>`;
       } else {
         secIcon.value = '';
         secIconDisplay.textContent = '📁';
@@ -455,7 +539,7 @@ function renderEntityPickerList() {
         });
         renderEntitiesList(sec.entities);
         updatePreview();
-        showToast(`Ентіті "${name}" додано`);
+        showToast(t('toast_entity_added', { name }));
       } else if (entityPickerContext === 'button_target') {
         selectedButtonTarget = { entityId: eid, friendlyName: name, domain: domain };
         const disp = document.getElementById('btn-target-display');
@@ -497,7 +581,7 @@ function setupActionConfig() {
       if (m) selectedActionEntity = m[1];
     }
     if (!selectedActionEntity) {
-      showToast('Спершу оберіть сутність', true);
+      showToast(t('toast_select_entity_first'), true);
       return;
     }
     let service = actionServiceSelect.value;
@@ -524,7 +608,7 @@ function setupActionConfig() {
     renderActionsList(sec.actions);
     updatePreview();
     actionConfigModal.classList.remove('open');
-    showToast('Дію додано');
+    showToast(t('toast_action_added'));
   });
 }
 
@@ -581,22 +665,22 @@ function createInlineEditRow(initialData = {}, onSave, onCancel) {
   const initialIcon = escapeHtml(initialData.icon || '');
   const initialText = escapeHtml(initialData.text || '');
   let isHeading = Boolean(initialData.is_heading);
-  const displayIcon = initialIcon ? initialIcon : '<span class="icon-empty-slot" title="Без іконки">∅</span>';
+  const displayIcon = initialIcon ? initialIcon : `<span class="icon-empty-slot" title="${t('empty_icon_title')}">∅</span>`;
 
   row.innerHTML = `
     <div class="icon-input-wrap">
-      <button type="button" class="btn-icon-select btn-inline-icon-picker" title="Обрати іконку або залишити пустою">
+      <button type="button" class="btn-icon-select btn-inline-icon-picker" title="${t('btn_inline_icon_title')}">
         <span class="item-icon-display">${displayIcon}</span>
       </button>
       <input type="hidden" class="item-icon-val" value="${initialIcon}">
     </div>
-    <input type="text" class="form-control flex-1 item-input-val ${isHeading ? 'is-heading' : ''}" placeholder="Введіть текст..." value="${initialText}">
+    <input type="text" class="form-control flex-1 item-input-val ${isHeading ? 'is-heading' : ''}" placeholder="${t('placeholder_text_input')}" value="${initialText}">
     <button type="button" class="btn-toggle-bold ${isHeading ? 'active' : ''}" title="Заголовок (жирний текст)" aria-pressed="${isHeading}">
       <b>B</b>
     </button>
     <div class="add-text-inline-row-actions">
-      <button type="button" class="btn btn-primary btn-sm btn-inline-action btn-save-inline" title="Зберегти">💾</button>
-      <button type="button" class="btn btn-ghost btn-sm btn-inline-action btn-cancel-inline" title="Скасувати">✕</button>
+      <button type="button" class="btn btn-primary btn-sm btn-inline-action btn-save-inline" title="${t('btn_save_item_title')}">💾</button>
+      <button type="button" class="btn btn-ghost btn-sm btn-inline-action btn-cancel-inline" title="${t('btn_cancel_item_title')}">✕</button>
     </div>
   `;
 
@@ -624,7 +708,7 @@ function createInlineEditRow(initialData = {}, onSave, onCancel) {
   btnSave.addEventListener('click', () => {
     const text = (inputVal.value || '').trim();
     if (!text) {
-      showToast('Введіть текст перед збереженням', true);
+      showToast(t('toast_enter_text_first'), true);
       inputVal.focus();
       return;
     }
@@ -716,7 +800,7 @@ function renderSectionTexts(texts) {
         editingTextIdx = null;
         renderSectionTexts(sec.texts);
         updatePreview();
-        showToast('Текст успішно оновлено');
+        showToast(t('toast_text_updated'));
       }, () => {
         editingTextIdx = null;
         renderSectionTexts(sec.texts);
@@ -748,7 +832,7 @@ function renderSectionTexts(texts) {
       </div>
       <div class="section-text-item-actions">
         <button type="button" class="btn-icon-action btn-edit-text-item" title="Правити" data-idx="${idx}">✏️</button>
-        <button type="button" class="btn-icon-action btn-remove-text-item" title="Видалити" data-idx="${idx}">🗑️</button>
+        <button type="button" class="btn-icon-action btn-remove-text-item" title="${t('btn_delete_user')}" data-idx="${idx}">🗑️</button>
       </div>
     `;
 
@@ -764,7 +848,7 @@ function renderSectionTexts(texts) {
       }
       renderSectionTexts(sec.texts);
       updatePreview();
-      showToast('Елемент видалено');
+      showToast(t('toast_item_deleted'));
     });
 
     container.appendChild(el);
@@ -777,7 +861,7 @@ function renderSectionTexts(texts) {
       editingTextIdx = null;
       renderSectionTexts(sec.texts);
       updatePreview();
-      showToast('Текст успішно додано');
+      showToast(t('toast_text_added'));
     }, () => {
       editingTextIdx = null;
       renderSectionTexts(sec.texts);
@@ -925,54 +1009,28 @@ function renderButtonsList(buttons) {
 
 // --- Section creation: title only, slug and icon guessed ---
 $('btn-add-section').addEventListener('click', () => {
-  const title = prompt('Введіть назву нового розділу:');
-  if (!title || !title.trim()) return;
-
-  const cleanTitle = stripLeadingEmoji(title.trim());
-  const rawSlug = slugify(cleanTitle) || 'section';
-  let slug = rawSlug;
-  let counter = 1;
-  while (config.menu[slug]) slug = `${rawSlug}_${counter++}`;
-
-  let guessedIcon = '📁';
-  const lower = cleanTitle.toLowerCase();
-  if (lower.includes('клімат') || lower.includes('температур')) guessedIcon = '🌡️';
-  else if (lower.includes('світл') || lower.includes('ламп')) guessedIcon = '💡';
-  else if (lower.includes('розетк') || lower.includes('вимикач')) guessedIcon = '🔌';
-  else if (lower.includes('безпек') || lower.includes('сигнал')) guessedIcon = '🛡️';
-  else if (lower.includes('камер')) guessedIcon = '📹';
-  else if (lower.includes('вод')) guessedIcon = '🚰';
-  else if (lower.includes('замок') || lower.includes('двер')) guessedIcon = '🔒';
-  else if (lower.includes('штор')) guessedIcon = '🪟';
-
-  config.menu[slug] = {
-    title: cleanTitle,
-    icon: guessedIcon,
-    type: 'section',
-    roles: ['admin', 'member'],
-    widgets: [],
-    actions: []
-  };
-
-  currentSectionKey = slug;
-  renderSectionsPills();
-  loadSectionIntoEditor(slug);
-  updatePreview();
-  showToast(`Розділ "${cleanTitle}" створено (id: ${slug})`);
+  openAddSectionModal();
 });
 
-$('btn-delete-section').addEventListener('click', () => {
+$('btn-delete-section').addEventListener('click', async () => {
   if (currentSectionKey === 'main') {
-    alert('Головний розділ (main) не можна видалити.');
+    showToast(t('alert_cannot_delete_main'), true);
     return;
   }
-  if (!confirm(`Видалити розділ "${currentSectionKey}"?`)) return;
+  const secTitle = config.menu[currentSectionKey]?.title || currentSectionKey;
+  const confirmed = await showCustomConfirm(
+    t('confirm_dialog_title'),
+    t('confirm_delete_section', { title: secTitle }),
+    t('btn_delete'),
+    true
+  );
+  if (!confirmed) return;
   delete config.menu[currentSectionKey];
   currentSectionKey = 'main';
   renderSectionsPills();
   loadSectionIntoEditor('main');
   updatePreview();
-  showToast('Розділ видалено');
+  showToast(t('toast_section_deleted'));
 });
 
 function syncCurrentSectionFromForm() {
@@ -1021,8 +1079,8 @@ function renderUsers() {
       </td>
       <td>${statusBadge}</td>
       <td style="white-space: nowrap;">
-        ${isGuest ? `<button class="btn btn-primary btn-sm btn-approve-user" data-id="${user.telegram_id}" style="margin-right: 6px;">✅ Підтвердити</button>` : ''}
-        <button class="btn btn-danger btn-sm btn-delete-user" data-id="${user.telegram_id}">Видалити</button>
+        ${isGuest ? `<button class="btn btn-primary btn-sm btn-approve-user" data-id="${user.telegram_id}" style="margin-right: 6px;">✅ ${t('btn_confirm_user')}</button>` : ''}
+        <button class="btn btn-danger btn-sm btn-delete-user" data-id="${user.telegram_id}">${t('btn_delete_user')}</button>
       </td>
     `;
     usersTbody.appendChild(tr);
@@ -1048,7 +1106,7 @@ function renderUsers() {
         user.role = 'member';
         await saveUser(user);
         renderUsers();
-        showToast(`Користувача ${user.name || id} підтверджено!`);
+        showToast(t('toast_user_confirmed', { name: user.name || id }));
       }
     });
   });
@@ -1056,7 +1114,7 @@ function renderUsers() {
   usersTbody.querySelectorAll('.btn-delete-user').forEach(btn => {
     btn.addEventListener('click', async () => {
       const id = parseInt(btn.dataset.id, 10);
-      if (confirm(`Видалити користувача ${id}?`)) await deleteUser(id);
+      if (confirm(`${t('btn_delete_user')} користувача ${id}?`)) await deleteUser(id);
     });
   });
 }
@@ -1068,7 +1126,7 @@ async function saveUser(user) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(user)
     });
-    showToast('Користувача оновлено');
+    showToast(t('toast_user_updated'));
   } catch (e) {
     showToast(`Помилка: ${e.message}`, true);
   }
@@ -1079,9 +1137,9 @@ async function deleteUser(id) {
     await api(`api/users/${id}`, { method: 'DELETE' });
     config.users = config.users.filter(u => u.telegram_id !== id);
     renderUsers();
-    showToast('Користувача видалено');
+    showToast(t('toast_user_deleted'));
   } catch (e) {
-    showToast('Помилка видалення', true);
+    showToast(t('toast_user_delete_error'), true);
   }
 }
 
@@ -1105,10 +1163,10 @@ $('btn-sync-users').addEventListener('click', async () => {
     if (data.users) {
       config.users = data.users;
       renderUsers();
-      showToast(`Синхронізовано. Нових користувачів: ${data.discovered || 0}`);
+      showToast(t('toast_users_synced', { count: data.discovered || 0 }));
     }
   } catch (e) {
-    showToast(`Помилка синхронізації: ${e.message}`, true);
+    showToast(t('toast_sync_error', { err: e.message }), true);
   } finally {
     btn.disabled = false;
     btn.textContent = '🔄 Оновити / Синхронізувати';
@@ -1118,6 +1176,10 @@ $('btn-sync-users').addEventListener('click', async () => {
 // --- Settings ---
 function loadSettings() {
   if (!config) return;
+  const currentLang = config.language || (window.I18N ? window.I18N.getLanguage() : 'en');
+  if ($('setting-language')) $('setting-language').value = currentLang;
+  if (window.I18N) window.I18N.setLanguage(currentLang, false);
+
   $('setting-bot-token').value = config.telegram_token || '';
   $('setting-theme').value = config.theme || 'cards';
   $('setting-default-role').value = config.default_role || 'guest';
@@ -1125,6 +1187,9 @@ function loadSettings() {
 
 function applySettings() {
   if (!config) return;
+  if ($('setting-language')) {
+    config.language = $('setting-language').value;
+  }
   config.telegram_token = $('setting-bot-token').value.trim();
   config.theme = $('setting-theme').value;
   config.default_role = $('setting-default-role').value;
@@ -1141,14 +1206,14 @@ $('btn-save').addEventListener('click', async () => {
       body: JSON.stringify(config)
     });
     if (res.ok) {
-      showToast('Всі зміни успішно збережено!');
+      showToast(t('toast_all_saved'));
       updatePreview();
     } else {
       const err = await res.json();
       showToast(`Помилка: ${err.error}`, true);
     }
   } catch (e) {
-    showToast('Не вдалося зберегти зміни', true);
+    showToast(t('toast_save_error'), true);
   }
 });
 
@@ -1222,6 +1287,29 @@ $('btn-toggle-preview').addEventListener('click', () => {
 
 // --- Live section name/icon sync ---
 function setupEventListeners() {
+  // Language selector live switch
+  const langSelect = $('setting-language');
+  if (langSelect) {
+    langSelect.addEventListener('change', (e) => {
+      const chosenLang = e.target.value;
+      if (window.I18N) {
+        window.I18N.setLanguage(chosenLang, true);
+      }
+      if (config) {
+        config.language = chosenLang;
+      }
+    });
+  }
+
+  window.onDashboardLanguageChanged = function(lang) {
+    if (config) {
+      renderSectionsPills();
+      loadSectionIntoEditor(currentSectionKey);
+      renderUsers();
+      updatePreview();
+    }
+  };
+
 
   // Setup Constructor Section Action Buttons (Text, Entity, Button)
   const btnActionAddText = $('btn-action-add-text');
@@ -1245,13 +1333,13 @@ function setupEventListeners() {
 
   if (btnActionAddEntity) {
     btnActionAddEntity.addEventListener('click', () => {
-      showToast('Додавання ентіті буде доступне незабаром');
+      showToast(t('toast_entity_coming_soon'));
     });
   }
 
   if (btnActionAddButton) {
     btnActionAddButton.addEventListener('click', () => {
-      showToast('Додавання кнопок буде доступне незабаром');
+      showToast(t('toast_buttons_coming_soon'));
     });
   }
 
@@ -1279,7 +1367,7 @@ function setupEventListeners() {
 
   document.getElementById('btn-save-configured-button')?.addEventListener('click', () => {
     if (!selectedButtonTarget) {
-      showToast('Спершу оберіть сутність', true);
+      showToast(t('toast_select_entity_first'), true);
       return;
     }
     const lbl = document.getElementById('btn-custom-label')?.value.trim() || selectedButtonTarget.friendlyName;

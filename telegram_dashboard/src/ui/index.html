@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="uk">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <base href="./">
@@ -17,26 +17,26 @@
         <div class="logo-icon">📱</div>
         <div class="brand-text">
           <h2>Telegram Dash</h2>
-          <span class="badge">v1.0.1</span>
+          <span class="badge">v1.0.2</span>
         </div>
       </div>
       <nav class="nav-links">
         <button class="nav-item active" data-tab="builder">
-          <span class="icon">🎛️</span> <span class="nav-text">Конструктор</span>
+          <span class="icon">🎛️</span> <span class="nav-text" data-i18n="nav_builder">Builder</span>
         </button>
         <button class="nav-item" data-tab="rbac">
-          <span class="icon">👥</span> <span class="nav-text">Користувачі</span>
+          <span class="icon">👥</span> <span class="nav-text" data-i18n="nav_rbac">Users</span>
         </button>
         <button class="nav-item" data-tab="settings">
-          <span class="icon">⚙️</span> <span class="nav-text">Налаштування</span>
+          <span class="icon">⚙️</span> <span class="nav-text" data-i18n="nav_settings">Settings</span>
         </button>
         <button class="nav-item nav-item-preview" data-tab="preview">
-          <span class="icon">📱</span> <span class="nav-text">Прев'ю бота</span>
+          <span class="icon">📱</span> <span class="nav-text" data-i18n="nav_preview">Bot Preview</span>
         </button>
       </nav>
       <div class="sidebar-footer">
         <span class="status-indicator online"></span>
-        <span id="ha-status-text">Home Assistant онлайн</span>
+        <span id="ha-status-text" data-i18n="ha_status_online">Home Assistant online</span>
       </div>
     </aside>
 
@@ -45,14 +45,14 @@
       <!-- Non-overlapping Top Bar -->
       <header class="top-header">
         <div class="header-title">
-          <h1>Конструктор меню Telegram</h1>
-          <p class="subtitle">Керування розділами, сутностями, віджетами та діями</p>
+          <h1 data-i18n="header_title">Telegram Menu Builder</h1>
+          <p class="subtitle" data-i18n="header_subtitle">Manage sections, entities, widgets, and actions</p>
         </div>
         <div class="header-actions">
-          <button id="btn-toggle-preview" class="btn btn-secondary desktop-toggle-preview" title="Сховати або показати прев'ю">
-            <span class="preview-toggle-icon">📱</span> <span class="preview-toggle-label">Прев'ю</span>
+          <button id="btn-toggle-preview" class="btn btn-secondary desktop-toggle-preview" data-i18n-title="btn_preview_title" title="Show or hide preview">
+            <span class="preview-toggle-icon">📱</span> <span class="preview-toggle-label" data-i18n="btn_preview">Preview</span>
           </button>
-          <button id="btn-save" class="btn btn-primary">💾 Зберегти зміни</button>
+          <button id="btn-save" class="btn btn-primary" data-i18n="btn_save_changes">💾 Save changes</button>
         </div>
       </header>
 
@@ -63,8 +63,8 @@
           <section id="tab-builder" class="tab-pane active">
             <div class="panel-card">
               <div class="panel-header">
-                <h3>📂 Розділи меню</h3>
-                <button id="btn-add-section" class="btn btn-secondary btn-sm">+ Додати розділ</button>
+                <h3 data-i18n="sections_title">📂 Menu Sections</h3>
+                <button id="btn-add-section" class="btn btn-secondary btn-sm" data-i18n="btn_add_section">+ Add section</button>
               </div>
               <div id="sections-list" class="sections-container">
                 <!-- Pills -->
@@ -75,70 +75,66 @@
             <div id="section-editor" class="panel-card">
               <div class="panel-header section-editor-header">
                 <div class="section-title-wrap">
-                  <h3>✏️ Основна назва розділу: <span id="editor-section-key" class="text-accent">main</span></h3>
-                  <span id="main-badge-wrap" class="badge-ok main-screen-badge" style="display: none;">⭐ Головний екран</span>
+                  <h3><span data-i18n="editor_title_prefix">✏️ Main section name:</span> <span id="editor-section-key" class="text-accent">main</span></h3>
+                  <span id="main-badge-wrap" class="badge-ok main-screen-badge" style="display: none;" data-i18n="badge_main_screen">⭐ Main screen</span>
                 </div>
-                <button id="btn-delete-section" class="btn btn-danger btn-sm">🗑️ Видалити</button>
+                <button id="btn-delete-section" class="btn btn-danger btn-sm" data-i18n="btn_delete">🗑️ Delete</button>
               </div>
 
-              <!-- Meta: Іконка - поле назви (в один рядок) -->
+              <!-- Meta: Icon - Section title -->
               <div class="form-row">
                 <div class="form-group form-group-icon">
-                  <label>Іконка</label>
+                  <label data-i18n="label_icon">Icon</label>
                   <div class="icon-input-wrap">
-                    <button type="button" id="btn-open-icon-picker" class="btn-icon-select" title="Обрати іконку з бази">
+                    <button type="button" id="btn-open-icon-picker" class="btn-icon-select" data-i18n-title="btn_icon_select_title" title="Choose icon from library">
                       <span id="sec-icon-display">📁</span>
                     </button>
                     <input type="hidden" id="sec-icon">
                   </div>
                 </div>
                 <div class="form-group flex-1">
-                  <label for="sec-title">Назва розділу</label>
-                  <input type="text" id="sec-title" class="form-control" placeholder="Наприклад: Клімат">
+                  <label for="sec-title" data-i18n="label_section_title">Section name</label>
+                  <input type="text" id="sec-title" class="form-control" data-i18n-placeholder="placeholder_section_title" placeholder="e.g. Climate">
                 </div>
               </div>
 
-
-
               <div class="form-group">
-                <label>Дозволені ролі</label>
+                <label data-i18n="label_allowed_roles">Allowed roles</label>
                 <div class="checkbox-group">
-                  <label><input type="checkbox" id="role-admin" value="admin"> Адміністратор</label>
-                  <label><input type="checkbox" id="role-member" value="member"> Член родини</label>
-                  <label><input type="checkbox" id="role-guest" value="guest"> Гість</label>
+                  <label><input type="checkbox" id="role-admin" value="admin"> <span data-i18n="role_admin">Administrator</span></label>
+                  <label><input type="checkbox" id="role-member" value="member"> <span data-i18n="role_member">Family member</span></label>
+                  <label><input type="checkbox" id="role-guest" value="guest"> <span data-i18n="role_guest">Guest</span></label>
                 </div>
               </div>
 
               <!-- Menu Sections Picker -->
               <div id="block-menu-sections" class="sub-block">
-                <h4>Кнопки переходу до розділів</h4>
-                <p class="field-hint">Оберіть розділи, кнопки переходу до яких відображатимуться у цьому розділі бота:</p>
+                <h4 data-i18n="block_nav_buttons_title">Navigation buttons to sections</h4>
+                <p class="field-hint" data-i18n="block_nav_buttons_hint">Select sections whose navigation buttons will be shown in this bot section:</p>
                 <div id="menu-sections-checklist" class="checkbox-grid"></div>
               </div>
 
               <!-- Section Items / Content Builder -->
               <div id="block-section-content" class="sub-block">
-                <h4>Елементи розділу</h4>
+                <h4 data-i18n="block_section_content_title">Section elements</h4>
                 <div id="section-texts-list" class="section-texts-list"></div>
 
                 <!-- Three buttons in one row -->
                 <div class="builder-actions-row">
                   <button type="button" id="btn-action-add-text" class="btn btn-builder-action">
                     <span class="btn-action-icon">📝</span>
-                    <span>Додати текст</span>
+                    <span data-i18n="btn_action_add_text">Add text</span>
                   </button>
                   <button type="button" id="btn-action-add-entity" class="btn btn-builder-action">
                     <span class="btn-action-icon">📊</span>
-                    <span>Додати ентіті</span>
+                    <span data-i18n="btn_action_add_entity">Add entity</span>
                   </button>
                   <button type="button" id="btn-action-add-button" class="btn btn-builder-action">
                     <span class="btn-action-icon">🔘</span>
-                    <span>Додати кнопку</span>
+                    <span data-i18n="btn_action_add_button">Add button</span>
                   </button>
                 </div>
               </div>
-
-
             </div>
           </section>
 
@@ -147,25 +143,25 @@
             <div class="panel-card">
               <div class="panel-header">
                 <div>
-                  <h3>👥 Користувачі бота</h3>
-                  <p class="section-desc">Користувачі автоматично додаються при повідомленні боту. Тут ви підтверджуєте їх та призначаєте ролі.</p>
+                  <h3 data-i18n="rbac_title">👥 Bot Users</h3>
+                  <p class="section-desc" data-i18n="rbac_desc">Users are automatically added when they message the bot. Confirm them here and assign roles.</p>
                 </div>
                 <div class="header-actions">
-                  <button id="btn-sync-users" class="btn btn-secondary btn-sm">
-                    🔄 Оновити / Синхронізувати
+                  <button id="btn-sync-users" class="btn btn-secondary btn-sm" data-i18n="btn_sync_users">
+                    🔄 Refresh / Sync
                   </button>
-                  <button id="btn-add-user" class="btn btn-primary btn-sm">+ Додати вручну</button>
+                  <button id="btn-add-user" class="btn btn-primary btn-sm" data-i18n="btn_add_user">+ Add manually</button>
                 </div>
               </div>
               <div class="table-responsive">
                 <table class="users-table">
                   <thead>
                     <tr>
-                      <th>Telegram ID</th>
-                      <th>Ім'я / Юзернейм</th>
-                      <th>Роль</th>
-                      <th>Статус доступу</th>
-                      <th>Дії</th>
+                      <th data-i18n="th_telegram_id">Telegram ID</th>
+                      <th data-i18n="th_name">Name / Username</th>
+                      <th data-i18n="th_role">Role</th>
+                      <th data-i18n="th_status">Access Status</th>
+                      <th data-i18n="th_actions">Actions</th>
                     </tr>
                   </thead>
                   <tbody id="users-tbody"></tbody>
@@ -177,26 +173,33 @@
           <!-- Settings Tab -->
           <section id="tab-settings" class="tab-pane">
             <div class="panel-card">
-              <h3>⚙️ Параметри Telegram-бота</h3>
+              <h3 data-i18n="settings_title">⚙️ Telegram Bot Settings</h3>
               <div class="form-group">
-                <label for="setting-bot-token">Токен Telegram-бота (Bot Token)</label>
-                <input type="password" id="setting-bot-token" class="form-control" placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11">
-                <small class="field-hint">Отримайте токен у @BotFather або вкажіть у конфігурації add-on.</small>
-              </div>
-              <div class="form-group">
-                <label for="setting-theme">Стиль повідомлень</label>
-                <select id="setting-theme" class="form-control">
-                  <option value="cards">Сучасний (HTML Картки)</option>
-                  <option value="minimal">Мінімалістичний</option>
-                  <option value="tree">Деревовидний із прогрес-барами</option>
+                <label for="setting-language" data-i18n="settings_language">Interface language</label>
+                <select id="setting-language" class="form-control">
+                  <option value="en" data-i18n="lang_en">English (Default)</option>
+                  <option value="uk" data-i18n="lang_uk">Ukrainian (Українська)</option>
                 </select>
               </div>
               <div class="form-group">
-                <label for="setting-default-role">Роль за замовчуванням для нових людей</label>
+                <label for="setting-bot-token" data-i18n="settings_bot_token">Telegram Bot Token</label>
+                <input type="password" id="setting-bot-token" class="form-control" placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11">
+                <small class="field-hint" data-i18n="settings_bot_token_hint">Get a token from @BotFather or specify it in add-on configuration.</small>
+              </div>
+              <div class="form-group">
+                <label for="setting-theme" data-i18n="settings_theme">Message style</label>
+                <select id="setting-theme" class="form-control">
+                  <option value="cards" data-i18n="theme_cards">Modern (HTML Cards)</option>
+                  <option value="minimal" data-i18n="theme_minimal">Minimalist</option>
+                  <option value="tree" data-i18n="theme_tree">Tree view with progress bars</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="setting-default-role" data-i18n="settings_default_role">Default role for new users</label>
                 <select id="setting-default-role" class="form-control">
-                  <option value="guest">Гість (очікує підтвердження)</option>
-                  <option value="member">Член родини (одразу активний)</option>
-                  <option value="admin">Адміністратор</option>
+                  <option value="guest" data-i18n="role_guest_hint">Guest (pending approval)</option>
+                  <option value="member" data-i18n="role_member_hint">Family member (immediately active)</option>
+                  <option value="admin" data-i18n="role_admin_hint">Administrator</option>
                 </select>
               </div>
             </div>
@@ -206,8 +209,8 @@
         <!-- Phone Preview Column -->
         <div class="preview-pane" id="preview-pane">
           <div class="preview-header-mobile">
-            <span class="preview-title">📱 Симулятор Telegram</span>
-            <button id="btn-back-to-editor" class="btn btn-secondary btn-sm">⬅️ До налаштувань</button>
+            <span class="preview-title" data-i18n="preview_mobile_title">📱 Telegram Simulator</span>
+            <button id="btn-back-to-editor" class="btn btn-secondary btn-sm" data-i18n="preview_back_btn">⬅️ Back to editor</button>
           </div>
           <div class="phone-frame">
             <div class="phone-notch"></div>
@@ -225,11 +228,11 @@
               </div>
             </div>
             <div class="preview-role-picker">
-              <span>Симуляція ролі:</span>
+              <span data-i18n="preview_sim_role">Role simulation:</span>
               <select id="preview-role-select" class="form-control form-control-sm">
-                <option value="admin">Адміністратор</option>
-                <option value="member">Член родини</option>
-                <option value="guest">Гість</option>
+                <option value="admin" data-i18n="role_admin">Administrator</option>
+                <option value="member" data-i18n="role_member">Family member</option>
+                <option value="guest" data-i18n="role_guest">Guest</option>
               </select>
             </div>
           </div>
@@ -242,12 +245,12 @@
   <div id="icon-picker-modal" class="modal-overlay">
     <div class="modal-card">
       <div class="modal-header">
-        <h3>База іконок для розумного дому</h3>
+        <h3 data-i18n="icon_picker_title">Smart home icon library</h3>
         <button type="button" class="btn-close-modal" id="btn-close-icon-picker">✕</button>
       </div>
       <div class="modal-search-wrap" style="display: flex; gap: 8px; align-items: center;">
-        <input type="text" id="icon-search-input" class="form-control flex-1" placeholder="🔍 Пошук іконки (наприклад: лампа, клімат, замок)...">
-        <button type="button" id="btn-clear-icon-selection" class="btn btn-ghost btn-sm" style="white-space: nowrap;">🚫 Без іконки</button>
+        <input type="text" id="icon-search-input" class="form-control flex-1" data-i18n-placeholder="icon_picker_search_ph" placeholder="🔍 Search icons (e.g. lamp, climate, lock)...">
+        <button type="button" id="btn-clear-icon-selection" class="btn btn-ghost btn-sm" style="white-space: nowrap;" data-i18n="btn_clear_icon">🚫 No icon</button>
       </div>
       <div class="icon-categories-tabs" id="icon-categories-tabs"></div>
       <div class="icon-picker-grid" id="icon-picker-grid"></div>
@@ -258,23 +261,23 @@
   <div id="entity-picker-modal" class="modal-overlay">
     <div class="modal-card modal-card-lg">
       <div class="modal-header">
-        <h3 id="entity-picker-title">Оберіть сутність Home Assistant</h3>
+        <h3 id="entity-picker-title" data-i18n="entity_picker_title">Choose Home Assistant entity</h3>
         <button type="button" class="btn-close-modal" id="btn-close-entity-picker">✕</button>
       </div>
       <div class="modal-search-wrap">
-        <input type="text" id="entity-search-input" class="form-control" placeholder="🔍 Пошук за назвою або entity_id (наприклад: кухня, light, boiler)...">
+        <input type="text" id="entity-search-input" class="form-control" data-i18n-placeholder="entity_picker_search_ph" placeholder="🔍 Search by name or entity_id (e.g. kitchen, light, boiler)...">
       </div>
       <div class="domain-filters-tabs" id="domain-filters-tabs">
-        <button class="domain-tab-btn active" data-domain="all">Всі</button>
-        <button class="domain-tab-btn" data-domain="light">💡 Світло</button>
-        <button class="domain-tab-btn" data-domain="switch">🔀 Перемикачі</button>
-        <button class="domain-tab-btn" data-domain="climate">🌡 Клімат</button>
-        <button class="domain-tab-btn" data-domain="sensor">📈 Сенсори</button>
-        <button class="domain-tab-btn" data-domain="binary_sensor">🚨 Датчики</button>
-        <button class="domain-tab-btn" data-domain="automation">⚡ Автоматизації</button>
-        <button class="domain-tab-btn" data-domain="script">📜 Скрипти</button>
-        <button class="domain-tab-btn" data-domain="media_player">🔊 Мультимедіа</button>
-        <button class="domain-tab-btn" data-domain="cover">🪟 Штори</button>
+        <button class="domain-tab-btn active" data-domain="all" data-i18n="domain_all">All</button>
+        <button class="domain-tab-btn" data-domain="light" data-i18n="domain_light">💡 Light</button>
+        <button class="domain-tab-btn" data-domain="switch" data-i18n="domain_switch">🔀 Switches</button>
+        <button class="domain-tab-btn" data-domain="climate" data-i18n="domain_climate">🌡 Climate</button>
+        <button class="domain-tab-btn" data-domain="sensor" data-i18n="domain_sensor">📈 Sensors</button>
+        <button class="domain-tab-btn" data-domain="binary_sensor" data-i18n="domain_binary_sensor">🚨 Binary Sensors</button>
+        <button class="domain-tab-btn" data-domain="automation" data-i18n="domain_automation">⚡ Automations</button>
+        <button class="domain-tab-btn" data-domain="script" data-i18n="domain_script">📜 Scripts</button>
+        <button class="domain-tab-btn" data-domain="media_player" data-i18n="domain_media_player">🔊 Media Player</button>
+        <button class="domain-tab-btn" data-domain="cover" data-i18n="domain_cover">🪟 Covers</button>
       </div>
       <div class="entity-picker-list" id="entity-picker-list">
         <!-- Entities list injected here -->
@@ -286,24 +289,24 @@
   <div id="widget-config-modal" class="modal-overlay">
     <div class="modal-card">
       <div class="modal-header">
-        <h3>📊 Додавання показника / сутності</h3>
+        <h3 data-i18n="widget_modal_title">📊 Add indicator / entity</h3>
         <button type="button" class="btn-close-modal" id="btn-close-widget-config">✕</button>
       </div>
       <div style="padding: 20px;">
         <div class="form-group">
-          <label>Обрана сутність</label>
+          <label data-i18n="widget_selected_entity">Selected entity</label>
           <input type="text" id="widget-entity-display" class="form-control" readonly>
         </div>
         <div class="form-group">
-          <label for="widget-label-input">Власна назва показника</label>
-          <input type="text" id="widget-label-input" class="form-control" placeholder="Наприклад: Поточна температура, Кран ввідний, Заряд">
+          <label for="widget-label-input" data-i18n="widget_label_input">Custom indicator label</label>
+          <input type="text" id="widget-label-input" class="form-control" data-i18n-placeholder="widget_label_ph" placeholder="e.g. Current temperature, Main valve, Battery level">
         </div>
         <div class="form-group">
-          <label for="widget-unit-input">Одиниця виміру (якщо потрібна)</label>
-          <input type="text" id="widget-unit-input" class="form-control" placeholder="Наприклад: °C, %, бар, Вт">
+          <label for="widget-unit-input" data-i18n="widget_unit_input">Unit of measurement (optional)</label>
+          <input type="text" id="widget-unit-input" class="form-control" data-i18n-placeholder="widget_unit_ph" placeholder="e.g. °C, %, bar, W">
         </div>
         <div class="form-actions" style="margin-top: 20px;">
-          <button type="button" id="btn-save-configured-widget" class="btn btn-primary" style="width: 100%;">Додати показник</button>
+          <button type="button" id="btn-save-configured-widget" class="btn btn-primary" style="width: 100%;" data-i18n="btn_add_widget">Add indicator</button>
         </div>
       </div>
     </div>
@@ -313,53 +316,51 @@
   <div id="action-config-modal" class="modal-overlay">
     <div class="modal-card">
       <div class="modal-header">
-        <h3>⚡ Налаштування дії</h3>
+        <h3 data-i18n="action_modal_title">⚡ Configure action</h3>
         <button type="button" class="btn-close-modal" id="btn-close-action-config">✕</button>
       </div>
       <div style="padding: 20px;">
         <div class="form-group">
-          <label>Обрана сутність / пристрій</label>
+          <label data-i18n="action_selected_entity">Selected entity / device</label>
           <div style="display: flex; gap: 8px;">
-            <input type="text" id="action-entity-display" class="form-control" readonly placeholder="Оберіть сутність...">
-            <button type="button" id="btn-action-choose-entity" class="btn btn-secondary">Вибрати</button>
+            <input type="text" id="action-entity-display" class="form-control" readonly data-i18n-placeholder="action_entity_ph" placeholder="Select entity...">
+            <button type="button" id="btn-action-choose-entity" class="btn btn-secondary" data-i18n="btn_choose">Choose</button>
           </div>
         </div>
         <div class="form-group">
-          <label for="action-service-select">Доступна дія з Home Assistant</label>
+          <label for="action-service-select" data-i18n="action_service_label">Available Home Assistant action</label>
           <select id="action-service-select" class="form-control"></select>
         </div>
         <div class="form-group">
-          <label for="action-label-input">Текст на кнопці в Telegram</label>
-          <input type="text" id="action-label-input" class="form-control" placeholder="Наприклад: Увімкнути світло">
+          <label for="action-label-input" data-i18n="action_button_label">Button label in Telegram</label>
+          <input type="text" id="action-label-input" class="form-control" data-i18n-placeholder="action_button_ph" placeholder="e.g. Turn on light">
         </div>
         <div class="form-actions" style="margin-top: 20px;">
-          <button type="button" id="btn-save-configured-action" class="btn btn-primary" style="width: 100%;">Додати дію до розділу</button>
+          <button type="button" id="btn-save-configured-action" class="btn btn-primary" style="width: 100%;" data-i18n="btn_save_action">Add action to section</button>
         </div>
       </div>
     </div>
   </div>
 
-  <div id="toast" class="toast">Повідомлення</div>
-  <script src="ui/app.js"></script>
-
+  <div id="toast" class="toast">Message</div>
 
   <!-- Add Section Modal -->
   <div id="modal-add-section" class="modal-overlay">
     <div class="modal-card modal-card-sm">
       <div class="modal-header">
-        <h3>Додати новий розділ</h3>
+        <h3 data-i18n="modal_add_section_title">Add new section</h3>
         <button type="button" class="btn-close-modal" id="btn-close-add-section-modal">✕</button>
       </div>
       <div class="modal-body" style="padding: 16px 20px;">
         <div class="form-group" style="margin-bottom: 14px;">
-          <label for="new-section-title-input">Назва розділу</label>
-          <input type="text" id="new-section-title-input" class="form-control" placeholder="Наприклад: Клімат або Освітлення" autocomplete="off">
+          <label for="new-section-title-input" data-i18n="modal_add_section_label">Section name</label>
+          <input type="text" id="new-section-title-input" class="form-control" data-i18n-placeholder="modal_add_section_placeholder" placeholder="e.g. Climate or Lighting" autocomplete="off">
         </div>
-        <p class="field-hint" style="margin: 0; font-size: 12px;">Ідентифікатор буде згенеровано автоматично з назви.</p>
+        <p class="field-hint" style="margin: 0; font-size: 12px;" data-i18n="modal_add_section_hint">Identifier will be generated automatically from the title.</p>
       </div>
       <div class="modal-footer" style="padding: 12px 20px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border-color);">
-        <button type="button" class="btn btn-ghost btn-sm" id="btn-cancel-add-section">Скасувати</button>
-        <button type="button" class="btn btn-primary btn-sm" id="btn-confirm-add-section">Створити розділ</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="btn-cancel-add-section" data-i18n="btn_cancel">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm" id="btn-confirm-add-section" data-i18n="btn_create_section">Create section</button>
       </div>
     </div>
   </div>
@@ -368,18 +369,20 @@
   <div id="modal-confirm-dialog" class="modal-overlay">
     <div class="modal-card modal-card-sm">
       <div class="modal-header">
-        <h3 id="confirm-dialog-title">Підтвердження</h3>
+        <h3 id="confirm-dialog-title" data-i18n="confirm_dialog_title">Confirmation</h3>
         <button type="button" class="btn-close-modal" id="btn-close-confirm-modal">✕</button>
       </div>
       <div class="modal-body" style="padding: 18px 20px;">
         <p id="confirm-dialog-message" style="margin: 0; font-size: 14px; line-height: 1.5; color: var(--text-main);"></p>
       </div>
       <div class="modal-footer" style="padding: 12px 20px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border-color);">
-        <button type="button" class="btn btn-ghost btn-sm" id="btn-dialog-cancel">Скасувати</button>
-        <button type="button" class="btn btn-danger btn-sm" id="btn-dialog-confirm">Видалити</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="btn-dialog-cancel" data-i18n="btn_cancel">Cancel</button>
+        <button type="button" class="btn btn-danger btn-sm" id="btn-dialog-confirm" data-i18n="btn_delete">Delete</button>
       </div>
     </div>
   </div>
 
+  <script src="ui/i18n.js"></script>
+  <script src="ui/app.js"></script>
 </body>
 </html>
