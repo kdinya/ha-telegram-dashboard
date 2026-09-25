@@ -156,20 +156,20 @@ class MessageRenderer:
         parts = [
             "<blockquote><b>🏠 ДІМ І БЕЗПЕКА</b>",
             f"<i>За бортом: {outside}°C • {people}</i>",
-            "──────────────",
+            "────────────────────────────",
             "<b>Клімат у кімнатах:</b>",
             climate_block,
-            "──────────────",
+            "────────────────────────────",
             "<b>Водопостачання та безпека:</b>",
             f"├ Ввідний кран: {water_status}",
         ]
         if leaks_block:
             parts.append(leaks_block.strip())
         parts.extend([
-            "──────────────",
+            "────────────────────────────",
             "<b>Заряди пристроїв:</b>",
             bat_block,
-            "──────────────",
+            "────────────────────────────",
             f"<tg-spoiler><i>⏱ Оновлено: {html.escape(str(state.get('updated_at', '—')))}</i></tg-spoiler></blockquote>"
         ])
         return "\n".join(parts)
@@ -183,7 +183,7 @@ class MessageRenderer:
         rows = [f"<blockquote><b>{icon} {title}</b>"]
         if note:
             rows.append(f"<i>{note}</i>")
-        rows.append("──────────────")
+        rows.append("────────────────────────────")
 
         # Unified ordered items: texts and entities rendered in saved order
         items = section.get("items")
@@ -247,11 +247,22 @@ class MessageRenderer:
                 rows.append(
                     f"{prefix}{icon_part}<b>{html.escape(label)}:</b> {val_formatted}"
                 )
+            elif item_type in ("divider", "spacer"):
+                has_items = True
+                style = item.get("style", "line")
+                if style == "space":
+                    rows.append("")
+                elif style == "dashed":
+                    rows.append("┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
+                elif style == "dotted":
+                    rows.append("····························")
+                else:
+                    rows.append("────────────────────────────")
 
         if not has_items:
             rows.append("<i>Показники не налаштовані.</i>")
 
-        rows.append("──────────────")
+        rows.append("────────────────────────────")
         updated = html.escape(str(state.get("updated_at", "—")))
         rows.append(f"<tg-spoiler><i>⏱ Оновлено: {updated}</i></tg-spoiler></blockquote>")
         return "\n".join(rows)
@@ -259,7 +270,7 @@ class MessageRenderer:
     def render_entity_list(self, section: dict, states: dict[str, Any]) -> str:
         """Render an auto-generated entity browser section."""
         title = html.escape(str(section.get("title", "")))
-        rows = [f"<blockquote><b>{title}</b>", "──────────────"]
+        rows = [f"<blockquote><b>{title}</b>", "────────────────────────────"]
         count = 0
         for entity_id, value in sorted(states.items()):
             icon = DOMAIN_ICONS.get(entity_id.split(".", 1)[0], "🔘")
@@ -270,7 +281,7 @@ class MessageRenderer:
             count += 1
         if count == 0:
             rows.append("├ <i>Немає доступних сутностей</i>")
-        rows.append("──────────────")
+        rows.append("────────────────────────────")
         rows.append(f"<i>Всього: {count}</i></blockquote>")
         return "\n".join(rows)
 

@@ -85,3 +85,37 @@ def test_addon_config_sidebar_title_and_version():
         cfg = yaml.safe_load(f)
     assert cfg.get("panel_title") == "Telegram Dashboard"
     assert cfg.get("version") == "1.0.7"
+
+
+def test_render_section_with_dividers_and_spacers():
+    renderer = MessageRenderer()
+    section = {
+        "title": "Вітальня",
+        "icon": "🛋️",
+        "items": [
+            {"type": "text", "icon": "", "text": "Блок один", "is_heading": False},
+            {"type": "divider", "style": "line"},
+            {"type": "text", "icon": "", "text": "Блок два", "is_heading": False},
+            {"type": "spacer", "style": "space"},
+            {"type": "entity", "entity_id": "light.living_room", "label": "Світло", "icon": "💡"},
+            {"type": "divider", "style": "dashed"},
+            {"type": "text", "icon": "", "text": "Блок три", "is_heading": False},
+        ],
+    }
+    state = {
+        "light.living_room": {"state": "on", "attributes": {"friendly_name": "Світло"}},
+        "updated_at": "12:00:00",
+    }
+    rendered = renderer.render_section(section, state)
+    lines = rendered.split("\n")
+    # Solid divider between block one and two
+    solid = "─" * 28
+    dashed = "┄" * 28
+    assert solid in lines
+    assert dashed in lines
+    # Blank spacer line exists
+    assert "" in lines
+    assert "Блок один" in rendered
+    assert "Блок три" in rendered
+    # Full-width dividers widen the Telegram bubble (no short legacy dividers remain)
+    assert not any(line == "─" * 14 for line in lines)

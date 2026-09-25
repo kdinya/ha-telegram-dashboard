@@ -1279,6 +1279,57 @@ function renderSectionElements(items) {
         updatePreview();
         showToast(t('toast_item_deleted'));
       });
+    } else if (item.type === 'divider' || item.type === 'spacer') {
+      // Divider / Horizontal spacer item
+      const style = item.style || 'line';
+      let styleLabel = t('divider_style_line') || 'Суцільна лінія';
+      let stylePreview = '────────────────────────────';
+      if (style === 'space') {
+        styleLabel = t('divider_style_space') || 'Порожній відступ';
+        stylePreview = '␣ (порожній відступ)';
+      } else if (style === 'dashed') {
+        styleLabel = t('divider_style_dashed') || 'Пунктирна лінія';
+        stylePreview = '┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄';
+      }
+
+      el.innerHTML = `
+        <div class="item-drag-handle" title="Перетягніть для зміни порядку" aria-label="Перетягнути">⠿</div>
+        <div class="section-text-item-main section-divider-item-main">
+          <span class="section-divider-preview"><code>${escapeHtml(stylePreview)}</code></span>
+          <span class="badge-text-type divider">${t('badge_divider')}</span>
+          <span class="badge-text-type">${escapeHtml(styleLabel)}</span>
+        </div>
+        <div class="section-text-item-actions">
+          <button type="button" class="btn-icon-action btn-cycle-divider-style" title="${t('btn_change_divider_style')}" data-idx="${idx}">🔄</button>
+          <button type="button" class="btn-icon-action btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}">🗑️</button>
+        </div>
+      `;
+
+      el.querySelector('.btn-cycle-divider-style').addEventListener('click', () => {
+        const currentStyle = item.style || 'line';
+        const styles = ['line', 'space', 'dashed'];
+        const nextStyle = styles[(styles.indexOf(currentStyle) + 1) % styles.length];
+        item.style = nextStyle;
+        syncSectionLegacyCollections(sec);
+        renderSectionElements(sec.items);
+        updatePreview();
+      });
+
+      el.querySelector('.btn-remove-elem-item').addEventListener('click', async () => {
+        const confirmed = await showCustomConfirm(
+          t('confirm_dialog_title'),
+          t('confirm_delete_divider_item'),
+          t('btn_delete'),
+          true
+        );
+        if (!confirmed) return;
+        sec.items.splice(idx, 1);
+        syncSectionLegacyCollections(sec);
+        if (editingItemIdx === idx) editingItemIdx = null;
+        renderSectionElements(sec.items);
+        updatePreview();
+        showToast(t('toast_item_deleted'));
+      });
     } else {
       // Text item
       const isHeading = Boolean(item.is_heading);
@@ -1898,7 +1949,26 @@ function setupEventListeners() {
   // Setup Constructor Section Action Buttons (Text, Entity, Button)
   const btnActionAddText = $('btn-action-add-text');
   const btnActionAddEntity = $('btn-action-add-entity');
+  const btnActionAddDivider = $('btn-action-add-divider');
   const btnActionAddButton = $('btn-action-add-button');
+
+  if (btnActionAddDivider) {
+    btnActionAddDivider.addEventListener('click', () => {
+      const sec = config && config.menu ? config.menu[currentSectionKey] : null;
+      if (!sec) return;
+      ensureSectionItems(sec);
+      sec.items.push({
+        type: 'divider',
+        style: 'line'
+      });
+      syncSectionLegacyCollections(sec);
+      editingItemIdx = null;
+      addingItemType = null;
+      renderSectionElements(sec.items);
+      updatePreview();
+      showToast(t('toast_divider_added'));
+    });
+  }
 
   if (btnActionAddText) {
     btnActionAddText.addEventListener('click', () => {
