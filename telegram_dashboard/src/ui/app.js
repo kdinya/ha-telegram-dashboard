@@ -390,9 +390,10 @@ function setupIconPicker() {
   const btnClearIcon = document.getElementById('btn-clear-icon-selection');
   if (btnClearIcon) {
     btnClearIcon.addEventListener('click', () => {
-      if (activeIconTarget === 'inline_text_item' || activeIconTarget === 'text_item') {
-        const textIconInput = document.querySelector('#inline-edit-row .item-icon-val');
-        const textIconDisplay = document.querySelector('#inline-edit-row .item-icon-display');
+      if (activeIconTarget === 'inline_text_item' || activeIconTarget === 'text_item' || activeIconTarget === 'inline_entity_item') {
+        const parentId = activeIconTarget === 'inline_entity_item' ? '#inline-entity-row' : '#inline-edit-row';
+        const textIconInput = document.querySelector(`${parentId} .item-icon-val`);
+        const textIconDisplay = document.querySelector(`${parentId} .item-icon-display`);
         if (textIconInput) textIconInput.value = '';
         if (textIconDisplay) textIconDisplay.innerHTML = `<span class="icon-empty-slot" title="${t('empty_icon_title')}">∅</span>`;
       } else {
@@ -533,7 +534,27 @@ function renderEntityPickerList() {
       const domain = item.dataset.domain;
       entityPickerModal.classList.remove('open');
 
-            if (entityPickerContext === 'entity_item') {
+            if (entityPickerContext === 'inline_entity_item') {
+        const row = document.getElementById('inline-entity-row');
+        if (row) {
+          const sel = row.querySelector('.entity-select-val');
+          if (sel) sel.value = eid;
+          const nameInput = row.querySelector('.item-name-input');
+          if (nameInput && !nameInput.value.trim()) {
+            nameInput.value = name || eid;
+          }
+          const iconInput = row.querySelector('.item-icon-val');
+          const iconDisplay = row.querySelector('.item-icon-display');
+          if (iconInput && !iconInput.value) {
+            const domain = (eid || '').split('.')[0];
+            const defIcon = DOMAIN_ICONS[domain] || '🔹';
+            iconInput.value = defIcon;
+            if (iconDisplay) iconDisplay.textContent = defIcon;
+          }
+        }
+        entityPickerModal.classList.remove('open');
+        return;
+      } else if (entityPickerContext === 'entity_item') {
         const sec = config.menu[currentSectionKey];
         if (!sec.entities) sec.entities = [];
         sec.entities.push({
@@ -662,7 +683,63 @@ function renderSectionsPills() {
 // --- Section editor ---
 let selectedButtonTarget = null;
 let activeIconTarget = 'section';
-let editingTextIdx = null; // null | number (index being edited) | -1 (adding new)
+let editingItemIdx = null; // null | number (index being edited)
+let addingItemType = null; // null | 'text' | 'entity'
+
+function ensureSectionItems(sec) {
+  if (!sec) return [];
+  if (!Array.isArray(sec.items)) {
+    sec.items = [];
+    if (Array.isArray(sec.texts)) {
+      sec.texts.forEach(t => {
+        if (t && typeof t === 'object') {
+          sec.items.push({
+            type: 'text',
+            icon: t.icon || '',
+            text: t.text || '',
+            is_heading: Boolean(t.is_heading)
+          });
+        }
+      });
+    }
+    if (Array.isArray(sec.entities)) {
+      sec.entities.forEach(e => {
+        if (e && typeof e === 'object') {
+          sec.items.push({
+            type: 'entity',
+            icon: e.icon || '',
+            label: e.label || '',
+            entity_id: e.entity_id || '',
+            show_indent: e.show_indent !== undefined ? Boolean(e.show_indent) : (e.indent !== undefined ? Boolean(e.indent) : true),
+            unit: e.unit || ''
+          });
+        }
+      });
+    }
+  }
+  return sec.items;
+}
+
+function syncSectionLegacyCollections(sec) {
+  if (!sec || !Array.isArray(sec.items)) return;
+  sec.texts = sec.items
+    .filter(it => it.type === 'text')
+    .map(it => ({
+      icon: it.icon || '',
+      text: it.text || '',
+      is_heading: Boolean(it.is_heading)
+    }));
+  sec.entities = sec.items
+    .filter(it => it.type === 'entity')
+    .map(it => ({
+      entity_id: it.entity_id,
+      label: it.label || '',
+      icon: it.icon || '',
+      indent: it.show_indent !== false,
+      show_indent: it.show_indent !== false,
+      unit: it.unit || ''
+    }));
+}
 
 function createInlineEditRow(initialData = {}, onSave, onCancel) {
   const row = document.createElement('div');
@@ -721,6 +798,7 @@ function createInlineEditRow(initialData = {}, onSave, onCancel) {
       return;
     }
     onSave({
+      type: 'text',
       icon: (iconVal.value || '').trim(),
       text: text,
       is_heading: Boolean(isHeading)
@@ -743,6 +821,129 @@ function createInlineEditRow(initialData = {}, onSave, onCancel) {
   return row;
 }
 
+function createInlineEntityRow(initialData = {}, onSave, onCancel) {
+  const row = document.createElement('div');
+  row.className = 'add-entity-inline-card';
+  row.id = 'inline-entity-row';
+
+  const initialIcon = escapeHtml(initialData.icon || '');
+  const initialLabel = escapeHtml(initialData.label || '');
+  const initialEntityId = initialData.entity_id || '';
+  let showIndent = initialData.show_indent !== undefined ? Boolean(initialData.show_indent) : true;
+  const displayIcon = initialIcon ? initialIcon : `<span class="icon-empty-slot" title="${t('empty_icon_title')}">∅</span>`;
+
+  // Build options for entities
+  let optionsHtml = `<option value="">${escapeHtml(t('placeholder_entity_select'))}</option>`;
+  if (Array.isArray(availableEntities) && availableEntities.length) {
+    optionsHtml += availableEntities.map(e => {
+      const selected = e.entity_id === initialEntityId ? 'selected' : '';
+      const fn = escapeHtml(e.friendly_name || e.entity_id);
+      return `<option value="${escapeHtml(e.entity_id)}" ${selected}>${fn} (${escapeHtml(e.entity_id)})</option>`;
+    }).join('');
+  } else if (initialEntityId) {
+    optionsHtml += `<option value="${escapeHtml(initialEntityId)}" selected>${escapeHtml(initialEntityId)}</option>`;
+  }
+
+  row.innerHTML = `
+    <!-- Row 1: Icon picker, Name input, Indent toggle -->
+    <div class="add-entity-row-1">
+      <div class="icon-input-wrap">
+        <button type="button" class="btn-icon-select btn-inline-icon-picker" title="${t('btn_inline_icon_title')}">
+          <span class="item-icon-display">${displayIcon}</span>
+        </button>
+        <input type="hidden" class="item-icon-val" value="${initialIcon}">
+      </div>
+      <input type="text" class="form-control flex-1 item-name-input" placeholder="${t('placeholder_entity_name')}" value="${initialLabel}">
+      <button type="button" class="btn-toggle-indent ${showIndent ? 'active' : ''}" title="${showIndent ? t('btn_toggle_indent_on') : t('btn_toggle_indent_off')}" aria-pressed="${showIndent}">
+        ↳
+      </button>
+    </div>
+
+    <!-- Row 2: Entity Selection (dropdown + browse button) -->
+    <div class="add-entity-row-2">
+      <select class="form-control flex-1 entity-select-val">
+        ${optionsHtml}
+      </select>
+      <button type="button" class="btn btn-secondary btn-sm btn-browse-entity" title="${t('btn_choose')}">
+        🔍 ${t('btn_choose')}
+      </button>
+    </div>
+
+    <!-- Row 3: Cancel and Save buttons -->
+    <div class="add-entity-row-3">
+      <button type="button" class="btn btn-ghost btn-sm btn-cancel-inline" title="${t('btn_cancel_item_title')}">${t('btn_cancel')}</button>
+      <button type="button" class="btn btn-primary btn-sm btn-save-inline" title="${t('btn_save_item_title')}">💾 ${t('btn_save_user')}</button>
+    </div>
+  `;
+
+  const btnPicker = row.querySelector('.btn-inline-icon-picker');
+  btnPicker.addEventListener('click', () => {
+    activeIconTarget = 'inline_entity_item';
+    iconPickerModal.classList.add('open');
+    renderIconCategories();
+    renderIconGrid();
+  });
+
+  const btnBrowse = row.querySelector('.btn-browse-entity');
+  btnBrowse.addEventListener('click', () => {
+    openEntityPicker('inline_entity_item', t('entity_picker_title'));
+  });
+
+  const entitySelect = row.querySelector('.entity-select-val');
+  const nameInput = row.querySelector('.item-name-input');
+  const iconInput = row.querySelector('.item-icon-val');
+  const iconDisplay = row.querySelector('.item-icon-display');
+  const btnIndent = row.querySelector('.btn-toggle-indent');
+  const btnSave = row.querySelector('.btn-save-inline');
+  const btnCancel = row.querySelector('.btn-cancel-inline');
+
+  entitySelect.addEventListener('change', () => {
+    const selectedEid = entitySelect.value;
+    if (selectedEid) {
+      const found = availableEntities.find(e => e.entity_id === selectedEid);
+      if (nameInput && !nameInput.value.trim()) {
+        nameInput.value = found ? (found.friendly_name || found.entity_id) : selectedEid;
+      }
+      if (iconInput && !iconInput.value) {
+        const domain = selectedEid.split('.')[0];
+        const defIcon = DOMAIN_ICONS[domain] || '🔹';
+        iconInput.value = defIcon;
+        iconDisplay.textContent = defIcon;
+      }
+    }
+  });
+
+  btnIndent.addEventListener('click', () => {
+    showIndent = !showIndent;
+    btnIndent.classList.toggle('active', showIndent);
+    btnIndent.setAttribute('aria-pressed', String(showIndent));
+    btnIndent.setAttribute('title', showIndent ? t('btn_toggle_indent_on') : t('btn_toggle_indent_off'));
+  });
+
+  btnSave.addEventListener('click', () => {
+    const selectedEid = (entitySelect.value || '').trim();
+    if (!selectedEid) {
+      showToast(t('toast_select_entity_first_validation'), true);
+      entitySelect.focus();
+      return;
+    }
+    const label = (nameInput.value || '').trim() || (availableEntities.find(e => e.entity_id === selectedEid)?.friendly_name) || selectedEid;
+    const chosenIcon = (iconInput.value || '').trim();
+
+    onSave({
+      type: 'entity',
+      entity_id: selectedEid,
+      label: label,
+      icon: chosenIcon,
+      show_indent: Boolean(showIndent)
+    });
+  });
+
+  btnCancel.addEventListener('click', onCancel);
+
+  return row;
+}
+
 function loadSectionIntoEditor(key) {
   if (!config || !config.menu || !config.menu[key]) return;
   const sec = config.menu[key];
@@ -750,7 +951,7 @@ function loadSectionIntoEditor(key) {
   secTitle.value = stripLeadingEmoji(sec.title || '');
   secIcon.value = sec.icon || '📁';
   secIconDisplay.textContent = sec.icon || '📁';
-  
+
   const mainBadge = document.getElementById('main-badge-wrap');
   const allKeys = Object.keys(config.menu);
   const isMain = key === 'main' || key === allKeys[0];
@@ -764,124 +965,197 @@ function loadSectionIntoEditor(key) {
   roleMember.checked = roles.includes('member');
   roleGuest.checked = roles.includes('guest');
 
-  // Migrate legacy data if needed
-  if (!sec.entities && sec.widgets) {
-    sec.entities = sec.widgets.map(w => ({
-      entity_id: w.entity_id || w.entity,
-      label: w.label,
-      unit: w.unit || ''
-    }));
-  }
-  if (!sec.entities) sec.entities = [];
-
-  if (!sec.buttons && sec.actions) {
-    sec.buttons = sec.actions.map(a => ({
-      entity_id: a.entity_id || (a.target && a.target.entity_id),
-      label: a.label
-    }));
-  }
-  if (!sec.buttons) sec.buttons = [];
+  ensureSectionItems(sec);
+  syncSectionLegacyCollections(sec);
 
   renderMenuChecklist(sec.sections || sec.menu_sections || []);
 
-  if (!sec.texts) sec.texts = [];
-  editingTextIdx = null;
-  renderSectionTexts(sec.texts);
+  editingItemIdx = null;
+  addingItemType = null;
+  renderSectionElements(sec.items);
 
   $('btn-delete-section').style.display = isMain ? 'none' : 'inline-flex';
 }
 
-function renderSectionTexts(texts) {
+function renderSectionElements(items) {
   const container = $('section-texts-list');
   if (!container) return;
   container.innerHTML = '';
 
   const sec = config && config.menu ? config.menu[currentSectionKey] : null;
   if (!sec) return;
-  if (!sec.texts) sec.texts = [];
+  ensureSectionItems(sec);
 
-  sec.texts.forEach((item, idx) => {
-    if (editingTextIdx === idx) {
-      // Inline edit row replaces the item card
-      const editRow = createInlineEditRow(item, (updatedData) => {
-        sec.texts[idx] = updatedData;
-        editingTextIdx = null;
-        renderSectionTexts(sec.texts);
-        updatePreview();
-        showToast(t('toast_text_updated'));
-      }, () => {
-        editingTextIdx = null;
-        renderSectionTexts(sec.texts);
-      });
-      container.appendChild(editRow);
+  sec.items.forEach((item, idx) => {
+    if (editingItemIdx === idx) {
+      if (item.type === 'entity') {
+        const editRow = createInlineEntityRow(item, (updatedData) => {
+          sec.items[idx] = updatedData;
+          syncSectionLegacyCollections(sec);
+          editingItemIdx = null;
+          renderSectionElements(sec.items);
+          updatePreview();
+          showToast(t('toast_entity_updated_success'));
+        }, () => {
+          editingItemIdx = null;
+          renderSectionElements(sec.items);
+        });
+        container.appendChild(editRow);
+      } else {
+        const editRow = createInlineEditRow(item, (updatedData) => {
+          sec.items[idx] = updatedData;
+          syncSectionLegacyCollections(sec);
+          editingItemIdx = null;
+          renderSectionElements(sec.items);
+          updatePreview();
+          showToast(t('toast_text_updated'));
+        }, () => {
+          editingItemIdx = null;
+          renderSectionElements(sec.items);
+        });
+        container.appendChild(editRow);
+      }
       return;
     }
 
     const el = document.createElement('div');
     el.className = 'section-text-item';
-    const isHeading = Boolean(item.is_heading);
-    const badgeHtml = isHeading
-      ? '<span class="badge-text-type heading">Заголовок</span>'
-      : '<span class="badge-text-type">Текст</span>';
-    const contentClass = isHeading
-      ? 'section-text-item-content section-text-item-heading'
-      : 'section-text-item-content';
 
-    const rawIcon = (item.icon || '').trim();
-    const safeIcon = escapeHtml(rawIcon);
-    const safeText = escapeHtml(item.text || '');
-    const iconSpan = safeIcon ? `<span class="section-text-item-icon">${safeIcon}</span>` : '';
+    if (item.type === 'entity') {
+      const eid = item.entity_id;
+      const found = availableEntities.find(e => e.entity_id === eid);
+      const stateVal = found ? (found.state || '—') : '—';
+      const rawIcon = (item.icon || (found ? DOMAIN_ICONS[eid.split('.')[0]] : '') || '🔹').trim();
+      const safeIcon = escapeHtml(rawIcon);
+      const safeLabel = escapeHtml(item.label || eid);
+      const iconSpan = safeIcon ? `<span class="section-text-item-icon">${safeIcon}</span>` : '';
+      const indentBadge = item.show_indent !== false
+        ? `<span class="badge-text-type indent" title="${t('btn_toggle_indent_on')}">↳ ${t('badge_indent')}</span>`
+        : `<span class="badge-text-type" title="${t('btn_toggle_indent_off')}">${t('badge_no_indent')}</span>`;
 
-    el.innerHTML = `
-      <div class="section-text-item-main">
-        ${iconSpan}
-        <span class="${contentClass}">${safeText}</span>
-        ${badgeHtml}
-      </div>
-      <div class="section-text-item-actions">
-        <button type="button" class="btn-icon-action btn-edit-text-item" title="Правити" data-idx="${idx}">✏️</button>
-        <button type="button" class="btn-icon-action btn-remove-text-item" title="${t('btn_delete_user')}" data-idx="${idx}">🗑️</button>
-      </div>
-    `;
+      el.innerHTML = `
+        <div class="section-text-item-main">
+          ${iconSpan}
+          <span class="section-text-item-content"><b>${safeLabel}</b>: <code>${escapeHtml(stateVal)}</code></span>
+          <span class="badge-text-type entity">${t('badge_entity')}</span>
+          ${indentBadge}
+        </div>
+        <div class="section-text-item-actions">
+          <button type="button" class="btn-icon-action btn-edit-elem-item" title="Редагувати" data-idx="${idx}">✏️</button>
+          <button type="button" class="btn-icon-action btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}">🗑️</button>
+        </div>
+      `;
 
-    el.querySelector('.btn-edit-text-item').addEventListener('click', () => {
-      editingTextIdx = idx;
-      renderSectionTexts(sec.texts);
-    });
+      el.querySelector('.btn-edit-elem-item').addEventListener('click', () => {
+        editingItemIdx = idx;
+        addingItemType = null;
+        renderSectionElements(sec.items);
+      });
 
-    el.querySelector('.btn-remove-text-item').addEventListener('click', async () => {
-      const confirmed = await showCustomConfirm(
-        t('confirm_dialog_title'),
-        t('confirm_delete_text_item'),
-        t('btn_delete'),
-        true
-      );
-      if (!confirmed) return;
-      sec.texts.splice(idx, 1);
-      if (editingTextIdx === idx) {
-        editingTextIdx = null;
-      }
-      renderSectionTexts(sec.texts);
-      updatePreview();
-      showToast(t('toast_item_deleted'));
-    });
+      el.querySelector('.btn-remove-elem-item').addEventListener('click', async () => {
+        const confirmed = await showCustomConfirm(
+          t('confirm_dialog_title'),
+          t('confirm_delete_entity_item_unified'),
+          t('btn_delete'),
+          true
+        );
+        if (!confirmed) return;
+        sec.items.splice(idx, 1);
+        syncSectionLegacyCollections(sec);
+        if (editingItemIdx === idx) editingItemIdx = null;
+        renderSectionElements(sec.items);
+        updatePreview();
+        showToast(t('toast_item_deleted'));
+      });
+    } else {
+      // Text item
+      const isHeading = Boolean(item.is_heading);
+      const badgeHtml = isHeading
+        ? `<span class="badge-text-type heading">${t('badge_heading')}</span>`
+        : `<span class="badge-text-type">${t('header_word') === 'Заголовок' ? 'Текст' : 'Text'}</span>`;
+      const contentClass = isHeading
+        ? 'section-text-item-content section-text-item-heading'
+        : 'section-text-item-content';
+
+      const rawIcon = (item.icon || '').trim();
+      const safeIcon = escapeHtml(rawIcon);
+      const safeText = escapeHtml(item.text || '');
+      const iconSpan = safeIcon ? `<span class="section-text-item-icon">${safeIcon}</span>` : '';
+
+      el.innerHTML = `
+        <div class="section-text-item-main">
+          ${iconSpan}
+          <span class="${contentClass}">${safeText}</span>
+          ${badgeHtml}
+        </div>
+        <div class="section-text-item-actions">
+          <button type="button" class="btn-icon-action btn-edit-elem-item" title="Редагувати" data-idx="${idx}">✏️</button>
+          <button type="button" class="btn-icon-action btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}">🗑️</button>
+        </div>
+      `;
+
+      el.querySelector('.btn-edit-elem-item').addEventListener('click', () => {
+        editingItemIdx = idx;
+        addingItemType = null;
+        renderSectionElements(sec.items);
+      });
+
+      el.querySelector('.btn-remove-elem-item').addEventListener('click', async () => {
+        const confirmed = await showCustomConfirm(
+          t('confirm_dialog_title'),
+          t('confirm_delete_text_item'),
+          t('btn_delete'),
+          true
+        );
+        if (!confirmed) return;
+        sec.items.splice(idx, 1);
+        syncSectionLegacyCollections(sec);
+        if (editingItemIdx === idx) editingItemIdx = null;
+        renderSectionElements(sec.items);
+        updatePreview();
+        showToast(t('toast_item_deleted'));
+      });
+    }
 
     container.appendChild(el);
   });
 
-  // If adding a new item, render inline edit row at the end of the list
-  if (editingTextIdx === -1) {
+  // If adding a new element at the bottom (under already added elements, above the 3 add buttons)
+  if (addingItemType === 'text') {
     const newRow = createInlineEditRow({ icon: '', text: '', is_heading: false }, (newData) => {
-      sec.texts.push(newData);
-      editingTextIdx = null;
-      renderSectionTexts(sec.texts);
+      sec.items.push(newData);
+      syncSectionLegacyCollections(sec);
+      addingItemType = null;
+      renderSectionElements(sec.items);
       updatePreview();
       showToast(t('toast_text_added'));
     }, () => {
-      editingTextIdx = null;
-      renderSectionTexts(sec.texts);
+      addingItemType = null;
+      renderSectionElements(sec.items);
     });
     container.appendChild(newRow);
+  } else if (addingItemType === 'entity') {
+    const newRow = createInlineEntityRow({ icon: '', label: '', entity_id: '', show_indent: true }, (newData) => {
+      sec.items.push(newData);
+      syncSectionLegacyCollections(sec);
+      addingItemType = null;
+      renderSectionElements(sec.items);
+      updatePreview();
+      showToast(t('toast_entity_added_success'));
+    }, () => {
+      addingItemType = null;
+      renderSectionElements(sec.items);
+    });
+    container.appendChild(newRow);
+  }
+}
+
+// Backward compatibility alias
+function renderSectionTexts(texts) {
+  const sec = config && config.menu ? config.menu[currentSectionKey] : null;
+  if (sec) {
+    ensureSectionItems(sec);
+    renderSectionElements(sec.items);
   }
 }
 
@@ -1358,20 +1632,21 @@ function setupEventListeners() {
     btnActionAddText.addEventListener('click', () => {
       const sec = config && config.menu ? config.menu[currentSectionKey] : null;
       if (!sec) return;
-      if (!sec.texts) sec.texts = [];
-
-      if (editingTextIdx === -1) {
-        editingTextIdx = null;
-      } else {
-        editingTextIdx = -1;
-      }
-      renderSectionTexts(sec.texts);
+      ensureSectionItems(sec);
+      editingItemIdx = null;
+      addingItemType = (addingItemType === 'text') ? null : 'text';
+      renderSectionElements(sec.items);
     });
   }
 
   if (btnActionAddEntity) {
     btnActionAddEntity.addEventListener('click', () => {
-      showToast(t('toast_entity_coming_soon'));
+      const sec = config && config.menu ? config.menu[currentSectionKey] : null;
+      if (!sec) return;
+      ensureSectionItems(sec);
+      editingItemIdx = null;
+      addingItemType = (addingItemType === 'entity') ? null : 'entity';
+      renderSectionElements(sec.items);
     });
   }
 

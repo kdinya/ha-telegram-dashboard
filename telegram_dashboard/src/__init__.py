@@ -1,2 +1,2 @@
-"""Telegram Dashboard Home Assistant Add-on."""
-__version__ = "1.0.2"
+"""Home Assistant Telegram Dashboard Add-on package."""
+__version__ = "1.0.3"

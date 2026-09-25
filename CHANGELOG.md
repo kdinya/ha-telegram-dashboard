@@ -11,6 +11,18 @@
 - Fix: saving an action recovers the chosen entity if the picker selection was lost.
 # Changelog
 
+## [1.0.3] - 2026-09-25
+### Added
+- Home Assistant sidebar: set full add-on name `panel_title: "Telegram Dashboard"`.
+- Constructor: full interactive "Add entity" builder for all sections placed under already created items and above action buttons.
+- 3-row entity configuration block:
+  1) Icon picker with library/no-icon support, custom display name field, and toggle button for indent.
+  2) Home Assistant entity selector (grouped dropdown and visual modal picker).
+  3) Cancel and Save buttons.
+- Unified sequential element ordering: texts and entities are displayed in exact creation order under already created items and synchronously rendered in UI preview and Telegram messages.
+- Real-time WYSIWYG parity for entities: preview displays icon, name, and live/formatted value with or without tree indent.
+- Complete English (`en`) and Ukrainian (`uk`) localization for entity builder, indent toggles, and deletion confirmations.
+
 ## [1.0.2] - 2026-09-24
 ### Fixed
 - Added `panel_icon: "mdi:telegram"` to display official Telegram icon on Home Assistant sidebar.

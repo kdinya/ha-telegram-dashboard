@@ -185,51 +185,70 @@ class MessageRenderer:
             rows.append(f"<i>{note}</i>")
         rows.append("──────────────")
 
-        # Configured texts (headings and text items)
-        texts = section.get("texts", [])
-        if texts:
-            for t_item in texts:
-                if not isinstance(t_item, dict):
-                    continue
-                t_text = str(t_item.get("text", "")).strip()
+        # Unified ordered items: texts and entities rendered in saved order
+        items = section.get("items")
+        if items is None:
+            # Backward compatibility: synthesize from legacy texts/entities
+            items = []
+            for t_item in section.get("texts", []):
+                if isinstance(t_item, dict):
+                    items.append({"type": "text", **t_item})
+            for e_item in section.get("entities", []):
+                if isinstance(e_item, dict):
+                    items.append({"type": "entity", **e_item})
+            if not items:
+                widgets = section.get("widgets", [])
+                items = [
+                    {
+                        "type": "entity",
+                        "entity_id": w.get("entity_id") or w.get("entity"),
+                        "label": w.get("label"),
+                        "unit": w.get("unit", ""),
+                    }
+                    for w in widgets
+                    if (w.get("entity_id") or w.get("entity"))
+                ]
+
+        has_items = False
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            item_type = item.get("type", "text")
+            explicit_icon = item.get("icon")
+            has_explicit_icon = explicit_icon is not None
+            item_icon = str(explicit_icon or "").strip()
+            indent = item.get("show_indent", True)
+            prefix = "├ " if indent else "\u2003"
+
+            if item_type == "text":
+                t_text = str(item.get("text", "")).strip()
                 if not t_text:
                     continue
-                t_icon = str(t_item.get("icon") or "").strip()
-                t_heading = bool(t_item.get("is_heading", False))
-                icon_prefix = f"{t_icon} " if t_icon else ""
-                if t_heading:
-                    rows.append(f"<b>{icon_prefix}{html.escape(t_text)}</b>")
+                has_items = True
+                icon_prefix = f"{item_icon} " if item_icon else ""
+                if item.get("is_heading", False):
+                    rows.append(f"{prefix}<b>{icon_prefix}{html.escape(t_text)}</b>")
                 else:
-                    rows.append(f"├ {icon_prefix}{html.escape(t_text)}")
-
-        # Configured entities
-        entities = section.get("entities")
-        if entities is None:
-            # Fallback to widgets
-            widgets = section.get("widgets", [])
-            entities = [
-                {
-                    "entity_id": w.get("entity_id") or w.get("entity"),
-                    "label": w.get("label"),
-                    "unit": w.get("unit", "")
-                }
-                for w in widgets
-                if (w.get("entity_id") or w.get("entity"))
-            ]
-
-        if entities:
-            for item in entities:
-                if not isinstance(item, dict):
-                    continue
+                    rows.append(f"{prefix}{icon_prefix}{html.escape(t_text)}")
+            elif item_type == "entity":
                 eid = item.get("entity_id")
                 if not eid:
                     continue
+                has_items = True
                 label = item.get("label") or friendly_name(eid)
                 unit = item.get("unit") or ""
                 raw_st = state.get(eid)
-                ic, val_formatted = format_entity_value(eid, raw_st, unit)
-                rows.append(f"├ {ic} <b>{html.escape(label)}:</b> {val_formatted}")
-        else:
+                if has_explicit_icon:
+                    ic = item_icon or ""
+                else:
+                    ic, _ = format_entity_value(eid, raw_st, unit)
+                _, val_formatted = format_entity_value(eid, raw_st, unit)
+                icon_part = f"{ic} " if ic else ""
+                rows.append(
+                    f"{prefix}{icon_part}<b>{html.escape(label)}:</b> {val_formatted}"
+                )
+
+        if not has_items:
             rows.append("├ <i>Показники не налаштовані.</i>")
 
         rows.append("──────────────")

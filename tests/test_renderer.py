@@ -41,3 +41,47 @@ def test_render_section_with_texts_and_parity():
     assert "<b>📌 Важлива інформація</b>" in rendered
     assert "├ 💡 Автоматизація увімкнена" in rendered
     assert "<b>🛋️ Вітальня</b>" in rendered
+
+
+def test_render_section_with_ordered_items_entities_and_indent():
+    renderer = MessageRenderer()
+    section = {
+        "title": "Вітальня",
+        "icon": "🛋️",
+        "items": [
+            {"type": "text", "icon": "📌", "text": "Керування", "is_heading": True},
+            {
+                "type": "entity",
+                "entity_id": "light.living_room",
+                "label": "Основне світло",
+                "icon": "💡",
+                "show_indent": True,
+            },
+            {
+                "type": "entity",
+                "entity_id": "switch.boiler",
+                "label": "Бойлер",
+                "icon": "🔌",
+                "show_indent": False,
+            },
+            {"type": "text", "icon": "", "text": "Примітка в кінці", "is_heading": False},
+        ],
+    }
+    state = {
+        "light.living_room": {"state": "on", "attributes": {"friendly_name": "Світло"}},
+        "switch.boiler": {"state": "off", "attributes": {"friendly_name": "Бойлер"}},
+        "updated_at": "12:30:00",
+    }
+    rendered = renderer.render_section(section, state)
+    assert "<b>📌 Керування</b>" in rendered
+    assert "├ 💡 <b>Основне світло:</b> 🟢 Увімкнено" in rendered
+    assert "\u2003🔌 <b>Бойлер:</b> 🔴 Вимкнено" in rendered
+    assert "├ Примітка в кінці" in rendered
+
+
+def test_addon_config_sidebar_title_and_version():
+    import yaml
+    with open("telegram_dashboard/config.yaml", "r", encoding="utf-8") as f:
+        cfg = yaml.safe_load(f)
+    assert cfg.get("panel_title") == "Telegram Dashboard"
+    assert cfg.get("version") == "1.0.3"

@@ -244,6 +244,44 @@ class WebApp:
             },
         }
 
+        # Enrich preview state with live HA states if connected
+        if self.ha_client is not None:
+            try:
+                live_states = await self.ha_client.get_states()
+                for s in live_states:
+                    eid = s.get("entity_id")
+                    if eid:
+                        state[eid] = s
+            except Exception as exc:
+                logger.warning("Could not fetch HA states for preview: %s", exc)
+
+        # Fallback realistic states for requested entities not yet in state
+        all_eids = []
+        for it in section.get("items", []):
+            if isinstance(it, dict) and it.get("type") == "entity" and it.get("entity_id"):
+                all_eids.append(it["entity_id"])
+        for e in section.get("entities", []):
+            if isinstance(e, dict) and e.get("entity_id"):
+                all_eids.append(e["entity_id"])
+
+        for eid in all_eids:
+            if eid not in state:
+                dom = eid.split(".")[0]
+                if dom in ("light", "switch", "input_boolean"):
+                    state[eid] = {"state": "on", "attributes": {"friendly_name": eid}}
+                elif dom == "climate":
+                    state[eid] = {"state": "21.5", "attributes": {"temperature": 21.5, "unit_of_measurement": "°C"}}
+                elif dom == "binary_sensor":
+                    state[eid] = {"state": "off", "attributes": {"device_class": "moisture"}}
+                elif "temp" in eid:
+                    state[eid] = {"state": "22.0", "attributes": {"unit_of_measurement": "°C"}}
+                elif "hum" in eid:
+                    state[eid] = {"state": "45", "attributes": {"unit_of_measurement": "%"}}
+                elif "batt" in eid:
+                    state[eid] = {"state": "85", "attributes": {"device_class": "battery"}}
+                else:
+                    state[eid] = {"state": "online", "attributes": {"friendly_name": eid}}
+
         # Check access
         allowed_roles = section.get("roles", ["admin", "member", "guest"])
         if user_role not in allowed_roles:

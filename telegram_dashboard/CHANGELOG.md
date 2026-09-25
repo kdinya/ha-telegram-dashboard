@@ -1,3 +1,11 @@
+## 1.0.3
+
+- Home Assistant sidebar: full add-on title `panel_title: "Telegram Dashboard"`.
+- Interactive entity builder across all sections with 3-row input layout (icon + name + indent toggle, entity selector, cancel/save).
+- Sequential ordering of section elements (texts and entities appear in order above the 3 add buttons and render synchronously in UI preview and Telegram message).
+- Real-time preview and Telegram bot rendering for entities (icon, name, value).
+- Full bilingual localization (`en` and `uk`).
+
 ## 1.0.1
 
 - Fix: correct Home Assistant API base URL so the entity picker and bot states work (entities are no longer empty).
