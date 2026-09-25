@@ -236,7 +236,7 @@ class BotEngine:
             parent_key = section.get("parent") or first_key
             keyboard.append([
                 {"text": "🔄 Оновити", "callback_data": f"td:/sec_{section_key}"},
-                {"text": "🔙 Назад", "callback_data": f"td:/sec_{parent_key}"},
+                {"text": "↩️ Назад", "callback_data": f"td:/sec_{parent_key}"},
             ])
         keyboard.append([{"text": "❌ Закрити", "callback_data": "td:/close"}])
 
@@ -253,14 +253,14 @@ class BotEngine:
         if not section:
             return {
                 "text": "❌ Розділ не знайдено.",
-                "keyboard": [[{"text": "🔙 Назад", "callback_data": f"td:/sec_{first_key}"}]],
+                "keyboard": [[{"text": "↩️ Назад", "callback_data": f"td:/sec_{first_key}"}]],
             }
 
         decision = self.access.check_section(user_id, section_key, section)
         if not decision.allowed:
             return {
                 "text": f"⛔ <b>Доступ обмежено</b>\n\n{decision.reason}",
-                "keyboard": [[{"text": "🔙 Головна", "callback_data": f"td:/sec_{first_key}"}]],
+                "keyboard": [[{"text": "↩️ Головна", "callback_data": f"td:/sec_{first_key}"}]],
                 "parse_mode": "HTML",
             }
 

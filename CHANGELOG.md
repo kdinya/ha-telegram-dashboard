@@ -14,6 +14,7 @@
 - Preview refreshes now keep exactly one update timestamp, while Telegram messages use one global invisible width anchor instead of section-dependent sizing.
 - Standard preview buttons now keep the same background as all other buttons, with only the Back arrow blue and Close cross red; timestamp is rendered in one dedicated element.
 - Preview refresh preserves the user's scroll position instead of forcing the message to the bottom.
+- Mobile preview now uses the available viewport height and starts overflowing messages from the top; Back uses the Telegram-compatible `↩️` icon.
 
 ## [1.1.2]
 

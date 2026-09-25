@@ -89,9 +89,13 @@ def test_mobile_preview_hides_editor_that_would_push_phone_down():
 
 def test_preview_refresh_preserves_scroll_position_unless_already_at_bottom():
     app = (UI_DIR / "app.js").read_text(encoding="utf-8")
+    styles = (UI_DIR / "style.css").read_text(encoding="utf-8")
     assert "const previousScrollTop = msgArea?.scrollTop || 0" in app
     assert "const wasAtBottom = msgArea" in app
     assert "msgArea.scrollTop = wasAtBottom ? msgArea.scrollHeight : previousScrollTop" in app
+    assert "is-overflowing" in app
+    assert "height: calc(100dvh - 110px) !important" in styles
+    assert "min-height: 680px !important" in styles
 
 
 def test_section_command_and_save_flow_are_explained_and_translated():

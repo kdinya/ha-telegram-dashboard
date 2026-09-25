@@ -594,6 +594,9 @@ select.form-control option {
   cursor: grabbing;
   user-select: none;
 }
+.tg-messages-area.is-overflowing {
+  justify-content: flex-start;
+}
 
 .tg-bot-bubble {
   margin-bottom: 0 !important;
@@ -944,8 +947,9 @@ select.form-control option {
   .phone-frame {
     width: 100% !important;
     max-width: 340px !important;
-    height: 580px !important;
-    max-height: 75vh !important;
+    height: calc(100dvh - 110px) !important;
+    max-height: none !important;
+    min-height: 680px !important;
     margin: 0 auto;
   }
 }
@@ -2146,9 +2150,9 @@ body:has(.modal-overlay.open) {
   .phone-frame {
     width: 100% !important;
     max-width: 340px !important;
-    height: 580px !important;
-    max-height: 80vh !important;
-    min-height: 480px !important;
+    height: calc(100dvh - 110px) !important;
+    max-height: none !important;
+    min-height: 680px !important;
     overflow: hidden !important;
     margin: 0 auto;
   }

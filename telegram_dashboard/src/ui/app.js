@@ -2148,6 +2148,10 @@ async function updatePreview() {
         if (!msgArea) return;
         msgArea.scrollTop = wasAtBottom ? msgArea.scrollHeight : previousScrollTop;
       };
+      const updateMessageOverflowState = () => {
+        if (!msgArea) return;
+        msgArea.classList.toggle('is-overflowing', msgArea.scrollHeight > msgArea.clientHeight + 1);
+      };
 
       // Update command in user bubble if current section has one
       const userCmdEl = document.querySelector('.tg-user-bubble-text');
@@ -2183,6 +2187,7 @@ async function updatePreview() {
         previewTimestampEl.textContent = timestampText;
         previewTimestampEl.hidden = !timestampText;
       }
+      updateMessageOverflowState();
 
       if (botBubble) {
         const msgW = (config && config.telegram_msg_width) || 75;
@@ -2208,6 +2213,7 @@ async function updatePreview() {
               msgArea.style.scrollBehavior = 'auto';
               const keepChatBottomAnchored = () => {
                 if (previewHeightAnimation !== animation) return;
+                updateMessageOverflowState();
                 restoreScrollPosition();
                 if (animation.playState === 'finished') return;
                 previewHeightFrame = requestAnimationFrame(keepChatBottomAnchored);
@@ -2220,6 +2226,7 @@ async function updatePreview() {
                 animation.cancel();
                 if (previewHeightFrame !== null) cancelAnimationFrame(previewHeightFrame);
                 previewHeightFrame = null;
+                updateMessageOverflowState();
                 restoreScrollPosition();
                 msgArea.style.scrollBehavior = previousScrollBehavior;
                 previewScrollBehaviorToRestore = null;
@@ -2249,6 +2256,7 @@ async function updatePreview() {
       if (msgArea) {
         if (!previewHeightAnimation) {
           requestAnimationFrame(() => {
+            updateMessageOverflowState();
             restoreScrollPosition();
           });
         }
