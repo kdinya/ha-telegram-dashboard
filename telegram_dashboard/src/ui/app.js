@@ -2140,6 +2140,14 @@ async function updatePreview() {
       if (renderSequence !== previewRenderSequence) return;
       const botBubble = document.getElementById('preview-bot-bubble') || document.querySelector('.tg-bot-bubble') || document.querySelector('.tg-message-bubble:not(.tg-user-bubble)');
       const msgArea = document.querySelector('.tg-messages-area');
+      const previousScrollTop = msgArea?.scrollTop || 0;
+      const wasAtBottom = msgArea
+        ? msgArea.scrollHeight - msgArea.scrollTop - msgArea.clientHeight < 12
+        : true;
+      const restoreScrollPosition = () => {
+        if (!msgArea) return;
+        msgArea.scrollTop = wasAtBottom ? msgArea.scrollHeight : previousScrollTop;
+      };
 
       // Update command in user bubble if current section has one
       const userCmdEl = document.querySelector('.tg-user-bubble-text');
@@ -2200,7 +2208,7 @@ async function updatePreview() {
               msgArea.style.scrollBehavior = 'auto';
               const keepChatBottomAnchored = () => {
                 if (previewHeightAnimation !== animation) return;
-                msgArea.scrollTop = msgArea.scrollHeight;
+                restoreScrollPosition();
                 if (animation.playState === 'finished') return;
                 previewHeightFrame = requestAnimationFrame(keepChatBottomAnchored);
               };
@@ -2212,7 +2220,7 @@ async function updatePreview() {
                 animation.cancel();
                 if (previewHeightFrame !== null) cancelAnimationFrame(previewHeightFrame);
                 previewHeightFrame = null;
-                msgArea.scrollTop = msgArea.scrollHeight;
+                restoreScrollPosition();
                 msgArea.style.scrollBehavior = previousScrollBehavior;
                 previewScrollBehaviorToRestore = null;
               };
@@ -2241,7 +2249,7 @@ async function updatePreview() {
       if (msgArea) {
         if (!previewHeightAnimation) {
           requestAnimationFrame(() => {
-            msgArea.scrollTop = msgArea.scrollHeight;
+            restoreScrollPosition();
           });
         }
       }

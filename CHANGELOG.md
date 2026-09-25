@@ -13,6 +13,7 @@
 - Preview messages can now be dragged vertically like a Telegram chat, and real Telegram buttons use blue/red markers that Telegram renders consistently.
 - Preview refreshes now keep exactly one update timestamp, while Telegram messages use one global invisible width anchor instead of section-dependent sizing.
 - Standard preview buttons now keep the same background as all other buttons, with only the Back arrow blue and Close cross red; timestamp is rendered in one dedicated element.
+- Preview refresh preserves the user's scroll position instead of forcing the message to the bottom.
 
 ## [1.1.2]
 

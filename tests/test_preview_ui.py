@@ -61,7 +61,7 @@ def test_preview_anchors_chat_to_bottom_and_colors_standard_buttons():
     app = (UI_DIR / "app.js").read_text(encoding="utf-8")
 
     assert "justify-content: flex-end" in styles
-    assert "msgArea.scrollTop = msgArea.scrollHeight" in app
+    assert "restoreScrollPosition();" in app
     assert ".tg-button.is-back" in styles
     assert ".tg-button.is-close" in styles
     assert "button.classList.add('is-back')" in app
@@ -85,6 +85,13 @@ def test_mobile_preview_hides_editor_that_would_push_phone_down():
     styles = (UI_DIR / "style.css").read_text(encoding="utf-8")
     assert ".split-view:has(.preview-pane.mobile-active) .editor-pane" in styles
     assert "display: none !important" in styles
+
+
+def test_preview_refresh_preserves_scroll_position_unless_already_at_bottom():
+    app = (UI_DIR / "app.js").read_text(encoding="utf-8")
+    assert "const previousScrollTop = msgArea?.scrollTop || 0" in app
+    assert "const wasAtBottom = msgArea" in app
+    assert "msgArea.scrollTop = wasAtBottom ? msgArea.scrollHeight : previousScrollTop" in app
 
 
 def test_section_command_and_save_flow_are_explained_and_translated():
