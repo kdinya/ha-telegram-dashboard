@@ -23,6 +23,10 @@
      - `telegram_dashboard/CHANGELOG.md`
      - `CHANGELOG.md` (root)
      - `README.md` (if badge/header lists version)
+   - **Changelog Quality & Sync Invariant**:
+     - Home Assistant Supervisor update dialog renders `telegram_dashboard/CHANGELOG.md` directly. It MUST always contain the latest version header at the top and stay 100% in sync with root `CHANGELOG.md`.
+     - Changelog entries must be grouped by standard sections (e.g. `### Added`, `### Changed`, `### Fixed`, `### Security`).
+     - Entries must describe meaningful user-facing changes clearly and concisely. Minor tweaks, minor layout adjustments or internal micro-refactors must be generalized into coherent points rather than listed line-by-line.
 
 4. **Source of Truth & Git Discipline**:
    - Always verify and pull the latest changes from `origin/main` before making changes.
