@@ -11,6 +11,18 @@
 - Fix: saving an action recovers the chosen entity if the picker selection was lost.
 # Changelog
 
+## [1.0.6] - 2026-03-31
+
+### Fixed
+- Fixed ReferenceError in  (focusInput referencing undefined nameInput instead of inputVal), allowing inline text creation to work seamlessly.
+- Removed restrictive domain tabs in Entity Picker so all entities are searchable by name and entity ID directly.
+- Fixed  REST payload by flattening target entity_id to top-level for Home Assistant REST API.
+- Fixed  to support plain-text template response parsing.
+- Enforced section-level permission checks in Telegram bot callback handlers before executing button or entity actions.
+- Automatically write configured Telegram bot token to Home Assistant  during companion integration sync so automation actions (, , etc.) work without manual re-entry.
+- Split TTS service call domain and service in  handler for Home Assistant media players.
+- Accurately propagate Telegram send message failure status codes in web API.
+
 ## [1.0.3] - 2026-09-25
 ### Added
 - Home Assistant sidebar: set full add-on name `panel_title: "Telegram Dashboard"`.

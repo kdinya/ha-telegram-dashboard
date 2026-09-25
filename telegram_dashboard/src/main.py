@@ -69,7 +69,7 @@ def sync_custom_component() -> None:
         logger.warning("Could not sync custom_component to %s: %s", dest, e)
 
 
-def ensure_ha_integration_enabled() -> None:
+def ensure_ha_integration_enabled(token: str = "") -> None:
     """Ensure 'telegram_dashboard:' is present in configuration.yaml if present."""
     config_dir = get_ha_config_dir()
     if not config_dir:
@@ -100,7 +100,7 @@ def main() -> None:
 
     # Sync custom component into HA /config if mounted
     sync_custom_component()
-    ensure_ha_integration_enabled()
+    ensure_ha_integration_enabled(options.get("telegram_token", ""))
 
     cm = ConfigManager(config_path)
     cm.load()

@@ -276,6 +276,13 @@ class BotEngine:
         """Execute action for a section button and return result."""
         menu = self.config.get("menu", {})
         section = menu.get(section_key, {})
+        if not section:
+            return {"ok": False, "toast": "Розділ не знайдено", "section_key": section_key}
+        roles = section.get("roles")
+        if roles:
+            sec_decision = self.access.check_section(user_id, section_key, section)
+            if not sec_decision.allowed:
+                return {"ok": False, "toast": f"⛔ Немає доступу до розділу: {sec_decision.reason}", "section_key": section_key}
         buttons = section.get("buttons", [])
 
         target_btn = None

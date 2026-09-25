@@ -195,8 +195,14 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
     async def handle_speak(call: ServiceCall) -> None:
         """Speak a message through a smart speaker via a TTS service."""
+        svc_name = call.data.get("tts_service", "tts.google_translate_say")
+        if "." in svc_name:
+            domain, service = svc_name.split(".", 1)
+        else:
+            domain, service = "tts", svc_name
         await hass.services.async_call(
-            call.data.get("tts_service", "tts.google_translate_say"),
+            domain,
+            service,
             {
                 "entity_id": call.data["entity_id"],
                 "message": call.data["message"],

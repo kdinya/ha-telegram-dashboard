@@ -1,7 +1,6 @@
 """Ingress Web UI and REST API server using aiohttp."""
 from __future__ import annotations
 
-import json
 import logging
 from pathlib import Path
 from typing import Any
@@ -387,13 +386,16 @@ class WebApp:
 
         targets = chat_id if isinstance(chat_id, list) else [chat_id]
         results = []
+        all_ok = True
         for cid in targets:
             res = await self.bot_runner.send_message(
                 cid, text, reply_markup=reply_markup,
                 parse_mode=parse_mode, disable_notification=disable_notification
             )
             results.append(res)
-        return web.json_response({"ok": True, "results": results})
+            if not res or not res.get("ok"):
+                all_ok = False
+        return web.json_response({"ok": all_ok, "results": results}, status=200 if all_ok else 400)
 
     async def bot_edit_message(self, request: web.Request) -> web.Response:
         if not self.bot_runner:

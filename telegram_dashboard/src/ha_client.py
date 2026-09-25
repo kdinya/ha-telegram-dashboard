@@ -55,12 +55,29 @@ class HAClient:
     async def call_service(self, domain: str, service: str, target: dict | None = None) -> Any:
         payload: dict[str, Any] = {}
         if target:
-            payload["target"] = target
+            # Flatten target fields (entity_id, area_id, device_id) to top level for HA REST API
+            for k, v in target.items():
+                if isinstance(v, list) and len(v) == 1:
+                    payload[k] = v[0]
+                else:
+                    payload[k] = v
         return await self._post(f"/api/services/{domain}/{service}", payload)
 
     async def render_template(self, template: str) -> Any:
         """Render a Jinja template through the HA REST API (/api/template)."""
-        return await self._post("/api/template", {"template": template})
+        session = await self._ensure_session()
+        async with session.post(
+            f"{self._base}/api/template", data=json.dumps({"template": template}),
+            headers={"Content-Type": "application/json"},
+        ) as resp:
+            if resp.status not in (200, 201):
+                text = await resp.text()
+                raise RuntimeError(f"HA API /api/template failed: {resp.status} {text[:200]}")
+            raw_text = await resp.text()
+            try:
+                return json.loads(raw_text)
+            except Exception:
+                return raw_text
 
     async def collect_catalog(self) -> dict[str, Any]:
         """Collect the full entity catalog grouped by area, domain and label.

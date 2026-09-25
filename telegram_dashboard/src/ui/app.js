@@ -590,11 +590,9 @@ function splitEntityName(friendlyName, domain, attributes) {
 }
 
 function renderEntityPickerList() {
-  const search = (entitySearchInput.value || '').toLowerCase();
-  const activeDomain = domainFiltersTabs.querySelector('.domain-tab-btn.active')?.dataset.domain || 'all';
+  const search = (entitySearchInput.value || '').toLowerCase().trim();
 
   let list = availableEntities;
-  if (activeDomain !== 'all') list = list.filter(e => e.domain === activeDomain);
   if (search) {
     list = list.filter(e =>
       (e.friendly_name || '').toLowerCase().includes(search) ||
@@ -967,12 +965,12 @@ function createInlineEditRow(initialData = {}, onSave, onCancel) {
     inputVal.focus();
   });
 
-  nameInput.setAttribute('autocomplete', 'off');
-  nameInput.setAttribute('spellcheck', 'false');
+  inputVal.setAttribute('autocomplete', 'off');
+  inputVal.setAttribute('spellcheck', 'false');
 
   row.focusInput = () => {
     requestAnimationFrame(() => {
-      nameInput.focus({ preventScroll: true });
+      inputVal.focus({ preventScroll: true });
     });
   };
 
