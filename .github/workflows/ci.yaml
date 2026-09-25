@@ -25,6 +25,8 @@ jobs:
       - name: Lint with flake8
         run: |
           flake8 telegram_dashboard/src tests --max-line-length=120 --ignore=E203,W503,F401
+        node --check telegram_dashboard/src/ui/app.js
+        node --check telegram_dashboard/src/ui/i18n.js
 
       - name: Run unit tests
         run: |

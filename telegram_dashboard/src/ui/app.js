@@ -636,7 +636,7 @@ function renderEntityPickerList() {
       const fn = (e.friendly_name || '').toLowerCase();
       const eid = (e.entity_id || '').toLowerCase();
       const area = (e.area || '').toLowerCase();
-      const combined = ;
+      const combined = `${fn} ${eid} ${area}`;
       return tokens.every(tok => combined.includes(tok));
     });
   }
