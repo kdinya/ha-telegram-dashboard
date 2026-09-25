@@ -1292,7 +1292,6 @@ function renderSectionElements(items) {
       const lockTitle = isLocked ? t('btn_unlock') : t('btn_lock');
       const lockIcon = isLocked ? '🔒' : '🔓';
       const lockClass = isLocked ? 'btn-lock-elem-item is-locked' : 'btn-lock-elem-item';
-      const lockBadge = isLocked ? `<span class="badge-locked">🔒 ${t('badge_locked')}</span>` : '';
       if (isLocked) el.classList.add('is-locked');
       el.draggable = !isLocked;
 
@@ -1302,13 +1301,12 @@ function renderSectionElements(items) {
           ${iconSpan}
           <span class="section-text-item-content"><b>${safeLabel}</b>: <code>${escapeHtml(stateVal)}</code></span>
           <span class="badge-text-type entity">${t('badge_entity')}</span>
-          ${lockBadge}
           ${indentBadge}
         </div>
         <div class="section-text-item-actions">
-          <button type="button" class="btn-icon-action ${lockClass}" title="${lockTitle}" data-idx="${idx}">${lockIcon}</button>
           <button type="button" class="btn-icon-action btn-edit-elem-item" title="Редагувати" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>✏️</button>
           <button type="button" class="btn-icon-action btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>🗑️</button>
+          <button type="button" class="btn-icon-action ${lockClass}" title="${lockTitle}" data-idx="${idx}">${lockIcon}</button>
         </div>
       `;
 
@@ -1366,7 +1364,6 @@ function renderSectionElements(items) {
       const lockTitle = isLocked ? t('btn_unlock') : t('btn_lock');
       const lockIcon = isLocked ? '🔒' : '🔓';
       const lockClass = isLocked ? 'btn-lock-elem-item is-locked' : 'btn-lock-elem-item';
-      const lockBadge = isLocked ? `<span class="badge-locked">🔒 ${t('badge_locked')}</span>` : '';
       if (isLocked) el.classList.add('is-locked');
       el.draggable = !isLocked;
 
@@ -1376,12 +1373,11 @@ function renderSectionElements(items) {
           <span class="section-divider-preview"><code>${escapeHtml(stylePreview)}</code></span>
           <span class="badge-text-type divider">${t('badge_divider')}</span>
           <span class="badge-text-type">${escapeHtml(styleLabel)}</span>
-          ${lockBadge}
         </div>
         <div class="section-text-item-actions">
-          <button type="button" class="btn-icon-action ${lockClass}" title="${lockTitle}" data-idx="${idx}">${lockIcon}</button>
           <button type="button" class="btn-icon-action btn-cycle-divider-style" title="${t('btn_change_divider_style')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>🔄</button>
           <button type="button" class="btn-icon-action btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>🗑️</button>
+          <button type="button" class="btn-icon-action ${lockClass}" title="${lockTitle}" data-idx="${idx}">${lockIcon}</button>
         </div>
       `;
 
@@ -1448,7 +1444,6 @@ function renderSectionElements(items) {
       const lockTitle = isLocked ? t('btn_unlock') : t('btn_lock');
       const lockIcon = isLocked ? '🔒' : '🔓';
       const lockClass = isLocked ? 'btn-lock-elem-item is-locked' : 'btn-lock-elem-item';
-      const lockBadge = isLocked ? `<span class="badge-locked">🔒 ${t('badge_locked')}</span>` : '';
       if (isLocked) el.classList.add('is-locked');
       el.draggable = !isLocked;
 
@@ -1458,13 +1453,12 @@ function renderSectionElements(items) {
           ${iconSpan}
           <span class="${contentClass}">${safeText}</span>
           ${badgeHtml}
-          ${lockBadge}
           ${indentBadge}
         </div>
         <div class="section-text-item-actions">
-          <button type="button" class="btn-icon-action ${lockClass}" title="${lockTitle}" data-idx="${idx}">${lockIcon}</button>
           <button type="button" class="btn-icon-action btn-edit-elem-item" title="Редагувати" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>✏️</button>
           <button type="button" class="btn-icon-action btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>🗑️</button>
+          <button type="button" class="btn-icon-action ${lockClass}" title="${lockTitle}" data-idx="${idx}">${lockIcon}</button>
         </div>
       `;
 
@@ -1614,14 +1608,29 @@ function renderMenuChecklist(selectedKeys) {
   if (!sec) return;
 
   const validMenuKeys = Object.keys(config.menu).filter(k => k !== currentSectionKey);
+  
+  // Maintain stable list ordering: preserve existing order, only arrows move positions
+  let fullOrder = Array.isArray(sec.sections_order) ? [...sec.sections_order] : [];
+  fullOrder = fullOrder.filter(k => validMenuKeys.includes(k));
+  
+  // If no sections_order stored yet, start with current selected followed by unselected
+  if (fullOrder.length === 0) {
+    const currentSel = Array.isArray(selectedKeys) ? [...selectedKeys].filter(k => validMenuKeys.includes(k)) : [];
+    const unsel = validMenuKeys.filter(k => !currentSel.includes(k));
+    fullOrder = [...currentSel, ...unsel];
+  } else {
+    validMenuKeys.forEach(k => {
+      if (!fullOrder.includes(k)) fullOrder.push(k);
+    });
+  }
+  sec.sections_order = fullOrder;
+
   const currentSelected = Array.isArray(selectedKeys) ? [...selectedKeys].filter(k => validMenuKeys.includes(k)) : [];
-  const unselected = validMenuKeys.filter(k => !currentSelected.includes(k));
-  const fullOrderedList = [...currentSelected, ...unselected];
 
   menuSectionsChecklist.innerHTML = '';
   menuSectionsChecklist.className = 'menu-sections-order-list';
 
-  fullOrderedList.forEach((k) => {
+  fullOrder.forEach((k, idx) => {
     const s = config.menu[k] || {};
     const cleanTitle = stripLeadingEmoji(s.title || k);
     const isChecked = currentSelected.includes(k);
@@ -1629,9 +1638,8 @@ function renderMenuChecklist(selectedKeys) {
     itemEl.className = `menu-section-order-item ${isChecked ? 'is-checked' : ''}`;
     itemEl.dataset.key = k;
 
-    const checkedIndex = currentSelected.indexOf(k);
-    const canMoveUp = isChecked && checkedIndex > 0;
-    const canMoveDown = isChecked && checkedIndex < currentSelected.length - 1;
+    const canMoveUp = idx > 0;
+    const canMoveDown = idx < fullOrder.length - 1;
 
     itemEl.innerHTML = `
       <label class="menu-section-label">
@@ -1647,12 +1655,15 @@ function renderMenuChecklist(selectedKeys) {
 
     const cb = itemEl.querySelector('input[type="checkbox"]');
     cb.addEventListener('change', () => {
+      // Toggle checked state without changing fullOrder position!
       let updatedSelected = Array.isArray(sec.sections) ? [...sec.sections] : [];
       if (cb.checked) {
         if (!updatedSelected.includes(k)) updatedSelected.push(k);
       } else {
         updatedSelected = updatedSelected.filter(itemKey => itemKey !== k);
       }
+      // Keep selected items in the order defined by fullOrder
+      updatedSelected = fullOrder.filter(itemKey => updatedSelected.includes(itemKey));
       sec.sections = updatedSelected;
       renderMenuChecklist(sec.sections);
       syncCurrentSectionFromForm();
@@ -1664,11 +1675,13 @@ function renderMenuChecklist(selectedKeys) {
       e.preventDefault();
       e.stopPropagation();
       if (!canMoveUp) return;
-      let updatedSelected = [...currentSelected];
-      const temp = updatedSelected[checkedIndex - 1];
-      updatedSelected[checkedIndex - 1] = updatedSelected[checkedIndex];
-      updatedSelected[checkedIndex] = temp;
-      sec.sections = updatedSelected;
+      const temp = fullOrder[idx - 1];
+      fullOrder[idx - 1] = fullOrder[idx];
+      fullOrder[idx] = temp;
+      sec.sections_order = fullOrder;
+      
+      let updatedSelected = Array.isArray(sec.sections) ? [...sec.sections] : [];
+      sec.sections = fullOrder.filter(itemKey => updatedSelected.includes(itemKey));
       renderMenuChecklist(sec.sections);
       syncCurrentSectionFromForm();
       updatePreview();
@@ -1679,11 +1692,13 @@ function renderMenuChecklist(selectedKeys) {
       e.preventDefault();
       e.stopPropagation();
       if (!canMoveDown) return;
-      let updatedSelected = [...currentSelected];
-      const temp = updatedSelected[checkedIndex + 1];
-      updatedSelected[checkedIndex + 1] = updatedSelected[checkedIndex];
-      updatedSelected[checkedIndex] = temp;
-      sec.sections = updatedSelected;
+      const temp = fullOrder[idx + 1];
+      fullOrder[idx + 1] = fullOrder[idx];
+      fullOrder[idx] = temp;
+      sec.sections_order = fullOrder;
+      
+      let updatedSelected = Array.isArray(sec.sections) ? [...sec.sections] : [];
+      sec.sections = fullOrder.filter(itemKey => updatedSelected.includes(itemKey));
       renderMenuChecklist(sec.sections);
       syncCurrentSectionFromForm();
       updatePreview();
@@ -2063,8 +2078,9 @@ async function updatePreview() {
       renderTelegramKeyboard(data.keyboard || []);
       const bubble = document.querySelector('.tg-message-bubble');
       if (bubble) {
-        bubble.style.width = '100%';
-        bubble.style.maxWidth = '100%';
+        const savedMsgW = localStorage.getItem('preview_slider_msg_width') || '100';
+        bubble.style.width = savedMsgW + '%';
+        bubble.style.maxWidth = savedMsgW + '%';
       }
     }
   } catch (e) {
@@ -2120,30 +2136,40 @@ $('btn-toggle-preview').addEventListener('click', () => {
 // --- Live section name/icon sync ---
 function setupEventListeners() {
 
-  // Preview Slider Controls (Width only, auto-fit height on wide screens)
+  // Preview & Telegram Message Slider Controls
   const phoneFrame = $('phone-frame');
   const rangeWidth = $('setting-preview-width');
   const valWidth = $('preview-width-val');
+  const rangeTgMsgWidth = $('setting-tg-msg-width');
+  const valTgMsgWidth = $('tg-msg-width-val');
   const btnResetPreviewSize = $('btn-reset-preview-size');
 
   const BASE_WIDTH = 320;
+  const BASE_MSG_WIDTH = 100;
 
-  function updatePreviewDimensions(w, save = true) {
+  function updatePreviewDimensions(w, msgW, save = true) {
     w = parseInt(w, 10) || BASE_WIDTH;
+    msgW = parseInt(msgW, 10);
+    if (isNaN(msgW) || msgW < 60 || msgW > 100) msgW = BASE_MSG_WIDTH;
+
     document.documentElement.style.setProperty('--preview-frame-w', w + 'px');
-    document.documentElement.style.setProperty('--tg-msg-width', '100%');
+    document.documentElement.style.setProperty('--tg-msg-width', msgW + '%');
 
     if (rangeWidth) rangeWidth.value = w;
     if (valWidth) valWidth.textContent = w + ' px';
 
+    if (rangeTgMsgWidth) rangeTgMsgWidth.value = msgW;
+    if (valTgMsgWidth) valTgMsgWidth.textContent = msgW + '%';
+
     const bubble = document.querySelector('.tg-message-bubble');
     if (bubble) {
-      bubble.style.width = '100%';
-      bubble.style.maxWidth = '100%';
+      bubble.style.width = msgW + '%';
+      bubble.style.maxWidth = msgW + '%';
     }
 
     if (save) {
       localStorage.setItem('preview_slider_width', String(w));
+      localStorage.setItem('preview_slider_msg_width', String(msgW));
     }
   }
 
@@ -2151,19 +2177,31 @@ function setupEventListeners() {
     let savedW = parseInt(localStorage.getItem('preview_slider_width'), 10);
     if (isNaN(savedW)) savedW = BASE_WIDTH;
 
-    updatePreviewDimensions(savedW, false);
+    let savedMsgW = parseInt(localStorage.getItem('preview_slider_msg_width'), 10);
+    if (isNaN(savedMsgW)) savedMsgW = BASE_MSG_WIDTH;
+
+    updatePreviewDimensions(savedW, savedMsgW, false);
 
     if (rangeWidth) {
       rangeWidth.addEventListener('input', (e) => {
         const w = parseInt(e.target.value, 10) || BASE_WIDTH;
-        updatePreviewDimensions(w, true);
+        const currentMsgW = rangeTgMsgWidth ? parseInt(rangeTgMsgWidth.value, 10) : BASE_MSG_WIDTH;
+        updatePreviewDimensions(w, currentMsgW, true);
+      });
+    }
+
+    if (rangeTgMsgWidth) {
+      rangeTgMsgWidth.addEventListener('input', (e) => {
+        const currentW = rangeWidth ? parseInt(rangeWidth.value, 10) : BASE_WIDTH;
+        const msgW = parseInt(e.target.value, 10) || BASE_MSG_WIDTH;
+        updatePreviewDimensions(currentW, msgW, true);
       });
     }
 
     if (btnResetPreviewSize) {
       btnResetPreviewSize.addEventListener('click', () => {
-        updatePreviewDimensions(BASE_WIDTH, true);
-        showToast(t('toast_reset_preview_size') || 'Ширину прев’ю скинуто до 320px');
+        updatePreviewDimensions(BASE_WIDTH, BASE_MSG_WIDTH, true);
+        showToast(t('toast_reset_preview_size') || 'Розміри прев’ю скинуто');
       });
     }
   }

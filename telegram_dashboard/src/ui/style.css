@@ -43,12 +43,12 @@ body {
 }
 
 .sidebar {
-  width: 250px;
+  width: 200px;
   background-color: var(--bg-surface);
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
-  padding: 24px 16px;
+  padding: 20px 12px;
   flex-shrink: 0;
 }
 
@@ -567,11 +567,12 @@ body {
   color: var(--tg-text);
   box-sizing: border-box;
   align-self: flex-start;
-  width: 100% !important;
+  width: var(--tg-msg-width, 100%) !important;
   min-width: 0 !important;
-  max-width: 100% !important;
+  max-width: var(--tg-msg-width, 100%) !important;
   margin-top: auto;
   overflow: hidden;
+  transition: width 0.15s ease, max-width 0.15s ease;
 }
 
 .tg-rendered-content {
@@ -1779,9 +1780,9 @@ body:has(.modal-overlay.open) {
 
 /* App logo icon */
 .app-logo-img {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
   display: block;
   object-fit: cover;
 }
@@ -1916,8 +1917,22 @@ body:has(.modal-overlay.open) {
 }
 
 .section-text-item.is-locked {
-  border-color: rgba(234, 179, 8, 0.3);
-  background: rgba(30, 41, 59, 0.5);
+  opacity: 0.62;
+  border-color: rgba(234, 179, 8, 0.35);
+  background: rgba(30, 41, 59, 0.4);
+  transition: opacity 0.2s ease, border-color 0.2s ease;
+}
+
+.section-text-item.is-locked .section-text-item-main {
+  opacity: 0.8;
+}
+
+.btn-lock-elem-item.is-locked {
+  opacity: 1 !important;
+  background: rgba(234, 179, 8, 0.25) !important;
+  border: 1px solid rgba(234, 179, 8, 0.6) !important;
+  box-shadow: 0 0 6px rgba(234, 179, 8, 0.3);
+  border-radius: 6px;
 }
 
 .badge-locked {
