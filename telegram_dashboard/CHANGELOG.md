@@ -1,3 +1,10 @@
+## 1.0.5
+
+- Security: HTML-escape entity and button labels in constructor lists to prevent stored attribute injection.
+- UI: HTML-escape dynamic entity state strings.
+- HA Integration: Companion integration auto-sync to /homeassistant with services for Automations and Scripts.
+- Integration: Cleanup dead ternary in inline_keyboard payload builder.
+
 ## 1.0.3
 
 - Home Assistant sidebar: full add-on title `panel_title: "Telegram Dashboard"`.

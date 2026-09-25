@@ -48,6 +48,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Direct Supervisor API integration for zero-config Home Assistant communication.
 - Full pytest test suite and GitHub Actions CI workflow.
 
+## [1.0.5] - 2026-09-25
+### Security & Bug Fixes
+- UI: HTML-escape entity and button labels in `renderEntitiesList` and `renderButtonsList` to prevent stored DOM/attribute injection.
+- UI: HTML-escape dynamic entity state badge values.
+- Add-on & HA: Ensure companion custom integration is synced to `/homeassistant` config directory with automated `telegram_dashboard:` entry.
+- Integration: Cleaned dead ternary logic in `inline_keyboard` payload builder.
+
 ## [1.0.4] - 2026-09-25
 ### Added
 - Native Home Assistant services in Automations and Scripts UI (`telegram_dashboard.send_message`, `edit_message`, `delete_message`, `answer_callback`, `send_photo`, `send_document`, `speak`).

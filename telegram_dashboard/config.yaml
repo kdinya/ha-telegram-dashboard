@@ -1,7 +1,7 @@
 name: "Telegram Dashboard (Beta)"
 slug: "telegram_dashboard"
 description: "[BETA] Interactive visual Telegram bot dashboard with role-based access control, areas, categories, scripts, automations and smart-speaker TTS"
-version: "1.0.4"
+version: "1.0.5"
 url: "https://github.com/kdinya/ha-telegram-dashboard"
 arch:
   - aarch64

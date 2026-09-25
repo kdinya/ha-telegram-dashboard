@@ -1429,7 +1429,7 @@ function renderEntitiesList(entities) {
       <div class="item-row" data-index="${index}">
         <div class="item-info" style="flex: 1;">
           <div style="display: flex; gap: 10px; align-items: center; width: 100%;">
-            <input type="text" class="form-control form-control-sm ent-label-input" data-index="${index}" value="${ent.label || ''}" placeholder="Назва показника" style="max-width: 200px; font-weight: 600;">
+            <input type="text" class="form-control form-control-sm ent-label-input" data-index="${index}" value="${escapeHtml(ent.label || '')}" placeholder="Назва показника" style="max-width: 200px; font-weight: 600;">
             <div style="font-size: 13px; color: var(--text-muted); flex: 1;">
               <code>${eid}</code>
             </div>
@@ -1493,14 +1493,14 @@ function renderButtonsList(buttons) {
     } else if (stateStr.toLowerCase() in { 'off': 1, 'closed': 1, 'false': 1 }) {
       stateBadge = '<span class="badge-warn">🔴 Вимк</span>';
     } else if (stateStr) {
-      stateBadge = `<span class="badge-ok">${stateStr}</span>`;
+      stateBadge = `<span class="badge-ok">${escapeHtml(stateStr)}</span>`;
     }
 
     return `
       <div class="item-row" data-index="${index}">
         <div class="item-info" style="flex: 1;">
           <div style="display: flex; gap: 10px; align-items: center; width: 100%;">
-            <input type="text" class="form-control form-control-sm btn-label-input" data-index="${index}" value="${btn.label || ''}" placeholder="Текст на кнопці" style="max-width: 220px; font-weight: 600;">
+            <input type="text" class="form-control form-control-sm btn-label-input" data-index="${index}" value="${escapeHtml(btn.label || '')}" placeholder="Текст на кнопці" style="max-width: 220px; font-weight: 600;">
             <div style="font-size: 13px; color: var(--text-muted); flex: 1;">
               <code>${eid}</code>
             </div>

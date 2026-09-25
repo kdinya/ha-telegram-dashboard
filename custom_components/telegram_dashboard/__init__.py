@@ -128,7 +128,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
             payload["disable_notification"] = True
         kb = call.data.get("inline_keyboard")
         if kb:
-            payload["reply_markup"] = {"inline_keyboard": kb} if "inline_keyboard" not in kb else kb
+            payload["reply_markup"] = {"inline_keyboard": kb}
         await _call_telegram(hass, token, "sendMessage", payload)
 
     async def handle_edit_message(call: ServiceCall) -> None:
@@ -144,7 +144,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
         payload["chat_id"] = chat_id
         kb = call.data.get("inline_keyboard")
         if kb:
-            payload["reply_markup"] = {"inline_keyboard": kb} if "inline_keyboard" not in kb else kb
+            payload["reply_markup"] = {"inline_keyboard": kb}
         await _call_telegram(hass, token, "editMessageText", payload)
 
     async def handle_delete_message(call: ServiceCall) -> None:
@@ -176,7 +176,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
             payload["caption"] = call.data["caption"]
         kb = call.data.get("inline_keyboard")
         if kb:
-            payload["reply_markup"] = {"inline_keyboard": kb} if "inline_keyboard" not in kb else kb
+            payload["reply_markup"] = {"inline_keyboard": kb}
         await _call_telegram(hass, token, "sendPhoto", payload)
 
     async def handle_send_document(call: ServiceCall) -> None:
@@ -190,7 +190,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
             payload["caption"] = call.data["caption"]
         kb = call.data.get("inline_keyboard")
         if kb:
-            payload["reply_markup"] = {"inline_keyboard": kb} if "inline_keyboard" not in kb else kb
+            payload["reply_markup"] = {"inline_keyboard": kb}
         await _call_telegram(hass, token, "sendDocument", payload)
 
     async def handle_speak(call: ServiceCall) -> None:
