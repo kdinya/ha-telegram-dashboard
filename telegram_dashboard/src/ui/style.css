@@ -1420,3 +1420,105 @@ body:has(.modal-overlay.open) {
   margin-left: 8px;
   opacity: 0.7;
 }
+
+
+/* Visual styling for Entity search item: distinct entity, device/id, and parameter */
+.entity-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 8px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+  gap: 12px;
+}
+
+.entity-item:hover {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+.entity-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.entity-item-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 1. Entity friendly name: bold, prominent */
+.entity-item-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f8fafc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 2. Device / Domain badge */
+.entity-item-domain-badge {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+/* 2. Entity ID: monospaced, subtle slate color */
+.entity-item-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.entity-item-id code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  color: #94a3b8;
+  background: transparent;
+  padding: 0;
+}
+
+/* 3. Parameter / State: distinct accent pill badge */
+.entity-item-state-wrap {
+  flex-shrink: 0;
+}
+
+.entity-item-param {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  background: rgba(52, 211, 153, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  max-width: 130px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.entity-item-param.is-muted {
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+  border-color: rgba(148, 163, 184, 0.25);
+}

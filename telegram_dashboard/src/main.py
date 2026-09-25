@@ -33,10 +33,19 @@ def load_options() -> dict:
     return {}
 
 
+def get_ha_config_dir() -> Path | None:
+    """Find the writable Home Assistant configuration directory (/homeassistant or /config)."""
+    for p in [Path("/homeassistant"), Path("/config")]:
+        if p.exists() and os.access(p, os.W_OK):
+            return p
+    return None
+
+
 def sync_custom_component() -> None:
-    """Sync companion integration into HA /config/custom_components if /config is mounted."""
-    config_dir = Path("/config")
-    if not config_dir.exists() or not os.access(config_dir, os.W_OK):
+    """Sync companion integration into HA custom_components directory."""
+    config_dir = get_ha_config_dir()
+    if not config_dir:
+        logger.warning("Home Assistant config directory (/homeassistant or /config) not found or not writable")
         return
     candidates = [
         Path("/app/custom_components/telegram_dashboard"),
@@ -57,33 +66,31 @@ def sync_custom_component() -> None:
         shutil.copytree(source, dest, dirs_exist_ok=True)
         logger.info("Successfully synced telegram_dashboard companion integration from %s to %s", source, dest)
     except Exception as e:
-        logger.warning("Could not sync custom_component to /config: %s", e)
+        logger.warning("Could not sync custom_component to %s: %s", dest, e)
 
 
 def ensure_ha_integration_enabled() -> None:
-    """Ensure 'telegram_dashboard:' is present in /config/configuration.yaml.
-
-    Home Assistant only loads a custom integration (and registers its services,
-    making them visible in the Automation/Script "Add action" picker) when the
-    integration is referenced in configuration.yaml or set up via a config entry.
-    """
-    config_file = Path("/config/configuration.yaml")
+    """Ensure 'telegram_dashboard:' is present in configuration.yaml if present."""
+    config_dir = get_ha_config_dir()
+    if not config_dir:
+        return
+    config_file = config_dir / "configuration.yaml"
     if not config_file.exists() or not os.access(config_file, os.W_OK):
         return
     try:
-        content = config_file.read_text(encoding="utf-8")
-        if re.search(r"^telegram_dashboard\s*:", content, flags=re.MULTILINE):
+        cfg_content = config_file.read_text(encoding="utf-8")
+        if re.search(r"^telegram_dashboard\s*:", cfg_content, flags=re.MULTILINE):
             return
         with open(config_file, "a", encoding="utf-8") as f:
-            if content and not content.endswith("\n"):
+            if cfg_content and not cfg_content.endswith("\n"):
                 f.write("\n")
             f.write("\ntelegram_dashboard:\n")
         logger.info(
-            "Added 'telegram_dashboard:' to configuration.yaml. "
-            "Restart Home Assistant once so the new services appear in the automation editor."
+            "Added 'telegram_dashboard:' to %s. Restart Home Assistant to load the integration.",
+            config_file
         )
     except Exception as e:
-        logger.warning("Could not update configuration.yaml: %s", e)
+        logger.warning("Could not update %s: %s", config_file, e)
 
 
 def main() -> None:

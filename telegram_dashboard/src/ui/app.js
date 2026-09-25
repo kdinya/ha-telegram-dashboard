@@ -547,16 +547,30 @@ function renderEntityPickerList() {
     return;
   }
 
-  entityPickerList.innerHTML = list.map(e => `
-    <button type="button" class="entity-item" data-id="${e.entity_id}" data-name="${e.friendly_name}" data-domain="${e.domain}">
-      <span class="entity-item-domain">${e.domain}</span>
-      <div class="entity-item-info">
-        <span class="entity-item-name">${e.friendly_name}</span>
-        <span class="entity-item-id">${e.entity_id}</span>
+  entityPickerList.innerHTML = list.map(e => {
+    const domain = escapeHtml(e.domain || (e.entity_id || '').split('.')[0] || '');
+    const friendlyName = escapeHtml(e.friendly_name || e.entity_id || '');
+    const entityId = escapeHtml(e.entity_id || '');
+    const stateVal = escapeHtml(String(e.state !== undefined && e.state !== null ? e.state : ''));
+    const unit = escapeHtml(e.attributes && e.attributes.unit_of_measurement ? e.attributes.unit_of_measurement : '');
+    const displayParam = unit ? `${stateVal} ${unit}` : stateVal;
+    return `
+    <button type="button" class="entity-item" data-id="${entityId}" data-name="${friendlyName}" data-domain="${domain}">
+      <div class="entity-item-main">
+        <div class="entity-item-header">
+          <span class="entity-item-name">${friendlyName}</span>
+          <span class="entity-item-domain-badge">${domain}</span>
+        </div>
+        <div class="entity-item-sub">
+          <span class="entity-item-id"><code>${entityId}</code></span>
+        </div>
       </div>
-      <span class="entity-item-state">${e.state || ''}</span>
+      <div class="entity-item-state-wrap">
+        <span class="entity-item-param ${stateVal === 'unavailable' || stateVal === 'unknown' ? 'is-muted' : ''}">${displayParam || '—'}</span>
+      </div>
     </button>
-  `).join('');
+  `;
+  }).join('');
 
   entityPickerList.querySelectorAll('.entity-item').forEach(item => {
     item.addEventListener('click', () => {
@@ -573,7 +587,7 @@ function renderEntityPickerList() {
             sel.value = eid;
             sel.dispatchEvent(new Event('change'));
           }
-          if (trigger) trigger.value = `${name || eid} (${eid})`;
+          
           const nameInput = row.querySelector('.item-name-input');
           if (nameInput && !nameInput.value.trim()) {
             nameInput.value = name || eid;
@@ -785,10 +799,6 @@ function createInlineEditRow(initialData = {}, onSave, onCancel) {
   const initialText = escapeHtml(initialData.text || '');
   let isHeading = Boolean(initialData.is_heading);
   const displayIcon = initialIcon ? initialIcon : `<span class="icon-empty-slot" title="${t('empty_icon_title')}">∅</span>`;
-  const initialFound = (initialEntityId && Array.isArray(availableEntities))
-    ? availableEntities.find(e => e.entity_id === initialEntityId)
-    : null;
-  const initialDisplay = initialFound ? `${initialFound.friendly_name || initialEntityId} · ${initialEntityId}` : initialEntityId;
 
   row.innerHTML = `
     <div class="icon-input-wrap">
@@ -877,9 +887,13 @@ function createInlineEntityRow(initialData = {}, onSave, onCancel) {
   const initialEntityId = initialData.entity_id || '';
   let showIndent = initialData.show_indent !== undefined ? Boolean(initialData.show_indent) : true;
   const displayIcon = initialIcon ? initialIcon : `<span class="icon-empty-slot" title="${t('empty_icon_title')}">∅</span>`;
+  const initialFound = (initialEntityId && Array.isArray(availableEntities))
+    ? availableEntities.find(e => e.entity_id === initialEntityId)
+    : null;
+  const initialDisplay = initialFound ? `${initialFound.friendly_name || initialEntityId} · ${initialEntityId}` : initialEntityId;
 
   row.innerHTML = `
-    <!-- Row 1: Icon picker, Name input, Indent toggle -->
+    <!-- Row 1: Icon picker, Name input, Indent toggle, Save button, Cancel button -->
     <div class="add-entity-row-1">
       <div class="icon-input-wrap">
         <button type="button" class="btn-icon-select btn-inline-icon-picker" title="${t('btn_inline_icon_title')}">
@@ -891,21 +905,17 @@ function createInlineEntityRow(initialData = {}, onSave, onCancel) {
       <button type="button" class="btn-toggle-indent ${showIndent ? 'active' : ''}" title="${showIndent ? t('btn_toggle_indent_on') : t('btn_toggle_indent_off')}" aria-pressed="${showIndent}">
         ↳
       </button>
+      <button type="button" class="btn btn-primary btn-sm btn-inline-action btn-save-inline" title="${t('btn_save_item_title')}">💾</button>
+      <button type="button" class="btn btn-ghost btn-sm btn-inline-action btn-cancel-inline" title="${t('btn_cancel_item_title')}">✕</button>
     </div>
 
-    <!-- Row 2: Entity Selection (opens the search list directly) -->
+    <!-- Row 2: Entity search / picker trigger -->
     <div class="add-entity-row-2">
       <input type="hidden" class="entity-select-val" value="${escapeHtml(initialEntityId)}">
       <button type="button" class="form-control flex-1 entity-select-display" title="${t('placeholder_entity_select')}">
         <span class="entity-select-text">${initialEntityId ? escapeHtml(initialDisplay) : t('placeholder_entity_select')}</span>
         <span class="entity-select-icon" aria-hidden="true">🔍</span>
       </button>
-    </div>
-
-    <!-- Row 3: Cancel and Save buttons -->
-    <div class="add-entity-row-3">
-      <button type="button" class="btn btn-ghost btn-sm btn-cancel-inline" title="${t('btn_cancel_item_title')}">${t('btn_cancel')}</button>
-      <button type="button" class="btn btn-primary btn-sm btn-save-inline" title="${t('btn_save_item_title')}">💾 ${t('btn_save_user')}</button>
     </div>
   `;
 
@@ -943,7 +953,7 @@ function createInlineEntityRow(initialData = {}, onSave, onCancel) {
       }
       if (iconInput && !iconInput.value) {
         const domain = eid.split('.')[0];
-        const defIcon = DOMAIN_ICONS[domain] || '🔹';
+        const defIcon = (typeof DOMAIN_ICONS !== 'undefined' && DOMAIN_ICONS[domain]) || '🔹';
         iconInput.value = defIcon;
         if (iconDisplay) iconDisplay.textContent = defIcon;
       }
@@ -969,7 +979,7 @@ function createInlineEntityRow(initialData = {}, onSave, onCancel) {
     const selectedEid = (entitySelect.value || '').trim();
     if (!selectedEid) {
       showToast(t('toast_select_entity_first_validation'), true);
-      entitySelect.focus();
+      entityDisplayBtn.focus();
       return;
     }
     const label = (nameInput.value || '').trim() || (availableEntities.find(e => e.entity_id === selectedEid)?.friendly_name) || selectedEid;
@@ -985,6 +995,16 @@ function createInlineEntityRow(initialData = {}, onSave, onCancel) {
   });
 
   btnCancel.addEventListener('click', onCancel);
+
+  nameInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      btnSave.click();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      onCancel();
+    }
+  });
 
   return row;
 }

@@ -13,7 +13,7 @@ startup: application
 boot: auto
 init: false
 map:
-  - "config:rw"
+  - "homeassistant_config:rw"
 homeassistant_api: true
 panel_icon: mdi:send-circle
 panel_title: "Telegram Dashboard"
