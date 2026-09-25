@@ -262,7 +262,7 @@ class MessageRenderer:
             rows.append("<i>Показники не налаштовані.</i>")
 
         # Telegram bubble width spacer based on telegram_msg_width (20-100%)
-        width_pct = int(section.get("telegram_msg_width") or state.get("telegram_msg_width") or 100)
+        width_pct = int(section.get("telegram_msg_width") or state.get("telegram_msg_width") or 60)
         width_pct = max(20, min(100, width_pct))
         width_chars = int((width_pct - 20) / 80 * 42)
         if width_chars > 0:

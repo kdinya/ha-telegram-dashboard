@@ -567,9 +567,9 @@ body {
   color: var(--tg-text);
   box-sizing: border-box;
   align-self: flex-start;
-  width: var(--tg-msg-width, 100%) !important;
+  width: var(--tg-msg-width, 75%) !important;
   min-width: 0 !important;
-  max-width: var(--tg-msg-width, 100%) !important;
+  max-width: var(--tg-msg-width, 75%) !important;
   margin-top: 0; margin-bottom: 12px;
   overflow: hidden;
   transition: width 0.15s ease, max-width 0.15s ease;
@@ -2085,4 +2085,26 @@ body:has(.modal-overlay.open) {
   font-size: 10px !important;
   color: rgba(255, 255, 255, 0.6) !important;
   margin-left: auto;
+}
+
+/* Auto-expand preview height on narrow/mobile view and enable chat scroll */
+.tg-messages-area {
+  cursor: grab;
+  user-select: none;
+}
+.tg-messages-area:active {
+  cursor: grabbing;
+}
+
+@media (max-width: 900px) {
+  .preview-pane {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  .phone-frame {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 480px !important;
+    overflow: visible !important;
+  }
 }

@@ -11,7 +11,7 @@ from typing import Any
 DEFAULT_CONFIG: dict[str, Any] = {
     "version": "1.0.0",
     "language": "en",
-    "telegram_msg_width": 100,
+    "telegram_msg_width": 60,
     "menu": {
         "main": {
             "title": "🏠 Smart Home",
