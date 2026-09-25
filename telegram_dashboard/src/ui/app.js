@@ -363,6 +363,7 @@ async function init() {
   setupWidgetConfig();
   await fetchEntities();
   await loadConfig();
+  void loadTelegramBotName();
   setupEventListeners();
 }
 
@@ -392,6 +393,20 @@ async function loadConfig() {
   } catch (e) {
     console.error('Помилка завантаження конфігурації або ініціалізації редактора:', e);
     showToast(t('toast_cfg_load_error'), true);
+  }
+}
+
+async function loadTelegramBotName() {
+  try {
+    const data = await api('api/bot/info');
+    const name = typeof data.name === 'string' ? data.name.trim() : '';
+    const nameEl = $('preview-bot-name');
+    if (name && nameEl) {
+      nameEl.textContent = name;
+      nameEl.removeAttribute('data-i18n');
+    }
+  } catch (e) {
+    console.warn('Could not fetch Telegram bot name:', e);
   }
 }
 

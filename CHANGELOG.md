@@ -2,7 +2,9 @@
 
 ### Fixed
 - Inactivity auto-delete now starts as soon as a dashboard message is sent and is reset by button interactions.
-- Telegram preview keeps the chat bottom-anchored throughout message-height changes, including on narrow screens.
+- Telegram preview animates message-height changes smoothly on narrow screens without a large empty gap above the chat.
+- Bot preview now uses the configured Home Assistant Telegram bot name and starts chat messages directly below the header.
+- Editor item controls stay above item content on narrow screens; the redundant Telegram integration notice was removed from Settings.
 
 ## [1.1.2] - 2026-03-29
 

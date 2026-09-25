@@ -68,6 +68,23 @@ class HAClient:
     async def get_state(self, entity_id: str) -> dict[str, Any] | None:
         return await self._get(f"/api/states/{entity_id}")
 
+    async def get_telegram_bot_name(self) -> str | None:
+        """Return the title of a loaded Telegram bot config entry, without reading its credentials."""
+        entries = await self._get("/api/config/config_entries/entry?domain=telegram_bot")
+        if not isinstance(entries, list):
+            return None
+        return next(
+            (
+                entry["title"].strip()
+                for entry in entries
+                if isinstance(entry, dict)
+                and entry.get("state") == "loaded"
+                and isinstance(entry.get("title"), str)
+                and entry["title"].strip()
+            ),
+            None,
+        )
+
     async def get_states(self) -> list[dict[str, Any]]:
         return await self._get("/api/states")
 

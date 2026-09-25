@@ -96,8 +96,6 @@ btn_action_add_divider: "Add spacer",
       lang_en: "English (Default)",
       lang_uk: "Ukrainian (Українська)",
       settings_bot_token: "Telegram Bot Token",
-      settings_ha_tg_integration_title: "Home Assistant Telegram Bot Integration",
-      settings_ha_tg_integration_desc: "Telegram Dashboard operates directly through the official Home Assistant telegram_bot integration. No bot token is required here.", 
       settings_auto_delete_timeout: "Auto-delete inactive message (seconds)",
       settings_auto_delete_timeout_hint: "Automatically deletes the dashboard message after inactivity (0 to disable, default 180s / 3 min).",
       settings_bot_token_hint: "Get a token from @BotFather or specify it in add-on configuration.",
@@ -125,6 +123,7 @@ btn_action_add_divider: "Add spacer",
 
       preview_back_btn: "⬅️ Back to editor",
       preview_sim_role: "Role simulation:",
+      preview_bot_fallback: "Telegram bot",
 
       // Modals: Add Section
       modal_add_section_title: "Add new section",
@@ -317,8 +316,6 @@ btn_action_add_divider: "Додати відступ",
       lang_en: "English (за замовчуванням)",
       lang_uk: "Українська",
       settings_bot_token: "Токен Telegram-бота (Bot Token)",
-      settings_ha_tg_integration_title: "Офіційна інтеграція Telegram Bot у Home Assistant",
-      settings_ha_tg_integration_desc: "Telegram Dashboard працює напряму через офіційну інтеграцію telegram_bot у Home Assistant. Токен бота в аддоні вказувати не потрібно.",
       settings_auto_delete_timeout: "Авто-видалення неактивного повідомлення (секунди)",
       settings_auto_delete_timeout_hint: "Автоматично видаляє повідомлення дашборду через вказаний час бездіяльності (0 — вимкнено, стандартно 180 с / 3 хв).",
       settings_bot_token_hint: "Отримайте токен у @BotFather або вкажіть у конфігурації add-on.",
@@ -346,6 +343,7 @@ btn_action_add_divider: "Додати відступ",
 
       preview_back_btn: "⬅️ До налаштувань",
       preview_sim_role: "Симуляція ролі:",
+      preview_bot_fallback: "Telegram-бот",
 
       // Modals: Add Section
       modal_add_section_title: "Додати новий розділ",

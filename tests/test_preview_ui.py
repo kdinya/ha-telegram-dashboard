@@ -1,0 +1,37 @@
+"""Regression checks for settings and the mobile Telegram preview UI."""
+import re
+from pathlib import Path
+
+
+UI_DIR = Path(__file__).resolve().parent.parent / "telegram_dashboard" / "src" / "ui"
+
+
+def test_settings_omits_redundant_telegram_integration_notice():
+    html = (UI_DIR / "index.html").read_text(encoding="utf-8")
+    translations = (UI_DIR / "i18n.js").read_text(encoding="utf-8")
+    styles = (UI_DIR / "style.css").read_text(encoding="utf-8")
+
+    assert "panel-notice-box" not in html
+    assert "settings_ha_tg_integration_title" not in translations
+    assert "settings_ha_tg_integration_desc" not in translations
+    assert ".panel-notice-box" not in styles
+
+
+def test_preview_uses_dynamic_telegram_bot_name():
+    html = (UI_DIR / "index.html").read_text(encoding="utf-8")
+    app = (UI_DIR / "app.js").read_text(encoding="utf-8")
+
+    assert 'id="preview-bot-name"' in html
+    assert "Smart Home Bot" not in html
+    assert "api/bot/info" in app
+    assert "loadTelegramBotName" in app
+
+
+def test_preview_chat_starts_at_header_and_item_controls_stack_above_content():
+    styles = (UI_DIR / "style.css").read_text(encoding="utf-8")
+    assert ".tg-messages-area > :first-child" not in styles
+
+    actions_rule = re.search(r"\.section-text-item-actions\s*\{([^}]*)\}", styles)
+    assert actions_rule is not None
+    assert "position: relative" in actions_rule.group(1)
+    assert "z-index: 5" in actions_rule.group(1)

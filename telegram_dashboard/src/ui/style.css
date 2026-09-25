@@ -582,10 +582,6 @@ select.form-control option {
   scroll-behavior: smooth;
 }
 
-.tg-messages-area > :first-child {
-  margin-top: auto !important;
-}
-
 .tg-bot-bubble {
   margin-bottom: 0 !important;
   overflow: hidden;
@@ -1266,6 +1262,8 @@ body:has(.modal-overlay.open) {
   gap: 8px;
   flex: 1;
   min-width: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .section-text-item-icon {
@@ -1305,6 +1303,8 @@ body:has(.modal-overlay.open) {
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
+  position: relative;
+  z-index: 5;
 }
 
 .btn-icon-action {
@@ -2161,31 +2161,4 @@ body:has(.modal-overlay.open) {
 /* Add padding to bottom of panes so floating button never obscures last fields */
 .editor-pane {
   padding-bottom: 90px !important;
-}
-
-.panel-notice-box {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  background: rgba(56, 189, 248, 0.08);
-  border: 1px solid rgba(56, 189, 248, 0.25);
-  border-radius: 10px;
-  padding: 14px 16px;
-  margin-bottom: 20px;
-}
-.panel-notice-box .notice-icon {
-  font-size: 20px;
-  line-height: 1;
-}
-.panel-notice-box .notice-content strong {
-  display: block;
-  font-size: 14px;
-  color: var(--primary, #38bdf8);
-  margin-bottom: 4px;
-}
-.panel-notice-box .notice-content p {
-  margin: 0;
-  font-size: 13px;
-  color: var(--text-secondary, #94a3b8);
-  line-height: 1.45;
 }

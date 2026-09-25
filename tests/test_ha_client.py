@@ -35,3 +35,28 @@ async def test_call_service_requests_service_response_when_requested():
     client._post.assert_awaited_once_with(
         "/api/services/telegram_bot/send_message?return_response", {"chat_id": [123]}
     )
+
+
+@pytest.mark.asyncio
+async def test_get_telegram_bot_name_uses_loaded_entry_title_only():
+    client = HAClient("http://supervisor/core", "test-token")
+    client._get = AsyncMock(return_value=[
+        {"title": "Unavailable bot", "state": "setup_error"},
+        {"title": "House Bot", "state": "loaded", "data": {"api_key": "must-not-be-read"}},
+    ])
+
+    assert await client.get_telegram_bot_name() == "House Bot"
+    client._get.assert_awaited_once_with(
+        "/api/config/config_entries/entry?domain=telegram_bot"
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_telegram_bot_name_returns_none_without_loaded_entry():
+    client = HAClient("http://supervisor/core", "test-token")
+    client._get = AsyncMock(return_value=[
+        {"title": "Unavailable bot", "state": "setup_error"},
+        {"state": "loaded", "title": "   "},
+    ])
+
+    assert await client.get_telegram_bot_name() is None

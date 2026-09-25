@@ -114,6 +114,7 @@ class WebApp:
         ui_path = Path(__file__).parent / "ui"
         self.app.router.add_get("/", self.index_handler)
         self.app.router.add_get("/api/config", self.get_config)
+        self.app.router.add_get("/api/bot/info", self.get_bot_info)
         self.app.router.add_post("/api/config", self.save_config)
         self.app.router.add_get("/api/users", self.get_users)
         self.app.router.add_post("/api/users", self.upsert_user)
@@ -144,6 +145,16 @@ class WebApp:
 
     async def get_config(self, request: web.Request) -> web.Response:
         return web.json_response(self.cm.config)
+
+    async def get_bot_info(self, request: web.Request) -> web.Response:
+        """Return only the configured bot name; never expose config-entry credentials."""
+        name = None
+        if self.ha_client:
+            try:
+                name = await self.ha_client.get_telegram_bot_name()
+            except Exception:
+                logger.warning("Could not retrieve Telegram bot name from Home Assistant")
+        return web.json_response({"name": name})
 
     async def save_config(self, request: web.Request) -> web.Response:
         data = await request.json()
