@@ -869,7 +869,8 @@ function ensureSectionItems(sec) {
             type: 'text',
             icon: t.icon || '',
             text: t.text || '',
-            is_heading: Boolean(t.is_heading)
+            is_heading: Boolean(t.is_heading),
+            show_indent: t.show_indent !== undefined ? Boolean(t.show_indent) : (t.indent !== undefined ? Boolean(t.indent) : true)
           });
         }
       });
@@ -899,7 +900,9 @@ function syncSectionLegacyCollections(sec) {
     .map(it => ({
       icon: it.icon || '',
       text: it.text || '',
-      is_heading: Boolean(it.is_heading)
+      is_heading: Boolean(it.is_heading),
+      indent: it.show_indent !== false,
+      show_indent: it.show_indent !== false
     }));
   sec.entities = sec.items
     .filter(it => it.type === 'entity')
@@ -921,6 +924,7 @@ function createInlineEditRow(initialData = {}, onSave, onCancel) {
   const initialIcon = escapeHtml(initialData.icon || '');
   const initialText = escapeHtml(initialData.text || '');
   let isHeading = Boolean(initialData.is_heading);
+  let showIndent = initialData.show_indent !== undefined ? Boolean(initialData.show_indent) : (initialData.indent !== undefined ? Boolean(initialData.indent) : true);
   const displayIcon = initialIcon ? initialIcon : `<span class="icon-empty-slot" title="${t('empty_icon_title')}">∅</span>`;
 
   row.innerHTML = `
@@ -933,6 +937,9 @@ function createInlineEditRow(initialData = {}, onSave, onCancel) {
     <input type="text" class="form-control flex-1 item-input-val ${isHeading ? 'is-heading' : ''}" placeholder="${t('placeholder_text_input')}" value="${initialText}">
     <button type="button" class="btn-toggle-bold ${isHeading ? 'active' : ''}" title="${t('header_word')} (${t('badge_heading')})" aria-pressed="${isHeading}">
       <b>B</b>
+    </button>
+    <button type="button" class="btn-toggle-indent ${showIndent ? 'active' : ''}" title="${showIndent ? t('btn_toggle_indent_on') : t('btn_toggle_indent_off')}" aria-pressed="${showIndent}">
+      ⇥
     </button>
     <div class="add-text-inline-row-actions">
       <button type="button" class="btn btn-primary btn-sm btn-inline-action btn-save-inline" title="${t('btn_save_item_title')}">💾</button>
@@ -951,6 +958,7 @@ function createInlineEditRow(initialData = {}, onSave, onCancel) {
   const inputVal = row.querySelector('.item-input-val');
   const iconVal = row.querySelector('.item-icon-val');
   const btnBold = row.querySelector('.btn-toggle-bold');
+  const btnIndent = row.querySelector('.btn-toggle-indent');
   const btnSave = row.querySelector('.btn-save-inline');
   const btnCancel = row.querySelector('.btn-cancel-inline');
 
@@ -961,6 +969,15 @@ function createInlineEditRow(initialData = {}, onSave, onCancel) {
     btnBold.setAttribute('title', isHeading ? `${t('header_word')} (${t('badge_heading')})` : t('btn_bold_title'));
     inputVal.classList.toggle('is-heading', isHeading);
   });
+
+  if (btnIndent) {
+    btnIndent.addEventListener('click', () => {
+      showIndent = !showIndent;
+      btnIndent.classList.toggle('active', showIndent);
+      btnIndent.setAttribute('aria-pressed', String(showIndent));
+      btnIndent.setAttribute('title', showIndent ? t('btn_toggle_indent_on') : t('btn_toggle_indent_off'));
+    });
+  }
 
   btnSave.addEventListener('click', () => {
     const text = (inputVal.value || '').trim();
@@ -973,7 +990,8 @@ function createInlineEditRow(initialData = {}, onSave, onCancel) {
       type: 'text',
       icon: (iconVal.value || '').trim(),
       text: text,
-      is_heading: Boolean(isHeading)
+      is_heading: Boolean(isHeading),
+      show_indent: Boolean(showIndent)
     });
   });
 
@@ -1344,6 +1362,9 @@ function renderSectionElements(items) {
       const safeIcon = escapeHtml(rawIcon);
       const safeText = escapeHtml(item.text || '');
       const iconSpan = safeIcon ? `<span class="section-text-item-icon">${safeIcon}</span>` : '';
+      const indentBadge = item.show_indent !== false
+        ? `<span class="badge-text-type indent" title="${t('btn_toggle_indent_on')}">⇥ ${t('badge_indent')}</span>`
+        : `<span class="badge-text-type" title="${t('btn_toggle_indent_off')}">${t('badge_no_indent')}</span>`;
 
       el.innerHTML = `
         <div class="item-drag-handle" title="Перетягніть для зміни порядку" aria-label="Перетягнути">⠿</div>
@@ -1351,6 +1372,7 @@ function renderSectionElements(items) {
           ${iconSpan}
           <span class="${contentClass}">${safeText}</span>
           ${badgeHtml}
+          ${indentBadge}
         </div>
         <div class="section-text-item-actions">
           <button type="button" class="btn-icon-action btn-edit-elem-item" title="Редагувати" data-idx="${idx}">✏️</button>
