@@ -589,15 +589,56 @@ function splitEntityName(friendlyName, domain, attributes) {
   return { device: '', param: friendlyName };
 }
 
+function isEntityInGroup(entity, group) {
+  if (!group || group === 'all') return true;
+  const domain = (entity.domain || (entity.entity_id || '').split('.')[0] || '').toLowerCase();
+  const eid = (entity.entity_id || '').toLowerCase();
+  const name = (entity.friendly_name || '').toLowerCase();
+
+  if (group === 'controls') {
+    return ['light', 'switch', 'cover', 'lock', 'climate', 'fan', 'media_player', 'valve', 'water_heater', 'vacuum', 'humidifier', 'siren'].includes(domain);
+  }
+  if (group === 'sensors') {
+    return ['sensor', 'binary_sensor', 'device_tracker', 'person', 'weather', 'sun'].includes(domain) && !isSystemEntity(eid, name, domain);
+  }
+  if (group === 'automations') {
+    return ['automation', 'script', 'scene', 'input_boolean', 'input_button', 'input_select', 'input_number', 'input_datetime', 'timer', 'counter', 'schedule'].includes(domain);
+  }
+  if (group === 'system') {
+    return isSystemEntity(eid, name, domain);
+  }
+  return true;
+}
+
+function isSystemEntity(eid, name, domain) {
+  if (['update', 'system_health', 'persistent_notification'].includes(domain)) return true;
+  if (eid.startsWith('sensor.home_assistant_') || eid.startsWith('sensor.supervisor_') || eid.startsWith('sensor.disk_') || eid.startsWith('sensor.memory_') || eid.startsWith('sensor.cpu_')) return true;
+  if (eid.includes('version') || eid.includes('uptime') || eid.includes('last_boot') || eid.includes('certificate')) return true;
+  if (name.includes('home assistant') || name.includes('supervisor') || name.includes('система') || name.includes('версія') || name.includes('диск') || name.includes('процесор')) return true;
+  return false;
+}
+
 function renderEntityPickerList() {
-  const search = (entitySearchInput.value || '').toLowerCase().trim();
+  const rawSearch = (entitySearchInput.value || '').toLowerCase().trim();
+  const activeGroup = domainFiltersTabs.querySelector('.domain-tab-btn.active')?.dataset.domain || 'all';
 
   let list = availableEntities;
-  if (search) {
-    list = list.filter(e =>
-      (e.friendly_name || '').toLowerCase().includes(search) ||
-      (e.entity_id || '').toLowerCase().includes(search)
-    );
+
+  // Filter by category group
+  if (activeGroup !== 'all') {
+    list = list.filter(e => isEntityInGroup(e, activeGroup));
+  }
+
+  // Multi-token search (matches all words regardless of order)
+  if (rawSearch) {
+    const tokens = rawSearch.split(/\s+/).filter(Boolean);
+    list = list.filter(e => {
+      const fn = (e.friendly_name || '').toLowerCase();
+      const eid = (e.entity_id || '').toLowerCase();
+      const area = (e.area || '').toLowerCase();
+      const combined = ;
+      return tokens.every(tok => combined.includes(tok));
+    });
   }
 
   if (!list.length) {

@@ -11,6 +11,12 @@
 - Fix: saving an action recovers the chosen entity if the picker selection was lost.
 # Changelog
 
+## [1.0.7] - 2026-03-31
+
+### Changed
+- Grouped Entity Picker filters into 4 logical categories: Controls & Devices, Sensors & States, Automations & Scripts, and Home Assistant & System.
+- Improved search in Entity Picker: supports multi-token search across friendly names, entity IDs, and areas without strict order.
+
 ## [1.0.6] - 2026-03-31
 
 ### Fixed

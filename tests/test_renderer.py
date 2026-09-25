@@ -84,4 +84,4 @@ def test_addon_config_sidebar_title_and_version():
     with open("telegram_dashboard/config.yaml", "r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
     assert cfg.get("panel_title") == "Telegram Dashboard"
-    assert cfg.get("version") == "1.0.6"
+    assert cfg.get("version") == "1.0.7"
