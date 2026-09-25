@@ -270,6 +270,17 @@ const navItems = document.querySelectorAll('.nav-item');
 const tabPanes = document.querySelectorAll('.tab-pane');
 const sectionsList = $('sections-list');
 const editorSectionKey = $('editor-section-key');
+const editorSectionIcon = $('editor-section-icon');
+const editorSectionTitle = $('editor-section-title');
+const btnEditSectionMeta = $('btn-edit-section-meta');
+const modalEditSection = $('modal-edit-section');
+const btnCloseEditSectionModal = $('btn-close-edit-section-modal');
+const btnCancelEditSection = $('btn-cancel-edit-section');
+const btnSaveEditSection = $('btn-save-edit-section');
+const btnEditSectionIconPicker = $('btn-edit-section-icon-picker');
+const editSecIcon = $('edit-sec-icon');
+const editSectionIconDisplay = $('edit-section-icon-display');
+const editSecTitle = $('edit-sec-title');
 const secTitle = $('sec-title');
 const secIcon = $('sec-icon');
 const secIconDisplay = $('sec-icon-display');
@@ -427,9 +438,12 @@ function setupIconPicker() {
         const textIconDisplay = document.querySelector(`${parentId} .item-icon-display`);
         if (textIconInput) textIconInput.value = '';
         if (textIconDisplay) textIconDisplay.innerHTML = `<span class="icon-empty-slot" title="${t('empty_icon_title')}">∅</span>`;
+      } else if (activeIconTarget === 'edit_section_meta') {
+        if (editSecIcon) editSecIcon.value = '';
+        if (editSectionIconDisplay) editSectionIconDisplay.textContent = '📁';
       } else {
-        secIcon.value = '';
-        secIconDisplay.textContent = '📁';
+        if (secIcon) secIcon.value = '';
+        if (secIconDisplay) secIconDisplay.textContent = '📁';
       }
       iconPickerModal.classList.remove('open');
     });
@@ -487,9 +501,17 @@ function renderIconGrid() {
         const textIconDisplay = document.querySelector('#inline-edit-row .item-icon-display');
         if (textIconInput) textIconInput.value = item.dataset.icon;
         if (textIconDisplay) textIconDisplay.textContent = item.dataset.icon;
+      } else if (activeIconTarget === 'inline_entity_item') {
+        const textIconInput = document.querySelector('#inline-entity-row .item-icon-val');
+        const textIconDisplay = document.querySelector('#inline-entity-row .item-icon-display');
+        if (textIconInput) textIconInput.value = item.dataset.icon;
+        if (textIconDisplay) textIconDisplay.textContent = item.dataset.icon;
+      } else if (activeIconTarget === 'edit_section_meta') {
+        if (editSecIcon) editSecIcon.value = item.dataset.icon;
+        if (editSectionIconDisplay) editSectionIconDisplay.textContent = item.dataset.icon;
       } else {
-        secIcon.value = item.dataset.icon;
-        secIconDisplay.textContent = item.dataset.icon;
+        if (secIcon) secIcon.value = item.dataset.icon;
+        if (secIconDisplay) secIconDisplay.textContent = item.dataset.icon;
       }
       iconPickerModal.classList.remove('open');
     });
@@ -1173,10 +1195,12 @@ function createInlineEntityRow(initialData = {}, onSave, onCancel) {
 function loadSectionIntoEditor(key) {
   if (!config || !config.menu || !config.menu[key]) return;
   const sec = config.menu[key];
-  editorSectionKey.textContent = key;
-  secTitle.value = stripLeadingEmoji(sec.title || '');
-  secIcon.value = sec.icon || '📁';
-  secIconDisplay.textContent = sec.icon || '📁';
+  if (editorSectionKey) editorSectionKey.textContent = key;
+  if (editorSectionIcon) editorSectionIcon.textContent = sec.icon || '📁';
+  if (editorSectionTitle) editorSectionTitle.textContent = stripLeadingEmoji(sec.title || '') || key;
+  if (secTitle) secTitle.value = stripLeadingEmoji(sec.title || '');
+  if (secIcon) secIcon.value = sec.icon || '📁';
+  if (secIconDisplay) secIconDisplay.textContent = sec.icon || '📁';
 
   const mainBadge = document.getElementById('main-badge-wrap');
   const allKeys = Object.keys(config.menu);
@@ -1944,6 +1968,60 @@ $('btn-toggle-preview').addEventListener('click', () => {
 
 // --- Live section name/icon sync ---
 function setupEventListeners() {
+  // Setup Section Meta Modal (Title & Icon)
+  if (btnEditSectionMeta) {
+    btnEditSectionMeta.addEventListener('click', () => {
+      const sec = config && config.menu ? config.menu[currentSectionKey] : null;
+      if (!sec) return;
+      if (editSecIcon) editSecIcon.value = sec.icon || '📁';
+      if (editSectionIconDisplay) editSectionIconDisplay.textContent = sec.icon || '📁';
+      if (editSecTitle) {
+        editSecTitle.value = stripLeadingEmoji(sec.title || '');
+      }
+      modalEditSection?.classList.add('open');
+      setTimeout(() => editSecTitle?.focus(), 50);
+    });
+  }
+
+  const closeEditSectionModal = () => {
+    modalEditSection?.classList.remove('open');
+  };
+  btnCloseEditSectionModal?.addEventListener('click', closeEditSectionModal);
+  btnCancelEditSection?.addEventListener('click', closeEditSectionModal);
+
+  const saveEditSectionMeta = () => {
+    const sec = config && config.menu ? config.menu[currentSectionKey] : null;
+    if (!sec) return;
+    if (editSecTitle) {
+      sec.title = stripLeadingEmoji(editSecTitle.value.trim()) || 'Розділ';
+    }
+    if (editSecIcon) {
+      sec.icon = editSecIcon.value.trim() || '📁';
+    }
+    if (editorSectionIcon) editorSectionIcon.textContent = sec.icon || '📁';
+    if (editorSectionTitle) editorSectionTitle.textContent = sec.title;
+    closeEditSectionModal();
+    renderSectionsPills();
+    renderMenuChecklist(sec.sections || sec.menu_sections || []);
+    updatePreview();
+    showToast(t('toast_section_updated'));
+  };
+
+  btnSaveEditSection?.addEventListener('click', saveEditSectionMeta);
+  editSecTitle?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveEditSectionMeta();
+    }
+  });
+
+  btnEditSectionIconPicker?.addEventListener('click', () => {
+    activeIconTarget = 'edit_section_meta';
+    iconPickerModal?.classList.add('open');
+    renderIconCategories();
+    renderIconGrid();
+  });
+
   // Language selector live switch
   const langSelect = $('setting-language');
   if (langSelect) {

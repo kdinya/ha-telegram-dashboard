@@ -75,28 +75,17 @@
             <div id="section-editor" class="panel-card">
               <div class="panel-header section-editor-header">
                 <div class="section-title-wrap">
-                  <h3><span data-i18n="editor_title_prefix">✏️ Main section name:</span> <span id="editor-section-key" class="text-accent">main</span></h3>
+                  <div class="editor-section-heading">
+                    <span id="editor-section-icon" class="editor-section-icon">📁</span>
+                    <h3 id="editor-section-title" class="editor-section-title">Розділ</h3>
+                    <button type="button" id="btn-edit-section-meta" class="btn-icon-action" data-i18n-title="btn_edit_section_meta_title" title="Edit section name and icon">✏️</button>
+                  </div>
                   <span id="main-badge-wrap" class="badge-ok main-screen-badge" style="display: none;" data-i18n="badge_main_screen">⭐ Main screen</span>
                 </div>
                 <button id="btn-delete-section" class="btn btn-danger btn-sm" data-i18n="btn_delete">🗑️ Delete</button>
               </div>
 
-              <!-- Meta: Icon - Section title -->
-              <div class="form-row">
-                <div class="form-group form-group-icon">
-                  <label data-i18n="label_icon">Icon</label>
-                  <div class="icon-input-wrap">
-                    <button type="button" id="btn-open-icon-picker" class="btn-icon-select" data-i18n-title="btn_icon_select_title" title="Choose icon from library">
-                      <span id="sec-icon-display">📁</span>
-                    </button>
-                    <input type="hidden" id="sec-icon">
-                  </div>
-                </div>
-                <div class="form-group flex-1">
-                  <label for="sec-title" data-i18n="label_section_title">Section name</label>
-                  <input type="text" id="sec-title" class="form-control" data-i18n-placeholder="placeholder_section_title" placeholder="e.g. Climate">
-                </div>
-              </div>
+
 
               <div class="form-group">
                 <label data-i18n="label_allowed_roles">Allowed roles</label>
@@ -337,6 +326,37 @@
   </div>
 
   <div id="toast" class="toast">Message</div>
+
+  <!-- Edit Section Modal -->
+  <div id="modal-edit-section" class="modal-overlay">
+    <div class="modal-card modal-card-sm">
+      <div class="modal-header">
+        <h3 data-i18n="modal_edit_section_title">Edit section</h3>
+        <button type="button" class="btn-close-modal" id="btn-close-edit-section-modal">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 16px 20px;">
+        <div class="form-row" style="margin-bottom: 0;">
+          <div class="form-group form-group-icon">
+            <label data-i18n="label_icon">Icon</label>
+            <div class="icon-input-wrap">
+              <button type="button" id="btn-edit-section-icon-picker" class="btn-icon-select" data-i18n-title="btn_icon_select_title" title="Choose icon from library">
+                <span id="edit-section-icon-display">📁</span>
+              </button>
+              <input type="hidden" id="edit-sec-icon">
+            </div>
+          </div>
+          <div class="form-group flex-1">
+            <label for="edit-sec-title" data-i18n="label_section_title">Section name</label>
+            <input type="text" id="edit-sec-title" class="form-control" data-i18n-placeholder="placeholder_section_title" placeholder="e.g. Climate" autocomplete="off">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="padding: 12px 20px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border-color);">
+        <button type="button" class="btn btn-ghost btn-sm" id="btn-cancel-edit-section" data-i18n="btn_cancel">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm" id="btn-save-edit-section" data-i18n="btn_save">Save</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Add Section Modal -->
   <div id="modal-add-section" class="modal-overlay">

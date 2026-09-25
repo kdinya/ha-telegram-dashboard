@@ -105,6 +105,9 @@
 
       // Modals: Add Section
       modal_add_section_title: "Add new section",
+      modal_edit_section_title: "Edit section",
+      btn_edit_section_meta_title: "Edit section name and icon",
+      toast_section_updated: "Section updated",
       modal_add_section_label: "Section name",
       modal_add_section_placeholder: "e.g. Climate or Lighting",
       modal_add_section_hint: "Identifier will be generated automatically from the title.",
@@ -300,6 +303,9 @@
 
       // Modals: Add Section
       modal_add_section_title: "Додати новий розділ",
+      modal_edit_section_title: "Редагувати розділ",
+      btn_edit_section_meta_title: "Редагувати назву та іконку розділу",
+      toast_section_updated: "Розділ оновлено",
       modal_add_section_label: "Назва розділу",
       modal_add_section_placeholder: "Наприклад: Клімат або Освітлення",
       modal_add_section_hint: "Ідентифікатор буде згенеровано автоматично з назви.",
