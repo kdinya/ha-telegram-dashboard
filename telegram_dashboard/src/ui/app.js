@@ -2039,6 +2039,10 @@ function setupEventListeners() {
 
   // Preview & Telegram Message Slider Controls
   const phoneFrame = $('phone-frame');
+  const previewPaneEl = $('preview-pane');
+  const chkAutoscale = $('setting-preview-autoscale');
+  const groupHeight = $('group-preview-height');
+  const groupScale = $('group-preview-scale');
   const rangeWidth = $('setting-preview-width');
   const rangeHeight = $('setting-preview-height');
   const rangeScale = $('setting-preview-scale');
@@ -2053,9 +2057,28 @@ function setupEventListeners() {
   const BASE_HEIGHT = 600;
 
   function updatePreviewDimensions(w, h, scale, msgW, save = true) {
+    const isAutoscale = !!(chkAutoscale && chkAutoscale.checked);
+
+    if (groupHeight) groupHeight.style.display = isAutoscale ? 'none' : '';
+    if (groupScale) groupScale.style.display = isAutoscale ? 'none' : '';
+
+    if (isAutoscale) {
+      const availableH = Math.max(380, window.innerHeight - 130);
+      const propH = Math.round(w * (BASE_HEIGHT / BASE_WIDTH));
+      h = Math.min(propH, availableH);
+      scale = Math.round((h / BASE_HEIGHT) * 100);
+      if (previewPaneEl) previewPaneEl.classList.add('preview-autoscale');
+    } else {
+      if (previewPaneEl) previewPaneEl.classList.remove('preview-autoscale');
+    }
+
+    document.documentElement.style.setProperty('--preview-frame-w', w + 'px');
+    document.documentElement.style.setProperty('--preview-frame-h', h + 'px');
+    document.documentElement.style.setProperty('--tg-msg-width', msgW + '%');
+
     if (phoneFrame) {
-      phoneFrame.style.width = w + 'px';
-      phoneFrame.style.height = h + 'px';
+      phoneFrame.style.removeProperty('width');
+      phoneFrame.style.removeProperty('height');
       phoneFrame.style.setProperty('--tg-msg-width', msgW + '%');
     }
 
@@ -2070,6 +2093,7 @@ function setupEventListeners() {
     if (valTgMsgWidth) valTgMsgWidth.textContent = msgW + '%';
 
     if (save) {
+      localStorage.setItem('preview_slider_autoscale', isAutoscale ? 'true' : 'false');
       localStorage.setItem('preview_slider_width', String(w));
       localStorage.setItem('preview_slider_height', String(h));
       localStorage.setItem('preview_slider_scale', String(scale));
@@ -2078,6 +2102,7 @@ function setupEventListeners() {
   }
 
   function initPreviewControls() {
+    let savedAutoscale = localStorage.getItem('preview_slider_autoscale') === 'true';
     let savedW = parseInt(localStorage.getItem('preview_slider_width'), 10);
     let savedH = parseInt(localStorage.getItem('preview_slider_height'), 10);
     let savedScale = parseInt(localStorage.getItem('preview_slider_scale'), 10);
@@ -2088,7 +2113,26 @@ function setupEventListeners() {
     if (isNaN(savedScale)) savedScale = 100;
     if (isNaN(savedMsgW)) savedMsgW = 100;
 
+    if (chkAutoscale) {
+      chkAutoscale.checked = savedAutoscale;
+      chkAutoscale.addEventListener('change', () => {
+        const w = rangeWidth ? (parseInt(rangeWidth.value, 10) || BASE_WIDTH) : BASE_WIDTH;
+        const msgW = rangeTgMsgWidth ? (parseInt(rangeTgMsgWidth.value, 10) || 100) : 100;
+        const sc = rangeScale ? (parseInt(rangeScale.value, 10) || 100) : 100;
+        const h = rangeHeight ? (parseInt(rangeHeight.value, 10) || BASE_HEIGHT) : BASE_HEIGHT;
+        updatePreviewDimensions(w, h, sc, msgW, true);
+      });
+    }
+
     updatePreviewDimensions(savedW, savedH, savedScale, savedMsgW, false);
+
+    window.addEventListener('resize', () => {
+      if (chkAutoscale && chkAutoscale.checked) {
+        const w = rangeWidth ? (parseInt(rangeWidth.value, 10) || BASE_WIDTH) : BASE_WIDTH;
+        const msgW = rangeTgMsgWidth ? (parseInt(rangeTgMsgWidth.value, 10) || 100) : 100;
+        updatePreviewDimensions(w, 0, 100, msgW, false);
+      }
+    });
 
     if (rangeScale) {
       rangeScale.addEventListener('input', (e) => {
@@ -2132,6 +2176,7 @@ function setupEventListeners() {
 
     if (btnResetPreviewSize) {
       btnResetPreviewSize.addEventListener('click', () => {
+        if (chkAutoscale) chkAutoscale.checked = false;
         updatePreviewDimensions(BASE_WIDTH, BASE_HEIGHT, 100, 100, true);
         showToast('Розміри прев’ю скинуто до стандартних');
       });

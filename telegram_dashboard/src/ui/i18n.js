@@ -103,6 +103,8 @@
       // Preview & Settings
       preview_mobile_title: "📱 Telegram Simulator",
       settings_preview_title: "📱 Telegram Preview & Simulator Settings",
+      settings_preview_autoscale: "Auto-scale preview for wide screens",
+      settings_preview_autoscale_hint: "Proportionally fits preview height to screen and keeps it sticky on scroll",
       settings_preview_width: "Preview width",
       settings_preview_height: "Preview height",
       settings_preview_scale: "Proportional (scale)",
@@ -312,6 +314,8 @@
       // Preview & Settings
       preview_mobile_title: "📱 Симулятор Telegram",
       settings_preview_title: "📱 Налаштування прев'ю та симулятора Telegram",
+      settings_preview_autoscale: "Автоматичне масштабування прев'ю для широких екранів",
+      settings_preview_autoscale_hint: "Пропорційно підганяє висоту прев'ю під екран та фіксує його при скролі редактора",
       settings_preview_width: "Ширина прев'ю",
       settings_preview_height: "Висота прев'ю",
       settings_preview_scale: "Пропорційно (масштаб)",

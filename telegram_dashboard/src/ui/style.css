@@ -38,7 +38,7 @@ body {
 
 .app-layout {
   display: flex;
-  width: 100vw;
+  width: 100%;
   min-height: 100vh;
 }
 
@@ -471,18 +471,28 @@ body {
 }
 
 .preview-pane {
-  width: auto;
-  min-width: 340px;
+  width: var(--preview-frame-w, 320px);
+  min-width: 0;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
   align-items: center;
-  padding: 10px 0;
+  padding: 0;
+  transition: width 0.15s ease;
+}
+
+/* Auto-scale mode: preview stays in the visible part of the screen while editor scrolls */
+.preview-pane.preview-autoscale {
+  position: sticky;
+  top: 90px;
+  align-self: flex-start;
+  max-height: calc(100vh - 110px);
+  overflow: visible;
 }
 
 .phone-frame {
-  width: 320px;
+  width: var(--preview-frame-w, 320px);
   background-color: var(--tg-bubble);
   border: 10px solid #2d3748;
   border-radius: 36px;
@@ -490,7 +500,7 @@ body {
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
   display: flex;
   flex-direction: column;
-  height: 600px;
+  height: var(--preview-frame-h, 600px);
   box-sizing: border-box;
   max-width: 100%;
 }
@@ -768,30 +778,37 @@ body {
     padding: 16px;
     flex-direction: column;
   }
+  .editor-pane {
+    width: 100%;
+    flex: none;
+  }
   .preview-pane {
     display: none;
-    width: 100%;
+    width: 100% !important;
+    min-width: 0 !important;
+    position: static !important;
+    max-height: none !important;
   }
   .preview-pane.mobile-active {
     display: flex;
     flex-direction: column;
     align-items: center;
+    width: 100% !important;
   }
   .preview-header-mobile {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    width: 100%;
-    max-width: 320px;
+    width: 100% !important;
+    max-width: 100% !important;
     margin-bottom: 12px;
   }
   .phone-frame {
-    width: 100%;
-    max-width: 320px;
-    height: 600px;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: var(--preview-frame-h, 600px);
   }
 }
-
 /* ---- Modal additions & entity picker ---- */
 .modal-card-lg {
   max-width: 640px;
