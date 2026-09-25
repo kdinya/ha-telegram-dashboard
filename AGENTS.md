@@ -100,3 +100,35 @@ Before pushing any commit or releasing:
 2. **Unit Tests**: `python -m pytest tests/ -v` — 100% passing.
 3. **Clean Working Tree**: no temporary artifacts or unstaged files remain.
 4. **Constructor Preview & Telegram Parity Check**: ensure changes to sections and their elements immediately render in the UI live preview and strictly correspond to the Telegram message formatting.
+
+---
+
+## 4. Reference Documentation & Sources of Truth
+
+When facing unknowns, investigating APIs, or verifying expected schemas, payload formats, or behavior, the AI **MUST first consult these official references** before searching elsewhere:
+
+1. **Home Assistant Telegram Bot Integration**:
+   - Integration overview & event schemas (`telegram_command`, `telegram_callback`, etc.):
+     https://www.home-assistant.io/integrations/telegram_bot/
+   - Action `telegram_bot.send_message`:
+     https://www.home-assistant.io/actions/telegram_bot.send_message/
+   - Action `telegram_bot.edit_message`:
+     https://www.home-assistant.io/actions/telegram_bot.edit_message/
+   - Action `telegram_bot.answer_callback_query`:
+     https://www.home-assistant.io/actions/telegram_bot.answer_callback_query/
+
+2. **Home Assistant WebSocket API**:
+   - Realtime event subscriptions, authentication, and service calls:
+     https://developers.home-assistant.io/docs/api/websocket/
+
+3. **Telegram Bot API**:
+   - Official Telegram Bot API Reference (inline keyboards, formatting, limits):
+     https://core.telegram.org/bots/api
+   - BotFather (Bot creation & configuration commands):
+     https://t.me/BotFather
+
+4. **Project Repository**:
+   - Source code, issue tracker, and releases:
+     https://github.com/kdinya/ha-telegram-dashboard
+
+Only if an answer cannot be determined from these primary sources should the AI proceed with broader web search or external documentation.
