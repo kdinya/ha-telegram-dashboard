@@ -282,7 +282,8 @@ class BotEngine:
         if roles:
             sec_decision = self.access.check_section(user_id, section_key, section)
             if not sec_decision.allowed:
-                return {"ok": False, "toast": f"⛔ Немає доступу до розділу: {sec_decision.reason}", "section_key": section_key}
+                msg = f"⛔ Немає доступу до розділу: {sec_decision.reason}"
+                return {"ok": False, "toast": msg, "section_key": section_key}
         buttons = section.get("buttons", [])
 
         target_btn = None

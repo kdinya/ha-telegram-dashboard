@@ -31,6 +31,13 @@
    - Git commits should be concise, following conventional commit format (`fix:`, `feat:`, `docs:`, `perf:`, `test:`, `chore:`).
    - Commit author identity: `kdinya <kdinya@users.noreply.github.com>` (GitHub profile email, never a real mailbox).
 
+5. **Mandatory CI Checks & Zero-Error Policy**:
+   - Before pushing any commit or declaring a task complete, the AI MUST run full local verification matching the CI pipeline:
+     - `flake8 telegram_dashboard/src tests --max-line-length=120 --ignore=E203,W503,F401`
+     - `python -m pytest tests/ -v`
+   - Zero errors, zero test failures, and zero lint violations are strictly mandatory. Pushing code that breaks CI is strictly prohibited.
+   - Immediately after pushing, the AI must verify the GitHub Actions run status via the GitHub API to ensure the build has passed successfully.
+
 ---
 
 ## 2. Core Architecture & Strict Invariants
