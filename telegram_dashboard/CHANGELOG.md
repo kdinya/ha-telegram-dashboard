@@ -12,6 +12,7 @@
 - Mobile preview no longer leaves the hidden editor above the phone; standard Back and Close controls now use explicit arrow and cross icons instead of relying on emoji glyph colors.
 - Preview messages can now be dragged vertically like a Telegram chat, and real Telegram buttons use blue/red markers that Telegram renders consistently.
 - Preview refreshes now keep exactly one update timestamp, while Telegram messages use one global invisible width anchor instead of section-dependent sizing.
+- Standard preview buttons now keep the same background as all other buttons, with only the Back arrow blue and Close cross red; timestamp is rendered in one dedicated element.
 
 ## [1.1.2]
 

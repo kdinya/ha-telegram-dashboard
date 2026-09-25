@@ -26,7 +26,7 @@ async def test_bot_engine_navigation():
     res_clim = await engine.handle_navigation(10, "climate", {})
     assert "📁 Клімат" in res_clim["text"]
     keyboard_text = [button["text"] for row in res_clim["keyboard"] for button in row]
-    assert "❌ Закрити" in keyboard_text
+    assert "🔴 Закрити" in keyboard_text
 
 
 @pytest.mark.asyncio

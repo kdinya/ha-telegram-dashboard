@@ -676,20 +676,20 @@ select.form-control option {
   background-color: var(--tg-btn-hover);
 }
 .tg-button.is-back {
-  background-color: #2563eb;
-  border-color: #60a5fa;
+  background-color: var(--tg-btn);
+  border-color: rgba(255, 255, 255, 0.18);
   color: #ffffff;
 }
 .tg-button.is-back:hover {
-  background-color: #1d4ed8;
+  background-color: var(--tg-btn-hover);
 }
 .tg-button.is-close {
-  background-color: #b91c1c;
-  border-color: #f87171;
+  background-color: var(--tg-btn);
+  border-color: rgba(255, 255, 255, 0.18);
   color: #ffffff;
 }
 .tg-button.is-close:hover {
-  background-color: #991b1b;
+  background-color: var(--tg-btn-hover);
 }
 .tg-standard-icon {
   display: inline-flex;

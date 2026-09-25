@@ -69,6 +69,10 @@ def test_preview_anchors_chat_to_bottom_and_colors_standard_buttons():
     assert "tg-standard-icon" in app
     assert "tg-back-icon" in styles
     assert "tg-close-icon" in styles
+    assert "id=\"preview-timestamp\"" in (UI_DIR / "index.html").read_text(encoding="utf-8")
+    assert "timestampNode?.remove()" in app
+    assert "previewTimestampEl.textContent" in app
+    assert "background-color: var(--tg-btn);" in styles
 
 
 def test_navigation_list_grows_instead_of_clipping_sections():

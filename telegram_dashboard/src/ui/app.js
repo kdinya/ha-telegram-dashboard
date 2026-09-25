@@ -2162,13 +2162,18 @@ async function updatePreview() {
         previewHeightFrame = null;
       }
 
-      botBubble?.querySelectorAll('.preview-timestamp').forEach((node) => node.remove());
-      previewText.innerHTML = data.html || 'Немає даних для показу';
-      const previewTimestamp = previewText.querySelector(':scope > i:last-child');
-      if (previewTimestamp) previewTimestamp.classList.add('preview-timestamp');
+      const previewTimestampEl = document.getElementById('preview-timestamp');
+      const renderedHtml = document.createElement('div');
+      renderedHtml.innerHTML = data.html || 'Немає даних для показу';
+      const timestampNode = [...renderedHtml.querySelectorAll('i')]
+        .find((node) => (node.textContent || '').includes('Оновлено'));
+      const timestampText = timestampNode?.textContent?.trim() || '';
+      timestampNode?.remove();
+      previewText.innerHTML = renderedHtml.innerHTML;
       renderTelegramKeyboard(data.keyboard || []);
-      if (previewTimestamp && previewButtons.parentElement === botBubble) {
-        previewButtons.after(previewTimestamp);
+      if (previewTimestampEl) {
+        previewTimestampEl.textContent = timestampText;
+        previewTimestampEl.hidden = !timestampText;
       }
 
       if (botBubble) {
