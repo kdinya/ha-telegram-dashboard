@@ -106,3 +106,12 @@ def test_section_command_and_save_flow_are_explained_and_translated():
     assert 'data-i18n="save_flow_hint"' in html
     assert 'label_section_command:' in i18n
     assert 'section_command_hint:' in i18n
+
+
+def test_preview_sanitizes_html_and_save_preserves_message_width():
+    app = (UI_DIR / "app.js").read_text(encoding="utf-8")
+    assert "function sanitizePreviewHtml(html)" in app
+    assert "NodeFilter.SHOW_ELEMENT" in app
+    assert "renderedHtml.innerHTML = sanitizePreviewHtml" in app
+    assert "config.telegram_msg_width = 60;" in app
+    assert "Number.isFinite(Number(config.telegram_msg_width))" in app

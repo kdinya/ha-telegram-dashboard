@@ -37,7 +37,15 @@ class BotEngine:
 
     def auto_discover_user(self, telegram_id: int, name: str) -> None:
         """Auto-register user from incoming Telegram update."""
+        configured_users = self.config.get("users", [])
+        if self.access.is_registered(telegram_id) and not any(
+            isinstance(user, dict) and int(user.get("telegram_id", -1)) == telegram_id
+            for user in configured_users
+        ):
+            return
         default_role = self.config.get("default_role", "guest")
+        if default_role == "admin":
+            default_role = "guest"
         if self.cm and hasattr(self.cm, "auto_discover_user"):
             user = self.cm.auto_discover_user(telegram_id, name, default_role)
             self.config = self.cm.config
@@ -57,8 +65,7 @@ class BotEngine:
                 }
                 users.append(user)
 
-        if hasattr(self.access, "users"):
-            self.access.users[telegram_id] = user
+        self.access.reload(self.config.get("users", []), self.config.get("default_role", "guest"))
 
     def set_catalog(self, catalog: dict[str, Any]) -> None:
         self.catalog = catalog or {}
@@ -74,6 +81,14 @@ class BotEngine:
             for ent in entities or []:
                 domain_of[ent] = domain
         return area_of, domain_of
+
+    def _entity_labels(self) -> dict[str, list[str]]:
+        """Invert catalog labels for label-aware entity authorization."""
+        labels_of: dict[str, list[str]] = {}
+        for label, entities in (self.catalog.get("labels") or {}).items():
+            for entity_id in entities or []:
+                labels_of.setdefault(entity_id, []).append(label)
+        return labels_of
 
     def _source_entities(self, section: dict) -> list[str]:
         """Resolve the entity list of an 'entities' section."""
@@ -106,10 +121,11 @@ class BotEngine:
     def _visible_entities(self, section: dict, user_id: int) -> list[str]:
         """Catalog entities of a section filtered by per-user RBAC."""
         area_of, domain_of = self._entity_maps()
+        labels_of = self._entity_labels()
         visible: list[str] = []
         for ent in self._source_entities(section):
             decision = self.access.check_entity(
-                user_id, ent, area=area_of.get(ent), domain=domain_of.get(ent)
+                user_id, ent, area=area_of.get(ent), domain=domain_of.get(ent), labels=labels_of.get(ent)
             )
             if decision.allowed:
                 visible.append(ent)
@@ -271,7 +287,9 @@ class BotEngine:
                     all_states = await self.get_all_states() or {}
                 except Exception as e:
                     logger.error("Failed to fetch entity states: %s", e)
-            text = self.renderer.render_entity_list(section, all_states)
+            visible_ids = set(self._visible_entities(section, user_id))
+            filtered_states = {entity_id: value for entity_id, value in all_states.items() if entity_id in visible_ids}
+            text = self.renderer.render_entity_list(section, filtered_states)
             keyboard = self.build_keyboard(section_key, user_id, page=page, state=state)
             return {"text": text, "keyboard": keyboard, "parse_mode": "HTML"}
 
@@ -306,6 +324,9 @@ class BotEngine:
         section = menu.get(section_key, {})
         if not section:
             return {"ok": False, "toast": "Розділ не знайдено", "section_key": section_key}
+        section_decision = self.access.check_section(user_id, section_key, section)
+        if not section_decision.allowed:
+            return {"ok": False, "toast": f"⛔ Відмовлено: {section_decision.reason}", "section_key": section_key}
         roles = section.get("roles")
         if roles:
             sec_decision = self.access.check_section(user_id, section_key, section)
@@ -337,8 +358,10 @@ class BotEngine:
             return {"ok": False, "toast": "Сутність не вказана", "section_key": section_key}
 
         area_of, domain_of = self._entity_maps()
+        labels_of = self._entity_labels()
         decision = self.access.check_entity(
-            user_id, target_entity, area=area_of.get(target_entity), domain=domain_of.get(target_entity)
+            user_id, target_entity, area=area_of.get(target_entity), domain=domain_of.get(target_entity),
+            labels=labels_of.get(target_entity)
         )
         if not decision.allowed:
             return {"ok": False, "toast": f"⛔ Відмовлено: {decision.reason}", "section_key": section_key}
@@ -367,7 +390,7 @@ class BotEngine:
             return {"ok": True, "toast": f"✅ {label}: виконано", "section_key": section_key}
         except Exception as e:
             logger.error("Service call failed: %s", e)
-            return {"ok": False, "toast": f"Помилка: {e}", "section_key": section_key}
+            return {"ok": False, "toast": "Помилка виклику Home Assistant", "section_key": section_key}
 
     async def handle_action(self, user_id: int, action_id: str, state: dict[str, Any]) -> dict[str, Any]:
         """Execute a Home Assistant action requested by an inline button."""
@@ -376,22 +399,40 @@ class BotEngine:
         if not target_action:
             return {"ok": False, "toast": "Дію не знайдено", "section_key": "main"}
 
+        section = self.config.get("menu", {}).get(sec_key or "", {})
+        section_decision = self.access.check_section(user_id, sec_key or "", section)
+        if not section_decision.allowed:
+            return {"ok": False, "toast": f"⛔ Відмовлено: {section_decision.reason}", "section_key": sec_key or "main"}
+
         decision = self.access.check_action(user_id, target_action)
         if not decision.allowed:
             return {"ok": False, "toast": f"⛔ Відмовлено: {decision.reason}", "section_key": sec_key}
 
         atype = target_action.get("type", "service")
+        if atype != "speak" and "min_role" not in target_action:
+            return {"ok": False, "toast": "⛔ Для цієї дії не задано мінімальну роль", "section_key": sec_key}
         area_of, domain_of = self._entity_maps()
+        labels_of = self._entity_labels()
 
         if atype == "speak":
             speaker = str(target_action.get("entity_id", ""))
             speaker_decision = self.access.check_entity(
-                user_id, speaker, area=area_of.get(speaker), domain=domain_of.get(speaker)
+                user_id,
+                speaker,
+                area=area_of.get(speaker),
+                domain=domain_of.get(speaker),
+                labels=labels_of.get(speaker),
             )
             if not speaker_decision.allowed:
-                return {"ok": False, "toast": f"⛔ Відмовлено: {speaker_decision.reason}", "section_key": sec_key}
+                return {
+                    "ok": False,
+                    "toast": f"⛔ Відмовлено: {speaker_decision.reason}",
+                    "section_key": sec_key,
+                }
             tts_service = str(target_action.get("tts_service", "tts.google_translate_say"))
             domain, _, service = tts_service.partition(".")
+            if domain != "tts" or not service:
+                return {"ok": False, "toast": "⛔ Дозволені лише TTS-сервіси", "section_key": sec_key}
             payload = {
                 "entity_id": [speaker],
                 "message": str(target_action.get("message", "")),
@@ -414,7 +455,8 @@ class BotEngine:
             domain = "homeassistant"
         if target_entity:
             entity_decision = self.access.check_entity(
-                user_id, target_entity, area=area_of.get(target_entity), domain=domain_of.get(target_entity)
+                user_id, target_entity, area=area_of.get(target_entity), domain=domain_of.get(target_entity),
+                labels=labels_of.get(target_entity)
             )
             if not entity_decision.allowed:
                 return {"ok": False, "toast": f"⛔ Відмовлено: {entity_decision.reason}", "section_key": sec_key}
@@ -434,6 +476,9 @@ class BotEngine:
         """Toggle an entity clicked from the entity browser."""
         menu = self.config.get("menu", {})
         section = menu.get(section_key, {})
+        section_decision = self.access.check_section(user_id, section_key, section)
+        if not section_decision.allowed:
+            return {"ok": False, "toast": f"⛔ Відмовлено: {section_decision.reason}"}
         visible = self._visible_entities(section, user_id)
         if entity_index < 0 or entity_index >= len(visible):
             return {"ok": False, "toast": "Сутність не знайдено"}

@@ -189,6 +189,23 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+function sanitizePreviewHtml(html) {
+  const allowedTags = new Set(['B', 'STRONG', 'I', 'EM', 'CODE', 'PRE', 'BLOCKQUOTE', 'BR', 'DIV', 'P', 'SPAN']);
+  const holder = document.createElement('div');
+  holder.innerHTML = String(html || '');
+  const walker = document.createTreeWalker(holder, NodeFilter.SHOW_ELEMENT);
+  const elements = [];
+  while (walker.nextNode()) elements.push(walker.currentNode);
+  elements.forEach((element) => {
+    if (!allowedTags.has(element.tagName)) {
+      element.replaceWith(document.createTextNode(element.textContent || ''));
+      return;
+    }
+    [...element.attributes].forEach((attribute) => element.removeAttribute(attribute.name));
+  });
+  return holder.innerHTML;
+}
+
 function stripLeadingEmoji(text) {
   if (!text) return text;
   return text.replace(/^[^\p{L}\p{N}]+/u, '').trim();
@@ -1784,10 +1801,10 @@ function renderEntitiesList(entities) {
           <div style="display: flex; gap: 10px; align-items: center; width: 100%;">
             <input type="text" class="form-control form-control-sm ent-label-input" data-index="${index}" value="${escapeHtml(ent.label || '')}" placeholder="Назва показника" style="max-width: 200px; font-weight: 600;">
             <div style="font-size: 13px; color: var(--text-muted); flex: 1;">
-              <code>${eid}</code>
+              <code>${escapeHtml(eid)}</code>
             </div>
             <div style="font-weight: bold; color: var(--accent); padding: 0 10px; background: rgba(56, 189, 248, 0.1); border-radius: 4px;">
-              ${currentVal}
+              ${escapeHtml(currentVal)}
             </div>
           </div>
         </div>
@@ -1855,7 +1872,7 @@ function renderButtonsList(buttons) {
           <div style="display: flex; gap: 10px; align-items: center; width: 100%;">
             <input type="text" class="form-control form-control-sm btn-label-input" data-index="${index}" value="${escapeHtml(btn.label || '')}" placeholder="Текст на кнопці" style="max-width: 220px; font-weight: 600;">
             <div style="font-size: 13px; color: var(--text-muted); flex: 1;">
-              <code>${eid}</code>
+              <code>${escapeHtml(eid)}</code>
             </div>
             ${stateBadge}
           </div>
@@ -1960,7 +1977,7 @@ function renderUsers() {
 
     tr.innerHTML = `
       <td><code>${user.telegram_id}</code></td>
-      <td><strong>${user.name || 'Користувач'}</strong></td>
+      <td><strong>${escapeHtml(user.name || 'Користувач')}</strong></td>
       <td>
         <select class="form-control form-control-sm user-role-select" data-id="${user.telegram_id}" style="width: auto;">
           <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Адміністратор</option>
@@ -2096,7 +2113,9 @@ function applySettings() {
   else config.theme = config.theme || 'cards';
   config.default_role = $('setting-default-role').value;
   if ($('setting-auto-delete')) config.auto_delete_timeout = parseInt($('setting-auto-delete').value, 10) || 0;
-  config.telegram_msg_width = 60;
+  if (!Number.isFinite(Number(config.telegram_msg_width))) {
+    config.telegram_msg_width = 60;
+  }
 }
 
 // --- Save config ---
@@ -2176,7 +2195,7 @@ async function updatePreview() {
 
       const previewTimestampEl = document.getElementById('preview-timestamp');
       const renderedHtml = document.createElement('div');
-      renderedHtml.innerHTML = data.html || 'Немає даних для показу';
+      renderedHtml.innerHTML = sanitizePreviewHtml(data.html || 'Немає даних для показу');
       const timestampNode = [...renderedHtml.querySelectorAll('i')]
         .find((node) => (node.textContent || '').includes('Оновлено'));
       const timestampText = timestampNode?.textContent?.trim() || '';
@@ -2606,8 +2625,8 @@ function renderSectionDevicesList(entities) {
         <div class="item-info">
           <span style="font-size: 16px; font-weight: 600; color: #38bdf8;">${domain}</span>
           <div>
-            <div class="item-title">${name}</div>
-            <div class="item-desc">${eid}</div>
+            <div class="item-title">${escapeHtml(name)}</div>
+            <div class="item-desc">${escapeHtml(eid)}</div>
           </div>
         </div>
         <button type="button" class="btn btn-danger btn-sm btn-remove-device" data-index="${index}">✕</button>

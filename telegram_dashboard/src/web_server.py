@@ -162,6 +162,9 @@ class WebApp:
             self.cm.save(data)
             if self.bot_engine:
                 self.bot_engine.config = self.cm.config
+                self.bot_engine.access.reload(
+                    self.cm.config.get("users", []), self.cm.config.get("default_role", "guest")
+                )
             return web.json_response({"ok": True, "config": self.cm.config})
         except Exception as e:
             return web.json_response({"ok": False, "error": str(e)}, status=400)
@@ -175,6 +178,10 @@ class WebApp:
             user = self.cm.upsert_user(
                 int(data["telegram_id"]), str(data.get("name", "")), str(data.get("role", "member"))
             )
+            if self.bot_engine:
+                self.bot_engine.access.reload(
+                    self.cm.config.get("users", []), self.cm.config.get("default_role", "guest")
+                )
             return web.json_response({"ok": True, "user": user})
         except Exception as e:
             return web.json_response({"ok": False, "error": str(e)}, status=400)
@@ -182,6 +189,10 @@ class WebApp:
     async def delete_user(self, request: web.Request) -> web.Response:
         uid = int(request.match_info["id"])
         deleted = self.cm.remove_user(uid)
+        if deleted and self.bot_engine:
+            self.bot_engine.access.reload(
+                self.cm.config.get("users", []), self.cm.config.get("default_role", "guest")
+            )
         return web.json_response({"ok": deleted})
 
     async def sync_users(self, request: web.Request) -> web.Response:

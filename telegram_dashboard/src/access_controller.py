@@ -41,6 +41,22 @@ class AccessController:
             raise ValueError(f"unknown default role '{default_role}'")
         self._default_role = default_role
 
+    def reload(self, users: list[dict] | dict, default_role: str | None = None) -> None:
+        """Replace the in-memory authorization snapshot after config changes."""
+        user_list = users.get("users", []) if isinstance(users, dict) else (users or [])
+        refreshed: dict[int, dict] = {}
+        for user in user_list:
+            if isinstance(user, dict) and "telegram_id" in user:
+                try:
+                    refreshed[int(user["telegram_id"])] = user
+                except (ValueError, TypeError):
+                    continue
+        if default_role is not None:
+            if default_role not in ROLE_PRIORITY:
+                raise ValueError(f"unknown default role '{default_role}'")
+            self._default_role = default_role
+        self._users = refreshed
+
     def role_of(self, telegram_id: int) -> str:
         user = self._users.get(int(telegram_id))
         if user is None:
@@ -56,7 +72,7 @@ class AccessController:
     def check_section(self, telegram_id: int, section_key: str, section: dict) -> AccessDecision:
         """Check whether the user may open a menu section."""
         role = self.role_of(telegram_id)
-        allowed_roles = section.get("roles", [])
+        allowed_roles = section.get("roles") or list(ROLE_PRIORITY)
         if role in allowed_roles:
             return AccessDecision(True, role)
         return AccessDecision(

@@ -87,7 +87,7 @@ def format_entity_value(entity_id: str, raw_state: Any, custom_unit: str = "") -
 
     if domain == "climate":
         temp = attrs.get("current_temperature") or attrs.get("temperature") or state_str
-        return "🌡️", f"{temp} °C"
+        return "🌡️", f"{html.escape(str(temp))} °C"
 
     # Battery
     if "battery" in entity_id or device_class == "battery":
@@ -99,18 +99,24 @@ def format_entity_value(entity_id: str, raw_state: Any, custom_unit: str = "") -
 
     # Sensor units
     if device_class == "temperature" or "temp" in entity_id or unit in ("°C", "°F"):
-        return "🌡️", f"{state_str} {unit or '°C'}".strip()
+        return "🌡️", f"{html.escape(state_str)} {html.escape(str(unit or '°C'))}".strip()
 
     if device_class == "humidity" or "humidity" in entity_id or unit == "%":
-        return "💧", f"{state_str} %".strip() if not unit else f"{state_str} {unit}".strip()
+        display = f"{html.escape(state_str)} %" if not unit else (
+            f"{html.escape(state_str)} {html.escape(str(unit))}"
+        )
+        return "💧", display.strip()
 
     if device_class == "power" or unit in ("W", "kW"):
-        return "⚡", f"{state_str} {unit}".strip()
+        return "⚡", f"{html.escape(state_str)} {html.escape(str(unit))}".strip()
 
     if state_lower in ("unavailable", "unknown"):
         return "⚠️", "Недоступно"
 
-    val_display = f"{state_str} {unit}".strip() if unit else state_str
+    val_display = (
+        f"{html.escape(state_str)} {html.escape(str(unit))}".strip()
+        if unit else html.escape(state_str)
+    )
     return DOMAIN_ICONS.get(domain, "🔹"), val_display or "—"
 
 

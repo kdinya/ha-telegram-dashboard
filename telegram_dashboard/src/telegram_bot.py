@@ -223,9 +223,6 @@ class TelegramBotRunner:
         if not user_id or not chat_id or not command:
             return
 
-        if hasattr(self.bot_engine, "auto_discover_user"):
-            self.bot_engine.auto_discover_user(user_id, display_name)
-
         # Multi-menu routing: match command against configured menu commands
         sec_key = None
         if hasattr(self.bot_engine, "find_menu_by_command"):
@@ -236,6 +233,9 @@ class TelegramBotRunner:
         if not sec_key:
             # Not a Telegram Dashboard command; leave untouched for user automations
             return
+
+        if hasattr(self.bot_engine, "auto_discover_user"):
+            self.bot_engine.auto_discover_user(user_id, display_name)
 
         state = await self._current_state()
         res = await self.bot_engine.handle_navigation(user_id, sec_key, state)
@@ -292,9 +292,6 @@ class TelegramBotRunner:
             if cb_id:
                 await self.answer_callback_query(cb_id)
             return
-
-        if hasattr(self.bot_engine, "auto_discover_user"):
-            self.bot_engine.auto_discover_user(user_id, display_name)
 
         state = await self._current_state()
         toast = None

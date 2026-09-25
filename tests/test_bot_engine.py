@@ -69,3 +69,35 @@ async def test_bot_engine_underscore_section_keys():
     btn_res = await engine.handle_button_click(111, "living_room", "0", {"switch.fan": "off"})
     assert btn_res["ok"] is True
     assert len(toggled) == 2
+
+
+@pytest.mark.asyncio
+async def test_callbacks_cannot_bypass_section_rbac():
+    config = {
+        "menu": {
+            "main": {"type": "menu", "roles": ["guest"], "sections": ["admin_only"]},
+            "admin_only": {
+                "type": "entities",
+                "roles": ["admin"],
+                "entities": ["switch.secret"],
+                "actions": [{
+                    "id": "danger", "min_role": "admin", "domain": "switch",
+                    "service": "turn_off", "entity_id": "switch.secret"
+                }],
+            },
+        }
+    }
+    called = []
+
+    async def mock_call_service(domain, service, target=None):
+        called.append((domain, service, target))
+
+    engine = BotEngine(
+        config, AccessController([{"telegram_id": 9, "role": "guest"}]),
+        MessageRenderer(), mock_call_service
+    )
+    toggle = await engine.handle_entity_toggle(9, "admin_only", 0)
+    action = await engine.handle_action(9, "danger", {})
+    assert toggle["ok"] is False
+    assert action["ok"] is False
+    assert called == []

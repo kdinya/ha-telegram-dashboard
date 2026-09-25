@@ -140,3 +140,13 @@ def test_render_section_uses_global_width_not_section_override():
         {"telegram_msg_width": 60, "updated_at": "12:00:00"},
     )
     assert len(base.splitlines()[-2]) >= 44
+
+
+def test_render_section_escapes_dynamic_entity_state_and_unit():
+    renderer = MessageRenderer()
+    rendered = renderer.render_section(
+        {"title": "Test", "roles": ["admin"], "items": [{"type": "entity", "entity_id": "sensor.test"}]},
+        {"sensor.test": {"state": "<b>unsafe</b>", "attributes": {"unit_of_measurement": "<x>"}}},
+    )
+    assert "<b>unsafe</b>" not in rendered
+    assert "&lt;b&gt;unsafe&lt;/b&gt;" in rendered

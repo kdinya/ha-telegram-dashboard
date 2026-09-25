@@ -1,6 +1,8 @@
 ## [1.1.3]
 
 ### Fixed
+- Security: Telegram callbacks now enforce section RBAC, entity label restrictions, and filtered entity-state rendering; live user-role changes take effect without restart.
+- Security: unknown Telegram events no longer create users, unscoped actions and non-TTS services are rejected, and preview/API-derived HTML is sanitized before DOM insertion.
 - Inactivity auto-delete now starts as soon as a dashboard message is sent and is reset by button interactions.
 - Telegram preview animates message-height changes smoothly on narrow screens without a large empty gap above the chat.
 - Bot preview now uses the configured Home Assistant Telegram bot name and starts chat messages directly below the header.

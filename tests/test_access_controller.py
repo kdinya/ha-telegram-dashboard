@@ -58,3 +58,11 @@ def test_access_controller_fail_closed_whitelist():
     # All match -> allowed
     res = ac.check_entity(50, "light.lamp", domain="light", area="living_room", labels=["guest_safe"])
     assert res.allowed is True
+
+
+def test_access_controller_reload_replaces_roles_and_restrictions():
+    ac = AccessController([{"telegram_id": 7, "role": "admin"}])
+    assert ac.role_of(7) == "admin"
+    ac.reload([{"telegram_id": 7, "role": "guest", "blocked_entities": ["light.secret"]}])
+    assert ac.role_of(7) == "guest"
+    assert ac.check_entity(7, "light.secret", domain="light").allowed is False
