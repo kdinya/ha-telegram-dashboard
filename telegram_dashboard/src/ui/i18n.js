@@ -100,13 +100,14 @@
       role_member_hint: "Family member (immediately active)",
       role_admin_hint: "Administrator",
 
-      // Preview
+      // Preview & Settings
       preview_mobile_title: "📱 Telegram Simulator",
-      preview_size_label: "Preview size:",
-      preview_size_compact: "Compact (290px)",
-      preview_size_standard: "Standard (320px)",
-      preview_size_large: "Large (360px)",
-      preview_size_wide: "Wide (400px)",
+      settings_preview_title: "📱 Telegram Preview & Simulator Settings",
+      settings_preview_width: "Preview width",
+      settings_preview_height: "Preview height",
+      settings_preview_scale: "Proportional (scale)",
+      settings_tg_msg_width: "Telegram message width",
+      btn_reset_preview_size: "↺ Reset to defaults",
       btn_save_section_meta: "Save",
       btn_save: "Save",
 
@@ -308,13 +309,14 @@
       role_member_hint: "Член родини (одразу активний)",
       role_admin_hint: "Адміністратор",
 
-      // Preview
+      // Preview & Settings
       preview_mobile_title: "📱 Симулятор Telegram",
-      preview_size_label: "Розмір прев'ю:",
-      preview_size_compact: "Компактний (290px)",
-      preview_size_standard: "Стандартний (320px)",
-      preview_size_large: "Великий (360px)",
-      preview_size_wide: "Широкий (400px)",
+      settings_preview_title: "📱 Налаштування прев'ю та симулятора Telegram",
+      settings_preview_width: "Ширина прев'ю",
+      settings_preview_height: "Висота прев'ю",
+      settings_preview_scale: "Пропорційно (масштаб)",
+      settings_tg_msg_width: "Ширина повідомлення у чаті ТГ",
+      btn_reset_preview_size: "↺ Скинути до стандартних",
       btn_save_section_meta: "Зберегти",
       btn_save: "Зберегти",
 

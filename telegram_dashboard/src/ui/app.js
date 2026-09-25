@@ -1503,7 +1503,6 @@ function renderSectionElements(items) {
       renderSectionElements(sec.items);
     });
     container.appendChild(newRow);
-    if (typeof newRow.focusInput === 'function') newRow.focusInput();
   } else if (addingItemType === 'entity') {
     const newRow = createInlineEntityRow({ icon: '', label: '', entity_id: '', show_indent: true }, (newData) => {
       sec.items.push(newData);
@@ -1517,7 +1516,6 @@ function renderSectionElements(items) {
       renderSectionElements(sec.items);
     });
     container.appendChild(newRow);
-    if (typeof newRow.focusInput === 'function') newRow.focusInput();
   }
 }
 
@@ -2039,39 +2037,108 @@ $('btn-toggle-preview').addEventListener('click', () => {
 // --- Live section name/icon sync ---
 function setupEventListeners() {
 
-  // Preview size controls
-  const previewSizeSelect = $('preview-size-select');
+  // Preview & Telegram Message Slider Controls
   const phoneFrame = $('phone-frame');
-  const sizeMap = {
-    compact: { width: '290px', height: '560px' },
-    standard: { width: '320px', height: '600px' },
-    large: { width: '360px', height: '640px' },
-    wide: { width: '400px', height: '680px' }
-  };
+  const rangeWidth = $('setting-preview-width');
+  const rangeHeight = $('setting-preview-height');
+  const rangeScale = $('setting-preview-scale');
+  const rangeTgMsgWidth = $('setting-tg-msg-width');
+  const valWidth = $('preview-width-val');
+  const valHeight = $('preview-height-val');
+  const valScale = $('preview-scale-val');
+  const valTgMsgWidth = $('tg-msg-width-val');
+  const btnResetPreviewSize = $('btn-reset-preview-size');
 
-  function applyPreviewSize(sizeKey) {
-    const size = sizeMap[sizeKey] || sizeMap.standard;
+  const BASE_WIDTH = 320;
+  const BASE_HEIGHT = 600;
+
+  function updatePreviewDimensions(w, h, scale, msgW, save = true) {
     if (phoneFrame) {
-      phoneFrame.style.width = size.width;
-      phoneFrame.style.height = size.height;
+      phoneFrame.style.width = w + 'px';
+      phoneFrame.style.height = h + 'px';
+      phoneFrame.style.setProperty('--tg-msg-width', msgW + '%');
     }
-    const previewSizeBar = document.querySelector('.preview-size-bar');
-    if (previewSizeBar) {
-      previewSizeBar.style.maxWidth = size.width;
+
+    if (rangeWidth) rangeWidth.value = w;
+    if (rangeHeight) rangeHeight.value = h;
+    if (rangeScale) rangeScale.value = scale;
+    if (rangeTgMsgWidth) rangeTgMsgWidth.value = msgW;
+
+    if (valWidth) valWidth.textContent = w + ' px';
+    if (valHeight) valHeight.textContent = h + ' px';
+    if (valScale) valScale.textContent = scale + '%';
+    if (valTgMsgWidth) valTgMsgWidth.textContent = msgW + '%';
+
+    if (save) {
+      localStorage.setItem('preview_slider_width', String(w));
+      localStorage.setItem('preview_slider_height', String(h));
+      localStorage.setItem('preview_slider_scale', String(scale));
+      localStorage.setItem('preview_slider_msg_width', String(msgW));
     }
   }
 
-  if (previewSizeSelect) {
-    const savedSize = localStorage.getItem('preview_frame_size') || 'standard';
-    previewSizeSelect.value = savedSize;
-    applyPreviewSize(savedSize);
+  function initPreviewControls() {
+    let savedW = parseInt(localStorage.getItem('preview_slider_width'), 10);
+    let savedH = parseInt(localStorage.getItem('preview_slider_height'), 10);
+    let savedScale = parseInt(localStorage.getItem('preview_slider_scale'), 10);
+    let savedMsgW = parseInt(localStorage.getItem('preview_slider_msg_width'), 10);
 
-    previewSizeSelect.addEventListener('change', (e) => {
-      const selected = e.target.value;
-      localStorage.setItem('preview_frame_size', selected);
-      applyPreviewSize(selected);
-    });
+    if (isNaN(savedW)) savedW = BASE_WIDTH;
+    if (isNaN(savedH)) savedH = BASE_HEIGHT;
+    if (isNaN(savedScale)) savedScale = 100;
+    if (isNaN(savedMsgW)) savedMsgW = 100;
+
+    updatePreviewDimensions(savedW, savedH, savedScale, savedMsgW, false);
+
+    if (rangeScale) {
+      rangeScale.addEventListener('input', (e) => {
+        const sc = parseInt(e.target.value, 10) || 100;
+        const w = Math.round(BASE_WIDTH * (sc / 100));
+        const h = Math.round(BASE_HEIGHT * (sc / 100));
+        const msgW = rangeTgMsgWidth ? (parseInt(rangeTgMsgWidth.value, 10) || 100) : 100;
+        updatePreviewDimensions(w, h, sc, msgW, true);
+      });
+    }
+
+    if (rangeWidth) {
+      rangeWidth.addEventListener('input', (e) => {
+        const w = parseInt(e.target.value, 10) || BASE_WIDTH;
+        const sc = Math.round((w / BASE_WIDTH) * 100);
+        const h = rangeHeight ? (parseInt(rangeHeight.value, 10) || BASE_HEIGHT) : BASE_HEIGHT;
+        const msgW = rangeTgMsgWidth ? (parseInt(rangeTgMsgWidth.value, 10) || 100) : 100;
+        updatePreviewDimensions(w, h, sc, msgW, true);
+      });
+    }
+
+    if (rangeHeight) {
+      rangeHeight.addEventListener('input', (e) => {
+        const h = parseInt(e.target.value, 10) || BASE_HEIGHT;
+        const w = rangeWidth ? (parseInt(rangeWidth.value, 10) || BASE_WIDTH) : BASE_WIDTH;
+        const sc = rangeScale ? (parseInt(rangeScale.value, 10) || 100) : 100;
+        const msgW = rangeTgMsgWidth ? (parseInt(rangeTgMsgWidth.value, 10) || 100) : 100;
+        updatePreviewDimensions(w, h, sc, msgW, true);
+      });
+    }
+
+    if (rangeTgMsgWidth) {
+      rangeTgMsgWidth.addEventListener('input', (e) => {
+        const msgW = parseInt(e.target.value, 10) || 100;
+        const w = rangeWidth ? (parseInt(rangeWidth.value, 10) || BASE_WIDTH) : BASE_WIDTH;
+        const h = rangeHeight ? (parseInt(rangeHeight.value, 10) || BASE_HEIGHT) : BASE_HEIGHT;
+        const sc = rangeScale ? (parseInt(rangeScale.value, 10) || 100) : 100;
+        updatePreviewDimensions(w, h, sc, msgW, true);
+      });
+    }
+
+    if (btnResetPreviewSize) {
+      btnResetPreviewSize.addEventListener('click', () => {
+        updatePreviewDimensions(BASE_WIDTH, BASE_HEIGHT, 100, 100, true);
+        showToast('Розміри прев’ю скинуто до стандартних');
+      });
+    }
   }
+
+  initPreviewControls();
 
   // Setup Section Meta Modal (Title & Icon)
   if (btnEditSectionMeta) {
@@ -2084,7 +2151,7 @@ function setupEventListeners() {
         editSecTitle.value = stripLeadingEmoji(sec.title || '');
       }
       modalEditSection?.classList.add('open');
-      setTimeout(() => editSecTitle?.focus(), 50);
+      // Do not automatically autofocus title to prevent unwanted virtual keyboard popup on mobile
     });
   }
 

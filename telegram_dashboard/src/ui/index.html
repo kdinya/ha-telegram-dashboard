@@ -191,6 +191,48 @@
                 </select>
               </div>
             </div>
+
+            <div class="panel-card" style="margin-top: 16px;">
+              <h3 data-i18n="settings_preview_title">📱 Налаштування прев'ю та повідомлень Telegram</h3>
+
+              <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <label for="setting-preview-width" style="margin: 0;" data-i18n="settings_preview_width">Ширина прев'ю</label>
+                  <span id="preview-width-val" class="badge-range-val">320 px</span>
+                </div>
+                <input type="range" id="setting-preview-width" class="form-range" min="260" max="500" step="5" value="320">
+              </div>
+
+              <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <label for="setting-preview-height" style="margin: 0;" data-i18n="settings_preview_height">Висота прев'ю</label>
+                  <span id="preview-height-val" class="badge-range-val">600 px</span>
+                </div>
+                <input type="range" id="setting-preview-height" class="form-range" min="450" max="850" step="10" value="600">
+              </div>
+
+              <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <label for="setting-preview-scale" style="margin: 0;" data-i18n="settings_preview_scale">Пропорційно (масштаб)</label>
+                  <span id="preview-scale-val" class="badge-range-val">100%</span>
+                </div>
+                <input type="range" id="setting-preview-scale" class="form-range" min="70" max="150" step="1" value="100">
+              </div>
+
+              <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <label for="setting-tg-msg-width" style="margin: 0;" data-i18n="settings_tg_msg_width">Ширина повідомлення у чаті ТГ</label>
+                  <span id="tg-msg-width-val" class="badge-range-val">100%</span>
+                </div>
+                <input type="range" id="setting-tg-msg-width" class="form-range" min="60" max="100" step="1" value="100">
+              </div>
+
+              <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                <button type="button" id="btn-reset-preview-size" class="btn btn-ghost btn-sm" data-i18n="btn_reset_preview_size">
+                  ↺ Скинути до стандартних
+                </button>
+              </div>
+            </div>
           </section>
         </div>
 
@@ -199,17 +241,6 @@
           <div class="preview-header-mobile">
             <span class="preview-title" data-i18n="preview_mobile_title">📱 Telegram Simulator</span>
             <button id="btn-back-to-editor" class="btn btn-secondary btn-sm" data-i18n="preview_back_btn">⬅️ Back to editor</button>
-          </div>
-          <div class="preview-size-bar">
-            <label for="preview-size-select">
-              <span>📏</span> <span data-i18n="preview_size_label">Розмір прев'ю:</span>
-            </label>
-            <select id="preview-size-select" class="preview-size-select">
-              <option value="compact" data-i18n="preview_size_compact">Компактний (290px)</option>
-              <option value="standard" selected data-i18n="preview_size_standard">Стандартний (320px)</option>
-              <option value="large" data-i18n="preview_size_large">Великий (360px)</option>
-              <option value="wide" data-i18n="preview_size_wide">Широкий (400px)</option>
-            </select>
           </div>
           <div class="phone-frame" id="phone-frame">
             <div class="phone-notch"></div>
