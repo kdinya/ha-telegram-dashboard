@@ -25,3 +25,12 @@ def test_user_management(tmp_path: Path):
     deleted = cm.remove_user(123456)
     assert deleted is True
     assert cm.get_user(123456) is None
+
+
+def test_default_config_english_section_titles():
+    from telegram_dashboard.src.config_manager import DEFAULT_CONFIG
+    menu = DEFAULT_CONFIG["menu"]
+    assert "Climate" in menu["climate"]["title"]
+    assert "Water" in menu["water"]["title"]
+    assert "Batteries" in menu["battery"]["title"]
+    assert "System" in menu["system"]["title"]

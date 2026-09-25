@@ -21,7 +21,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
             "sections": ["climate", "water", "home", "battery", "system"],
         },
         "climate": {
-            "title": "🌡 Клімат",
+            "title": "🌡 Climate",
             "type": "section",
             "icon": "🌡",
             "roles": ["admin", "member", "guest"],
@@ -29,7 +29,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
             "actions": [],
         },
         "water": {
-            "title": "🚰 Вода",
+            "title": "🚰 Water",
             "type": "section",
             "icon": "🚰",
             "roles": ["admin", "member"],
@@ -37,14 +37,14 @@ DEFAULT_CONFIG: dict[str, Any] = {
             "actions": [],
         },
         "battery": {
-            "title": "🔋 Батареї",
+            "title": "🔋 Batteries",
             "type": "section",
             "icon": "🔋",
             "roles": ["admin", "member"],
             "widgets": [],
         },
         "system": {
-            "title": "⚙️ Система",
+            "title": "⚙️ System",
             "type": "section",
             "icon": "⚙️",
             "roles": ["admin"],

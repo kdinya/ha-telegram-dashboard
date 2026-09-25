@@ -65,13 +65,17 @@ function createSectionWithTitle(title) {
   else if (lower.includes('замок') || lower.includes('двер') || lower.includes('lock') || lower.includes('door')) guessedIcon = '🔒';
   else if (lower.includes('штор') || lower.includes('blind') || lower.includes('curtain')) guessedIcon = '🪟';
 
+  // Ensure section is placed at the end of sections and is explicitly NOT main screen
+  delete config.menu[slug];
   config.menu[slug] = {
     title: cleanTitle,
     icon: guessedIcon,
     type: 'section',
+    is_main: false,
     roles: ['admin', 'member'],
     widgets: [],
-    actions: []
+    actions: [],
+    texts: []
   };
 
   currentSectionKey = slug;
@@ -635,7 +639,10 @@ function renderActionServiceOptions(domain, entityId) {
 function renderSectionsPills() {
   if (!config || !config.menu) return;
   sectionsList.innerHTML = '';
-  Object.keys(config.menu).forEach(key => {
+  const keys = Object.keys(config.menu);
+  const otherKeys = keys.filter(k => k !== 'main');
+  const orderedKeys = config.menu['main'] ? ['main', ...otherKeys] : keys;
+  orderedKeys.forEach(key => {
     const sec = config.menu[key];
     const pill = document.createElement('div');
     pill.className = `section-pill ${key === currentSectionKey ? 'active' : ''}`;
@@ -675,7 +682,7 @@ function createInlineEditRow(initialData = {}, onSave, onCancel) {
       <input type="hidden" class="item-icon-val" value="${initialIcon}">
     </div>
     <input type="text" class="form-control flex-1 item-input-val ${isHeading ? 'is-heading' : ''}" placeholder="${t('placeholder_text_input')}" value="${initialText}">
-    <button type="button" class="btn-toggle-bold ${isHeading ? 'active' : ''}" title="Заголовок (жирний текст)" aria-pressed="${isHeading}">
+    <button type="button" class="btn-toggle-bold ${isHeading ? 'active' : ''}" title="${t('header_word')} (${t('badge_heading')})" aria-pressed="${isHeading}">
       <b>B</b>
     </button>
     <div class="add-text-inline-row-actions">
@@ -702,6 +709,7 @@ function createInlineEditRow(initialData = {}, onSave, onCancel) {
     isHeading = !isHeading;
     btnBold.classList.toggle('active', isHeading);
     btnBold.setAttribute('aria-pressed', String(isHeading));
+    btnBold.setAttribute('title', isHeading ? `${t('header_word')} (${t('badge_heading')})` : t('btn_bold_title'));
     inputVal.classList.toggle('is-heading', isHeading);
   });
 
@@ -841,7 +849,14 @@ function renderSectionTexts(texts) {
       renderSectionTexts(sec.texts);
     });
 
-    el.querySelector('.btn-remove-text-item').addEventListener('click', () => {
+    el.querySelector('.btn-remove-text-item').addEventListener('click', async () => {
+      const confirmed = await showCustomConfirm(
+        t('confirm_dialog_title'),
+        t('confirm_delete_text_item'),
+        t('btn_delete'),
+        true
+      );
+      if (!confirmed) return;
       sec.texts.splice(idx, 1);
       if (editingTextIdx === idx) {
         editingTextIdx = null;
@@ -933,7 +948,14 @@ function renderEntitiesList(entities) {
   });
 
   container.querySelectorAll('.btn-remove-entity').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
+      const confirmed = await showCustomConfirm(
+        t('confirm_dialog_title'),
+        t('confirm_delete_entity'),
+        t('btn_delete'),
+        true
+      );
+      if (!confirmed) return;
       const idx = parseInt(btn.dataset.index, 10);
       const sec = config.menu[currentSectionKey];
       if (sec && sec.entities) {
@@ -995,7 +1017,14 @@ function renderButtonsList(buttons) {
   });
 
   container.querySelectorAll('.btn-remove-button').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
+      const confirmed = await showCustomConfirm(
+        t('confirm_dialog_title'),
+        t('confirm_delete_button'),
+        t('btn_delete'),
+        true
+      );
+      if (!confirmed) return;
       const idx = parseInt(btn.dataset.index, 10);
       const sec = config.menu[currentSectionKey];
       if (sec && sec.buttons) {
@@ -1114,7 +1143,13 @@ function renderUsers() {
   usersTbody.querySelectorAll('.btn-delete-user').forEach(btn => {
     btn.addEventListener('click', async () => {
       const id = parseInt(btn.dataset.id, 10);
-      if (confirm(`${t('btn_delete_user')} користувача ${id}?`)) await deleteUser(id);
+      const confirmed = await showCustomConfirm(
+        t('confirm_dialog_title'),
+        t('confirm_delete_user', { name: id }),
+        t('btn_delete'),
+        true
+      );
+      if (confirmed) await deleteUser(id);
     });
   });
 }
@@ -1143,35 +1178,38 @@ async function deleteUser(id) {
   }
 }
 
-$('btn-add-user').addEventListener('click', async () => {
-  const tid = prompt('Введіть Telegram ID користувача (число):');
-  if (!tid || isNaN(tid)) return;
-  const name = prompt("Введіть ім'я або юзернейм:") || 'Користувач';
-  const role = prompt('Оберіть роль (admin, member, guest):', 'member') || 'member';
-  const user = { telegram_id: parseInt(tid, 10), name, role };
-  await saveUser(user);
-  config.users.push(user);
-  renderUsers();
-});
+const btnAddUserEl = $('btn-add-user');
+if (btnAddUserEl) {
+  btnAddUserEl.addEventListener('click', async () => {
+    const tid = prompt('Введіть Telegram ID користувача (число):');
+    if (!tid || isNaN(tid)) return;
+    const name = prompt("Введіть ім'я або юзернейм:") || 'Користувач';
+    const role = prompt('Оберіть роль (admin, member, guest):', 'member') || 'member';
+    const user = { telegram_id: parseInt(tid, 10), name, role };
+    await saveUser(user);
+    config.users.push(user);
+    renderUsers();
+  });
+}
 
-$('btn-sync-users').addEventListener('click', async () => {
-  const btn = $('btn-sync-users');
-  btn.disabled = true;
-  btn.textContent = '⏳ Синхронізація...';
-  try {
-    const data = await api('api/users/sync', { method: 'POST' });
-    if (data.users) {
-      config.users = data.users;
-      renderUsers();
-      showToast(t('toast_users_synced', { count: data.discovered || 0 }));
+const btnSyncUsersEl = $('btn-sync-users');
+if (btnSyncUsersEl) {
+  btnSyncUsersEl.addEventListener('click', async () => {
+    btnSyncUsersEl.disabled = true;
+    try {
+      const data = await api('api/users/sync', { method: 'POST' });
+      if (data.users) {
+        config.users = data.users;
+        renderUsers();
+        showToast(t('toast_users_synced', { count: data.discovered || 0 }));
+      }
+    } catch (e) {
+      showToast(t('toast_sync_error', { err: e.message }), true);
+    } finally {
+      btnSyncUsersEl.disabled = false;
     }
-  } catch (e) {
-    showToast(t('toast_sync_error', { err: e.message }), true);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '🔄 Оновити / Синхронізувати';
-  }
-});
+  });
+}
 
 // --- Settings ---
 function loadSettings() {
@@ -1440,7 +1478,14 @@ function renderSectionDevicesList(entities) {
   }).join('');
 
   sectionDevicesList.querySelectorAll('.btn-remove-device').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
+      const confirmed = await showCustomConfirm(
+        t('confirm_dialog_title'),
+        t('confirm_delete_device'),
+        t('btn_delete'),
+        true
+      );
+      if (!confirmed) return;
       const idx = parseInt(btn.dataset.index, 10);
       const sec = config.menu[currentSectionKey];
       if (sec && sec.entities) {
