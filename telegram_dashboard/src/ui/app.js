@@ -531,7 +531,7 @@ function createInlineEditRow(initialData = {}, onSave, onCancel) {
 
   const initialIcon = escapeHtml(initialData.icon || '💬');
   const initialText = escapeHtml(initialData.text || '');
-  const isHeading = Boolean(initialData.is_heading);
+  let isHeading = Boolean(initialData.is_heading);
 
   row.innerHTML = `
     <div class="icon-input-wrap">
@@ -540,14 +540,13 @@ function createInlineEditRow(initialData = {}, onSave, onCancel) {
       </button>
       <input type="hidden" class="item-icon-val" value="${initialIcon}">
     </div>
-    <input type="text" class="form-control flex-1 item-input-val" placeholder="Введіть текст..." value="${initialText}">
-    <label class="checkbox-label-compact" title="Позначте, якщо це заголовок">
-      <input type="checkbox" class="item-heading-val" ${isHeading ? 'checked' : ''}>
-      <span>Заголовок</span>
-    </label>
+    <input type="text" class="form-control flex-1 item-input-val ${isHeading ? 'is-heading' : ''}" placeholder="Введіть текст..." value="${initialText}">
+    <button type="button" class="btn-toggle-bold ${isHeading ? 'active' : ''}" title="Заголовок (жирний текст)" aria-pressed="${isHeading}">
+      <b>B</b>
+    </button>
     <div class="add-text-inline-row-actions">
-      <button type="button" class="btn btn-primary btn-sm btn-save-inline">Зберегти</button>
-      <button type="button" class="btn btn-ghost btn-sm btn-cancel-inline" title="Скасувати">✕</button>
+      <button type="button" class="btn btn-primary btn-sm btn-inline-action btn-save-inline" title="Зберегти">💾</button>
+      <button type="button" class="btn btn-ghost btn-sm btn-inline-action btn-cancel-inline" title="Скасувати">✕</button>
     </div>
   `;
 
@@ -561,9 +560,16 @@ function createInlineEditRow(initialData = {}, onSave, onCancel) {
 
   const inputVal = row.querySelector('.item-input-val');
   const iconVal = row.querySelector('.item-icon-val');
-  const headingVal = row.querySelector('.item-heading-val');
+  const btnBold = row.querySelector('.btn-toggle-bold');
   const btnSave = row.querySelector('.btn-save-inline');
   const btnCancel = row.querySelector('.btn-cancel-inline');
+
+  btnBold.addEventListener('click', () => {
+    isHeading = !isHeading;
+    btnBold.classList.toggle('active', isHeading);
+    btnBold.setAttribute('aria-pressed', String(isHeading));
+    inputVal.classList.toggle('is-heading', isHeading);
+  });
 
   btnSave.addEventListener('click', () => {
     const text = (inputVal.value || '').trim();
@@ -575,7 +581,7 @@ function createInlineEditRow(initialData = {}, onSave, onCancel) {
     onSave({
       icon: iconVal.value || '💬',
       text: text,
-      is_heading: Boolean(headingVal.checked)
+      is_heading: Boolean(isHeading)
     });
   });
 

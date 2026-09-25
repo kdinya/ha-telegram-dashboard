@@ -1028,39 +1028,110 @@ body:has(.modal-overlay.open) {
 
 .add-text-inline-row {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   background: rgba(15, 23, 42, 0.6);
   border: 1px solid rgba(56, 189, 248, 0.35);
   border-radius: 8px;
-  padding: 10px 12px;
+  padding: 8px 10px;
   margin-bottom: 12px;
+}
+
+.add-text-inline-row .icon-input-wrap {
+  flex-shrink: 0;
+}
+
+.add-text-inline-row .btn-inline-icon-picker {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  font-size: 16px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.add-text-inline-row .btn-inline-icon-picker:hover {
+  border-color: var(--primary, #38bdf8);
+}
+
+.add-text-inline-row .item-input-val {
+  flex: 1 1 auto;
+  min-width: 80px;
+  height: 36px;
+  font-size: 14px;
+  transition: font-weight 0.15s ease;
+}
+
+.add-text-inline-row .item-input-val.is-heading {
+  font-weight: 700;
+  color: #fff;
+}
+
+.btn-toggle-bold {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
+  border-radius: 6px;
+  color: var(--text-muted, #94a3b8);
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.btn-toggle-bold b,
+.btn-toggle-bold strong {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-weight: 900;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.btn-toggle-bold:hover {
+  color: var(--text-main, #f8fafc);
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-toggle-bold.active {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: var(--primary, #38bdf8);
+  color: var(--primary, #38bdf8);
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.35);
 }
 
 .add-text-inline-row-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
-.checkbox-label-compact {
+.add-text-inline-row-actions .btn-inline-action {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--text-secondary, #94a3b8);
-  cursor: pointer;
-  white-space: nowrap;
-  user-select: none;
-  padding: 4px 8px;
+  justify-content: center;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.checkbox-label-compact input[type="checkbox"] {
+  font-size: 15px;
   cursor: pointer;
-  accent-color: var(--primary, #38bdf8);
 }
 
 .section-texts-list {
@@ -1174,22 +1245,17 @@ body:has(.modal-overlay.open) {
     padding: 12px 14px;
   }
   .add-text-inline-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
   }
-  .add-text-inline-row .form-control {
-    width: 100%;
-    min-width: 0;
-  }
-  .add-text-inline-row .icon-input-wrap {
-    align-self: flex-start;
-  }
-  .add-text-inline-row .checkbox-label-compact {
-    align-self: flex-start;
+  .add-text-inline-row .item-input-val {
+    min-width: 60px;
   }
   .add-text-inline-row-actions {
-    justify-content: flex-end;
-    margin-top: 4px;
+    margin-top: 0;
+    gap: 4px;
   }
 }
