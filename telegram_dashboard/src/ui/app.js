@@ -1983,6 +1983,12 @@ async function updatePreview() {
       const data = await res.json();
       previewText.innerHTML = data.html || 'Немає даних для показу';
       renderTelegramKeyboard(data.keyboard || []);
+      const bubble = document.querySelector('.tg-message-bubble');
+      if (bubble) {
+        const savedMsgW = localStorage.getItem('preview_slider_msg_width') || '100';
+        bubble.style.width = savedMsgW + '%';
+        bubble.style.maxWidth = savedMsgW + '%';
+      }
     }
   } catch (e) {
     previewText.textContent = 'Помилка рендеру превʼю: ' + e.message;

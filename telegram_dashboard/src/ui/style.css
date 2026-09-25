@@ -485,6 +485,9 @@ body {
   position: sticky;
   top: 0;
   align-self: flex-start;
+  max-height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
   transition: width 0.15s ease;
 }
 
@@ -493,6 +496,7 @@ body {
   top: 0;
   align-self: flex-start;
   max-height: calc(100vh - 110px);
+  overflow-y: auto;
 }
 
 .phone-frame {
@@ -571,7 +575,9 @@ body {
   box-sizing: border-box;
   align-self: flex-start;
   width: var(--tg-msg-width, 100%) !important;
-  max-width: 100% !important;
+  min-width: 0 !important;
+  max-width: var(--tg-msg-width, 100%) !important;
+  overflow: hidden;
   transition: width 0.15s ease, max-width 0.15s ease;
 }
 
@@ -580,6 +586,8 @@ body {
   line-height: 1.45;
   white-space: pre-wrap;
   word-break: break-word;
+  overflow-wrap: anywhere;
+  overflow: hidden;
 }
 
 .tg-inline-keyboard {
@@ -587,16 +595,20 @@ body {
   flex-direction: column;
   gap: 6px;
   margin-top: 10px;
+  width: 100%;
 }
 
 .tg-btn-row {
   display: flex;
   gap: 6px;
+  width: 100%;
+  min-width: 0;
 }
 
 .tg-button {
-  flex: 1;
-  padding: 8px 10px;
+  flex: 1 1 0px;
+  min-width: 0;
+  padding: 8px 6px;
   background-color: var(--tg-btn);
   border: none;
   border-radius: 6px;
