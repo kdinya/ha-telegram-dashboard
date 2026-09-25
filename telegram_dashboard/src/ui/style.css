@@ -1569,3 +1569,103 @@ body:has(.modal-overlay.open) {
   border-color: rgba(56, 189, 248, 0.35);
   color: #cbd5e1;
 }
+
+/* Drag & Drop Styles for section items */
+.section-text-item {
+  position: relative;
+  transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.item-drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 28px;
+  color: #64748b;
+  cursor: grab;
+  user-select: none;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 4px;
+  opacity: 0.6;
+  transition: opacity 0.15s ease, color 0.15s ease;
+  margin-right: 4px;
+}
+
+.section-text-item:hover .item-drag-handle {
+  opacity: 1;
+  color: #94a3b8;
+}
+
+.item-drag-handle:active {
+  cursor: grabbing;
+}
+
+.section-text-item.is-dragging {
+  opacity: 0.35;
+  background: rgba(56, 189, 248, 0.08);
+  border-style: dashed;
+  border-color: #38bdf8;
+}
+
+.section-text-item.drag-over-top {
+  border-top: 2px solid #38bdf8 !important;
+}
+
+.section-text-item.drag-over-bottom {
+  border-bottom: 2px solid #38bdf8 !important;
+}
+
+/* Unified square button styles for inline rows (text & entity) */
+.add-inline-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.add-entity-row-1 .btn-inline-action,
+.add-text-inline-row-actions .btn-inline-action,
+.add-inline-row-actions .btn-inline-action {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.btn-toggle-indent {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
+  border-radius: 6px;
+  color: var(--text-muted, #94a3b8);
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-toggle-indent:hover {
+  color: var(--text-main, #f8fafc);
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-toggle-indent.active {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: var(--primary, #38bdf8);
+  color: var(--primary, #38bdf8);
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.35);
+}

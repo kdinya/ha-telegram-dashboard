@@ -218,7 +218,7 @@ class MessageRenderer:
             has_explicit_icon = explicit_icon is not None
             item_icon = str(explicit_icon or "").strip()
             indent = item.get("show_indent", True)
-            prefix = "├ " if indent else "\u2003"
+            prefix = "    " if indent else ""
 
             if item_type == "text":
                 t_text = str(item.get("text", "")).strip()
@@ -249,7 +249,7 @@ class MessageRenderer:
                 )
 
         if not has_items:
-            rows.append("├ <i>Показники не налаштовані.</i>")
+            rows.append("<i>Показники не налаштовані.</i>")
 
         rows.append("──────────────")
         updated = html.escape(str(state.get("updated_at", "—")))

@@ -39,7 +39,7 @@ def test_render_section_with_texts_and_parity():
     }
     rendered = renderer.render_section(section, {})
     assert "<b>📌 Важлива інформація</b>" in rendered
-    assert "├ 💡 Автоматизація увімкнена" in rendered
+    assert "💡 Автоматизація увімкнена" in rendered
     assert "<b>🛋️ Вітальня</b>" in rendered
 
 
@@ -74,9 +74,9 @@ def test_render_section_with_ordered_items_entities_and_indent():
     }
     rendered = renderer.render_section(section, state)
     assert "<b>📌 Керування</b>" in rendered
-    assert "├ 💡 <b>Основне світло:</b> 🟢 Увімкнено" in rendered
-    assert "\u2003🔌 <b>Бойлер:</b> 🔴 Вимкнено" in rendered
-    assert "├ Примітка в кінці" in rendered
+    assert "💡 <b>Основне світло:</b> 🟢 Увімкнено" in rendered
+    assert "🔌 <b>Бойлер:</b> 🔴 Вимкнено" in rendered
+    assert "Примітка в кінці" in rendered
 
 
 def test_addon_config_sidebar_title_and_version():

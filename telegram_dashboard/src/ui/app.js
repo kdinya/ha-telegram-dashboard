@@ -950,14 +950,32 @@ function createInlineEditRow(initialData = {}, onSave, onCancel) {
     }
   });
 
-  const focusEditorInput = () => {
-    inputVal.focus({ preventScroll: true });
-    if (document.activeElement !== inputVal) {
-      setTimeout(() => inputVal.focus({ preventScroll: true }), 60);
-    }
+  inputVal.setAttribute('autocomplete', 'off');
+  inputVal.setAttribute('spellcheck', 'false');
+
+  row.focusInput = () => {
+    requestAnimationFrame(() => {
+      inputVal.focus({ preventScroll: true });
+      if (document.activeElement !== inputVal) {
+        setTimeout(() => inputVal.focus({ preventScroll: true }), 50);
+      }
+    });
   };
-  focusEditorInput();
-  setTimeout(focusEditorInput, 150);
+
+  inputVal.addEventListener('click', (e) => {
+    e.stopPropagation();
+    inputVal.focus();
+  });
+
+  nameInput.setAttribute('autocomplete', 'off');
+  nameInput.setAttribute('spellcheck', 'false');
+
+  row.focusInput = () => {
+    requestAnimationFrame(() => {
+      nameInput.focus({ preventScroll: true });
+    });
+  };
+
   return row;
 }
 
@@ -987,10 +1005,12 @@ function createInlineEntityRow(initialData = {}, onSave, onCancel) {
       </div>
       <input type="text" class="form-control flex-1 item-name-input" placeholder="${t('placeholder_entity_name')}" value="${initialLabel}">
       <button type="button" class="btn-toggle-indent ${showIndent ? 'active' : ''}" title="${showIndent ? t('btn_toggle_indent_on') : t('btn_toggle_indent_off')}" aria-pressed="${showIndent}">
-        ↳
+        ⇥
       </button>
-      <button type="button" class="btn btn-primary btn-sm btn-inline-action btn-save-inline" title="${t('btn_save_item_title')}">💾</button>
-      <button type="button" class="btn btn-ghost btn-sm btn-inline-action btn-cancel-inline" title="${t('btn_cancel_item_title')}">✕</button>
+      <div class="add-inline-row-actions">
+        <button type="button" class="btn btn-primary btn-sm btn-inline-action btn-save-inline" title="${t('btn_save_item_title')}">💾</button>
+        <button type="button" class="btn btn-ghost btn-sm btn-inline-action btn-cancel-inline" title="${t('btn_cancel_item_title')}">✕</button>
+      </div>
     </div>
 
     <!-- Row 2: Entity search / picker trigger -->
@@ -1170,6 +1190,8 @@ function renderSectionElements(items) {
 
     const el = document.createElement('div');
     el.className = 'section-text-item';
+    el.draggable = true;
+    el.dataset.idx = String(idx);
 
     if (item.type === 'entity') {
       const eid = item.entity_id || '';
@@ -1180,10 +1202,11 @@ function renderSectionElements(items) {
       const safeLabel = escapeHtml(item.label || eid);
       const iconSpan = safeIcon ? `<span class="section-text-item-icon">${safeIcon}</span>` : '';
       const indentBadge = item.show_indent !== false
-        ? `<span class="badge-text-type indent" title="${t('btn_toggle_indent_on')}">↳ ${t('badge_indent')}</span>`
+        ? `<span class="badge-text-type indent" title="${t('btn_toggle_indent_on')}">⇥ ${t('badge_indent')}</span>`
         : `<span class="badge-text-type" title="${t('btn_toggle_indent_off')}">${t('badge_no_indent')}</span>`;
 
       el.innerHTML = `
+        <div class="item-drag-handle" title="Перетягніть для зміни порядку" aria-label="Перетягнути">⠿</div>
         <div class="section-text-item-main">
           ${iconSpan}
           <span class="section-text-item-content"><b>${safeLabel}</b>: <code>${escapeHtml(stateVal)}</code></span>
@@ -1233,6 +1256,7 @@ function renderSectionElements(items) {
       const iconSpan = safeIcon ? `<span class="section-text-item-icon">${safeIcon}</span>` : '';
 
       el.innerHTML = `
+        <div class="item-drag-handle" title="Перетягніть для зміни порядку" aria-label="Перетягнути">⠿</div>
         <div class="section-text-item-main">
           ${iconSpan}
           <span class="${contentClass}">${safeText}</span>
@@ -1267,6 +1291,60 @@ function renderSectionElements(items) {
       });
     }
 
+    
+    // Drag and Drop reordering
+    el.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('text/plain', String(idx));
+      e.dataTransfer.effectAllowed = 'move';
+      el.classList.add('is-dragging');
+    });
+
+    el.addEventListener('dragend', () => {
+      el.classList.remove('is-dragging');
+      container.querySelectorAll('.section-text-item').forEach(node => {
+        node.classList.remove('drag-over-top', 'drag-over-bottom');
+      });
+    });
+
+    el.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const rect = el.getBoundingClientRect();
+      const mid = rect.top + rect.height / 2;
+      if (e.clientY < mid) {
+        el.classList.add('drag-over-top');
+        el.classList.remove('drag-over-bottom');
+      } else {
+        el.classList.add('drag-over-bottom');
+        el.classList.remove('drag-over-top');
+      }
+    });
+
+    el.addEventListener('dragleave', () => {
+      el.classList.remove('drag-over-top', 'drag-over-bottom');
+    });
+
+    el.addEventListener('drop', (e) => {
+      e.preventDefault();
+      el.classList.remove('drag-over-top', 'drag-over-bottom');
+      const fromIdxStr = e.dataTransfer.getData('text/plain');
+      if (fromIdxStr === '') return;
+      const fromIdx = parseInt(fromIdxStr, 10);
+      let toIdx = idx;
+      const rect = el.getBoundingClientRect();
+      if (e.clientY >= rect.top + rect.height / 2) {
+        toIdx = idx + 1;
+      }
+      if (fromIdx === toIdx || fromIdx === toIdx - 1) return;
+      const [movedItem] = sec.items.splice(fromIdx, 1);
+      const targetIdx = fromIdx < toIdx ? toIdx - 1 : toIdx;
+      sec.items.splice(targetIdx, 0, movedItem);
+      syncSectionLegacyCollections(sec);
+      renderSectionElements(sec.items);
+      updatePreview();
+      showToast('Порядок елементів оновлено');
+    });
+
     container.appendChild(el);
     } catch (err) {
       console.error('Telegram Dashboard: failed to render section element', idx, err);
@@ -1287,6 +1365,7 @@ function renderSectionElements(items) {
       renderSectionElements(sec.items);
     });
     container.appendChild(newRow);
+    if (typeof newRow.focusInput === 'function') newRow.focusInput();
   } else if (addingItemType === 'entity') {
     const newRow = createInlineEntityRow({ icon: '', label: '', entity_id: '', show_indent: true }, (newData) => {
       sec.items.push(newData);
@@ -1300,6 +1379,7 @@ function renderSectionElements(items) {
       renderSectionElements(sec.items);
     });
     container.appendChild(newRow);
+    if (typeof newRow.focusInput === 'function') newRow.focusInput();
   }
 }
 
