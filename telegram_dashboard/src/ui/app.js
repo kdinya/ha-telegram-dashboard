@@ -1,3 +1,34 @@
+// Default domain icons mapping
+const DOMAIN_ICONS = {
+  light: '💡',
+  switch: '🔌',
+  climate: '🌡️',
+  cover: '🪟',
+  sensor: '📊',
+  binary_sensor: '🔔',
+  media_player: '🔊',
+  fan: '💨',
+  lock: '🔒',
+  camera: '📷',
+  automation: '⚙️',
+  script: '📜',
+  scene: '🎬',
+  vacuum: '🧹',
+  weather: '☀️',
+  water_heater: '♨️',
+  valve: '🚰',
+  siren: '🚨',
+  device_tracker: '📍',
+  person: '👤',
+  timer: '⏱️',
+  input_boolean: '🔘',
+  input_number: '🔢',
+  input_select: '📋',
+  input_text: '📝',
+  input_datetime: '📅',
+  counter: '🔢'
+};
+
 
 function openAddSectionModal() {
   const modal = document.getElementById('modal-add-section');
@@ -538,7 +569,11 @@ function renderEntityPickerList() {
         const row = document.getElementById('inline-entity-row');
         if (row) {
           const sel = row.querySelector('.entity-select-val');
-          if (sel) sel.value = eid;
+          if (sel) {
+            sel.value = eid;
+            sel.dispatchEvent(new Event('change'));
+          }
+          if (trigger) trigger.value = `${name || eid} (${eid})`;
           const nameInput = row.querySelector('.item-name-input');
           if (nameInput && !nameInput.value.trim()) {
             nameInput.value = name || eid;
@@ -547,7 +582,7 @@ function renderEntityPickerList() {
           const iconDisplay = row.querySelector('.item-icon-display');
           if (iconInput && !iconInput.value) {
             const domain = (eid || '').split('.')[0];
-            const defIcon = DOMAIN_ICONS[domain] || '🔹';
+            const defIcon = (DOMAIN_ICONS && DOMAIN_ICONS[domain]) || '🔹';
             iconInput.value = defIcon;
             if (iconDisplay) iconDisplay.textContent = defIcon;
           }
@@ -750,6 +785,10 @@ function createInlineEditRow(initialData = {}, onSave, onCancel) {
   const initialText = escapeHtml(initialData.text || '');
   let isHeading = Boolean(initialData.is_heading);
   const displayIcon = initialIcon ? initialIcon : `<span class="icon-empty-slot" title="${t('empty_icon_title')}">∅</span>`;
+  const initialFound = (initialEntityId && Array.isArray(availableEntities))
+    ? availableEntities.find(e => e.entity_id === initialEntityId)
+    : null;
+  const initialDisplay = initialFound ? `${initialFound.friendly_name || initialEntityId} · ${initialEntityId}` : initialEntityId;
 
   row.innerHTML = `
     <div class="icon-input-wrap">
@@ -817,7 +856,14 @@ function createInlineEditRow(initialData = {}, onSave, onCancel) {
     }
   });
 
-  setTimeout(() => inputVal.focus(), 0);
+  const focusEditorInput = () => {
+    inputVal.focus({ preventScroll: true });
+    if (document.activeElement !== inputVal) {
+      setTimeout(() => inputVal.focus({ preventScroll: true }), 60);
+    }
+  };
+  focusEditorInput();
+  setTimeout(focusEditorInput, 150);
   return row;
 }
 
@@ -831,18 +877,6 @@ function createInlineEntityRow(initialData = {}, onSave, onCancel) {
   const initialEntityId = initialData.entity_id || '';
   let showIndent = initialData.show_indent !== undefined ? Boolean(initialData.show_indent) : true;
   const displayIcon = initialIcon ? initialIcon : `<span class="icon-empty-slot" title="${t('empty_icon_title')}">∅</span>`;
-
-  // Build options for entities
-  let optionsHtml = `<option value="">${escapeHtml(t('placeholder_entity_select'))}</option>`;
-  if (Array.isArray(availableEntities) && availableEntities.length) {
-    optionsHtml += availableEntities.map(e => {
-      const selected = e.entity_id === initialEntityId ? 'selected' : '';
-      const fn = escapeHtml(e.friendly_name || e.entity_id);
-      return `<option value="${escapeHtml(e.entity_id)}" ${selected}>${fn} (${escapeHtml(e.entity_id)})</option>`;
-    }).join('');
-  } else if (initialEntityId) {
-    optionsHtml += `<option value="${escapeHtml(initialEntityId)}" selected>${escapeHtml(initialEntityId)}</option>`;
-  }
 
   row.innerHTML = `
     <!-- Row 1: Icon picker, Name input, Indent toggle -->
@@ -859,13 +893,12 @@ function createInlineEntityRow(initialData = {}, onSave, onCancel) {
       </button>
     </div>
 
-    <!-- Row 2: Entity Selection (dropdown + browse button) -->
+    <!-- Row 2: Entity Selection (opens the search list directly) -->
     <div class="add-entity-row-2">
-      <select class="form-control flex-1 entity-select-val">
-        ${optionsHtml}
-      </select>
-      <button type="button" class="btn btn-secondary btn-sm btn-browse-entity" title="${t('btn_choose')}">
-        🔍 ${t('btn_choose')}
+      <input type="hidden" class="entity-select-val" value="${escapeHtml(initialEntityId)}">
+      <button type="button" class="form-control flex-1 entity-select-display" title="${t('placeholder_entity_select')}">
+        <span class="entity-select-text">${initialEntityId ? escapeHtml(initialDisplay) : t('placeholder_entity_select')}</span>
+        <span class="entity-select-icon" aria-hidden="true">🔍</span>
       </button>
     </div>
 
@@ -884,12 +917,9 @@ function createInlineEntityRow(initialData = {}, onSave, onCancel) {
     renderIconGrid();
   });
 
-  const btnBrowse = row.querySelector('.btn-browse-entity');
-  btnBrowse.addEventListener('click', () => {
-    openEntityPicker('inline_entity_item', t('entity_picker_title'));
-  });
-
   const entitySelect = row.querySelector('.entity-select-val');
+  const entityDisplayBtn = row.querySelector('.entity-select-display');
+  const entityDisplayText = row.querySelector('.entity-select-text');
   const nameInput = row.querySelector('.item-name-input');
   const iconInput = row.querySelector('.item-icon-val');
   const iconDisplay = row.querySelector('.item-icon-display');
@@ -897,21 +927,36 @@ function createInlineEntityRow(initialData = {}, onSave, onCancel) {
   const btnSave = row.querySelector('.btn-save-inline');
   const btnCancel = row.querySelector('.btn-cancel-inline');
 
-  entitySelect.addEventListener('change', () => {
-    const selectedEid = entitySelect.value;
-    if (selectedEid) {
-      const found = availableEntities.find(e => e.entity_id === selectedEid);
+  const setEntityValue = (eid) => {
+    entitySelect.value = eid || '';
+    const found = (eid && Array.isArray(availableEntities))
+      ? availableEntities.find(e => e.entity_id === eid)
+      : null;
+    if (entityDisplayText) {
+      entityDisplayText.textContent = eid
+        ? `${found ? (found.friendly_name || eid) : eid} · ${eid}`
+        : t('placeholder_entity_select');
+    }
+    if (eid) {
       if (nameInput && !nameInput.value.trim()) {
-        nameInput.value = found ? (found.friendly_name || found.entity_id) : selectedEid;
+        nameInput.value = found ? (found.friendly_name || eid) : eid;
       }
       if (iconInput && !iconInput.value) {
-        const domain = selectedEid.split('.')[0];
+        const domain = eid.split('.')[0];
         const defIcon = DOMAIN_ICONS[domain] || '🔹';
         iconInput.value = defIcon;
-        iconDisplay.textContent = defIcon;
+        if (iconDisplay) iconDisplay.textContent = defIcon;
       }
     }
+  };
+
+  entityDisplayBtn.addEventListener('click', () => {
+    openEntityPicker('inline_entity_item', t('entity_picker_title'));
   });
+
+  entitySelect.addEventListener('change', () => setEntityValue(entitySelect.value));
+
+  if (initialEntityId) setEntityValue(initialEntityId);
 
   btnIndent.addEventListener('click', () => {
     showIndent = !showIndent;
@@ -987,6 +1032,7 @@ function renderSectionElements(items) {
   ensureSectionItems(sec);
 
   sec.items.forEach((item, idx) => {
+    try {
     if (editingItemIdx === idx) {
       if (item.type === 'entity') {
         const editRow = createInlineEntityRow(item, (updatedData) => {
@@ -1022,8 +1068,8 @@ function renderSectionElements(items) {
     el.className = 'section-text-item';
 
     if (item.type === 'entity') {
-      const eid = item.entity_id;
-      const found = availableEntities.find(e => e.entity_id === eid);
+      const eid = item.entity_id || '';
+      const found = eid ? availableEntities.find(e => e.entity_id === eid) : null;
       const stateVal = found ? (found.state || '—') : '—';
       const rawIcon = (item.icon || (found ? DOMAIN_ICONS[eid.split('.')[0]] : '') || '🔹').trim();
       const safeIcon = escapeHtml(rawIcon);
@@ -1118,6 +1164,9 @@ function renderSectionElements(items) {
     }
 
     container.appendChild(el);
+    } catch (err) {
+      console.error('Telegram Dashboard: failed to render section element', idx, err);
+    }
   });
 
   // If adding a new element at the bottom (under already added elements, above the 3 add buttons)

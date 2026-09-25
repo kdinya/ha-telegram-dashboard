@@ -15,7 +15,8 @@ RUN apk add --no-cache \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application source
+# Copy custom component and application source
+COPY custom_components/ /app/custom_components/
 COPY src/ /app/src/
 
 EXPOSE 8099

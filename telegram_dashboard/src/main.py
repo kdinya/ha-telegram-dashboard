@@ -2,6 +2,7 @@
 import json
 import logging
 import os
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -37,19 +38,52 @@ def sync_custom_component() -> None:
     config_dir = Path("/config")
     if not config_dir.exists() or not os.access(config_dir, os.W_OK):
         return
-    source = Path("/app/custom_components/telegram_dashboard")
-    if not source.exists():
-        # Check relative repo path
-        source = Path(__file__).resolve().parent.parent.parent / "custom_components" / "telegram_dashboard"
-    if not source.exists():
+    candidates = [
+        Path("/app/custom_components/telegram_dashboard"),
+        Path(__file__).resolve().parent.parent / "custom_components" / "telegram_dashboard",
+        Path(__file__).resolve().parent.parent.parent / "custom_components" / "telegram_dashboard",
+    ]
+    source = None
+    for cand in candidates:
+        if cand.exists() and (cand / "manifest.json").exists():
+            source = cand
+            break
+    if not source:
+        logger.warning("Could not find telegram_dashboard companion integration source directory")
         return
     dest = config_dir / "custom_components" / "telegram_dashboard"
     try:
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copytree(source, dest, dirs_exist_ok=True)
-        logger.info("Successfully synced telegram_dashboard companion integration to %s", dest)
+        logger.info("Successfully synced telegram_dashboard companion integration from %s to %s", source, dest)
     except Exception as e:
         logger.warning("Could not sync custom_component to /config: %s", e)
+
+
+def ensure_ha_integration_enabled() -> None:
+    """Ensure 'telegram_dashboard:' is present in /config/configuration.yaml.
+
+    Home Assistant only loads a custom integration (and registers its services,
+    making them visible in the Automation/Script "Add action" picker) when the
+    integration is referenced in configuration.yaml or set up via a config entry.
+    """
+    config_file = Path("/config/configuration.yaml")
+    if not config_file.exists() or not os.access(config_file, os.W_OK):
+        return
+    try:
+        content = config_file.read_text(encoding="utf-8")
+        if re.search(r"^telegram_dashboard\s*:", content, flags=re.MULTILINE):
+            return
+        with open(config_file, "a", encoding="utf-8") as f:
+            if content and not content.endswith("\n"):
+                f.write("\n")
+            f.write("\ntelegram_dashboard:\n")
+        logger.info(
+            "Added 'telegram_dashboard:' to configuration.yaml. "
+            "Restart Home Assistant once so the new services appear in the automation editor."
+        )
+    except Exception as e:
+        logger.warning("Could not update configuration.yaml: %s", e)
 
 
 def main() -> None:
@@ -59,6 +93,7 @@ def main() -> None:
 
     # Sync custom component into HA /config if mounted
     sync_custom_component()
+    ensure_ha_integration_enabled()
 
     cm = ConfigManager(config_path)
     cm.load()
