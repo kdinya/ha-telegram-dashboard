@@ -1,3 +1,15 @@
+## [1.1.2] - 2026-03-29
+
+### Added
+- **Default "🔙 Назад" & "✖️ Закрити" buttons**: all sub-sections now feature a standard Back button, and every dashboard message includes a Close button that deletes the message from the chat.
+- **Inactivity auto-delete**: inactive dashboard messages are automatically cleaned up after a configurable timeout (default 180s / 3 minutes, 0 to disable). Configurable in the Settings tab.
+
+### Fixed & Improved
+- **Telegram Preview realism**: preview phone frame height is locked against jumping; messages are anchored to the bottom with smooth 60fps transitions as menu heights change, matching the official Telegram app behavior.
+- **Removed leftover bot token field**: cleaned up the token input from the Settings tab and replaced it with an informative banner explaining the official Home Assistant `telegram_bot` integration.
+- **Preview close simulation**: clicking "✖️ Закрити" in the simulator clears the message view with a button to reopen.
+- **Cleaned legacy polling**: removed deprecated direct Telegram `getUpdates` from user synchronization.
+
 ## [1.1.1] - 2026-03-29
 
 ### Fixed

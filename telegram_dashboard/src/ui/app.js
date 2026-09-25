@@ -2050,6 +2050,7 @@ function loadSettings() {
 
   if ($('setting-theme')) $('setting-theme').value = config.theme || 'cards';
   $('setting-default-role').value = config.default_role || 'guest';
+  if ($('setting-auto-delete')) $('setting-auto-delete').value = config.auto_delete_timeout !== undefined ? config.auto_delete_timeout : 180;
   if (config.telegram_msg_width) {
   }
 }
@@ -2062,6 +2063,7 @@ function applySettings() {
   if ($('setting-theme')) config.theme = $('setting-theme').value;
   else config.theme = config.theme || 'cards';
   config.default_role = $('setting-default-role').value;
+  if ($('setting-auto-delete')) config.auto_delete_timeout = parseInt($('setting-auto-delete').value, 10) || 0;
   config.telegram_msg_width = 60;
 }
 
@@ -2102,13 +2104,57 @@ async function updatePreview() {
     });
     if (res.ok) {
       const data = await res.json();
+      const botBubble = document.getElementById('preview-bot-bubble') || document.querySelector('.tg-bot-bubble') || document.querySelector('.tg-message-bubble:not(.tg-user-bubble)');
+      const msgArea = document.querySelector('.tg-messages-area');
+
+      // Update command in user bubble if current section has one
+      const userCmdEl = document.querySelector('.tg-user-bubble-text');
+      if (userCmdEl && config.menu && config.menu[currentSectionKey]) {
+        userCmdEl.textContent = config.menu[currentSectionKey].command || '/dashboard';
+      }
+
+      const prevHeight = (botBubble && botBubble.offsetHeight > 0) ? botBubble.offsetHeight : 0;
+
       previewText.innerHTML = data.html || 'Немає даних для показу';
       renderTelegramKeyboard(data.keyboard || []);
-      const bubble = document.querySelector('.tg-message-bubble');
-      if (bubble) {
-        const msgW = (config && config.telegram_msg_width) || 60;
-        bubble.style.width = msgW + '%';
-        bubble.style.maxWidth = msgW + '%';
+
+      if (botBubble) {
+        const msgW = (config && config.telegram_msg_width) || 75;
+        botBubble.style.width = msgW + '%';
+        botBubble.style.maxWidth = msgW + '%';
+
+        if (prevHeight > 0) {
+          // Temporarily measure natural height
+          botBubble.style.height = 'auto';
+          const newHeight = botBubble.offsetHeight;
+
+          if (Math.abs(newHeight - prevHeight) > 1) {
+            botBubble.style.transition = 'none';
+            botBubble.style.height = prevHeight + 'px';
+            void botBubble.offsetHeight; // force reflow
+
+            botBubble.style.transition = 'height 0.28s cubic-bezier(0.25, 1, 0.5, 1)';
+            botBubble.style.height = newHeight + 'px';
+
+            const onEnd = () => {
+              botBubble.style.height = '';
+              botBubble.style.transition = '';
+              botBubble.removeEventListener('transitionend', onEnd);
+              if (msgArea) {
+                msgArea.scrollTop = msgArea.scrollHeight;
+              }
+            };
+            botBubble.addEventListener('transitionend', onEnd);
+          } else {
+            botBubble.style.height = '';
+          }
+        }
+      }
+
+      if (msgArea) {
+        requestAnimationFrame(() => {
+          msgArea.scrollTo({ top: msgArea.scrollHeight, behavior: 'smooth' });
+        });
       }
     }
   } catch (e) {
@@ -2141,6 +2187,13 @@ function handlePreviewButtonClick(callbackData) {
   let actionData = String(callbackData);
   if (actionData.startsWith('td:')) {
     actionData = actionData.slice(3);
+  }
+  if (actionData === '/close' || actionData === 'close') {
+    previewText.innerHTML = '<i>💬 Повідомлення закрито (видалено з чату)</i>';
+    previewButtons.innerHTML = '<div class="tg-btn-row"><button class="tg-button" id="btn-preview-reopen">🔄 Відкрити знову</button></div>';
+    const reopenBtn = document.getElementById('btn-preview-reopen');
+    if (reopenBtn) reopenBtn.addEventListener('click', () => updatePreview());
+    return;
   }
   if (actionData.startsWith('/sec_')) {
     const secKey = actionData.replace('/sec_', '');

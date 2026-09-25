@@ -174,50 +174,12 @@ class WebApp:
         return web.json_response({"ok": deleted})
 
     async def sync_users(self, request: web.Request) -> web.Response:
-        """Sync users from Telegram API getUpdates and Home Assistant integration."""
-        discovered = 0
-        default_role = self.cm.config.get("default_role", "guest")
-        token = self.telegram_token or self.cm.config.get("telegram_token", "")
-
-        # 1. Direct Telegram Bot API getUpdates
-        if token:
-            try:
-                async with aiohttp.ClientSession() as session:
-                    url = f"https://api.telegram.org/bot{token}/getUpdates"
-                    async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
-                        if resp.status == 200:
-                            data = await resp.json()
-                            for upd in data.get("result", []):
-                                user_info = None
-                                if "message" in upd and "from" in upd["message"]:
-                                    user_info = upd["message"]["from"]
-                                elif "callback_query" in upd and "from" in upd["callback_query"]:
-                                    user_info = upd["callback_query"]["from"]
-                                elif "my_chat_member" in upd and "from" in upd["my_chat_member"]:
-                                    user_info = upd["my_chat_member"]["from"]
-
-                                if user_info and "id" in user_info:
-                                    tid = int(user_info["id"])
-                                    parts = [user_info.get("first_name", ""), user_info.get("last_name", "")]
-                                    name = " ".join(p for p in parts if p).strip()
-                                    if not name and user_info.get("username"):
-                                        name = f"@{user_info['username']}"
-                                    if not name:
-                                        name = f"User {tid}"
-
-                                    existing = any(u.get("telegram_id") == tid for u in self.cm.config.get("users", []))
-                                    self.cm.auto_discover_user(tid, name, default_role)
-                                    if not existing:
-                                        discovered += 1
-            except Exception as e:
-                logger.warning("Telegram getUpdates sync failed: %s", e)
-
-        # User auto-discovery happens directly through Telegram chat interactions and getUpdates
-
+        """Return known users and trigger discovery refresh."""
+        # User auto-discovery happens directly through Telegram chat interactions via Home Assistant events
         return web.json_response({
             "ok": True,
             "users": self.cm.config.get("users", []),
-            "discovered": discovered,
+            "discovered": 0,
         })
 
     async def preview_render(self, request: web.Request) -> web.Response:

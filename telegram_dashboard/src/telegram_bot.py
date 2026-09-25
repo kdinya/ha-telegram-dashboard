@@ -51,6 +51,7 @@ class TelegramBotRunner:
         self.bot_engine = bot_engine
         self.get_ha_state = get_ha_state
         self._running = False
+        self._auto_delete_tasks: dict[tuple[int, int], asyncio.Task] = {}
 
     async def send_message(
         self,
@@ -107,6 +108,47 @@ class TelegramBotRunner:
         except Exception as e:
             logger.error("Failed to edit message through HA telegram_bot: %s", e)
             return None
+
+
+    def schedule_auto_delete(self, chat_id: int | str, message_id: int) -> None:
+        """Schedule automatic message deletion after period of inactivity."""
+        try:
+            cid = int(chat_id)
+            mid = int(message_id)
+        except (ValueError, TypeError):
+            return
+
+        self.cancel_auto_delete(cid, mid)
+
+        timeout = 180
+        if hasattr(self.bot_engine, "config"):
+            timeout = int(self.bot_engine.config.get("auto_delete_timeout", 180))
+
+        if timeout <= 0:
+            return
+
+        async def _auto_delete_coro():
+            try:
+                await asyncio.sleep(timeout)
+                logger.info("Auto-deleting inactive dashboard message %s in chat %s after %ds", mid, cid, timeout)
+                await self.delete_message(cid, mid)
+            except asyncio.CancelledError:
+                pass
+            finally:
+                self._auto_delete_tasks.pop((cid, mid), None)
+
+        self._auto_delete_tasks[(cid, mid)] = asyncio.create_task(_auto_delete_coro())
+
+    def cancel_auto_delete(self, chat_id: int | str, message_id: int) -> None:
+        """Cancel auto deletion for a message."""
+        try:
+            cid = int(chat_id)
+            mid = int(message_id)
+        except (ValueError, TypeError):
+            return
+        task = self._auto_delete_tasks.pop((cid, mid), None)
+        if task and not task.done():
+            task.cancel()
 
     async def delete_message(self, chat_id: int | str, message_id: int) -> dict[str, Any] | None:
         """Delete message via Home Assistant telegram_bot.delete_message action."""
@@ -219,7 +261,16 @@ class TelegramBotRunner:
         state = await self._current_state()
         toast = None
 
-        if action_data.startswith("/sec_"):
+        # Reset inactivity timer on any interaction
+        self.schedule_auto_delete(chat_id, int(msg_id))
+
+        if action_data in ("/close", "close"):
+            self.cancel_auto_delete(chat_id, int(msg_id))
+            await self.delete_message(chat_id, int(msg_id))
+            if cb_id:
+                await self.answer_callback_query(cb_id)
+            return
+        elif action_data.startswith("/sec_"):
             sec_key = action_data[5:]
             res = await self.bot_engine.handle_navigation(user_id, sec_key, state)
             reply_markup = {"inline_keyboard": res.get("keyboard", [])} if res.get("keyboard") else None

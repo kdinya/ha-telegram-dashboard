@@ -233,10 +233,12 @@ class BotEngine:
         if section_key == first_key:
             keyboard.append([{"text": "🔄 Оновити", "callback_data": f"td:/sec_{section_key}"}])
         else:
+            parent_key = section.get("parent") or first_key
             keyboard.append([
                 {"text": "🔄 Оновити", "callback_data": f"td:/sec_{section_key}"},
-                {"text": "⬅️ Головна", "callback_data": f"td:/sec_{first_key}"},
+                {"text": "🔙 Назад", "callback_data": f"td:/sec_{parent_key}"},
             ])
+        keyboard.append([{"text": "✖️ Закрити", "callback_data": "td:/close"}])
 
         return keyboard
 

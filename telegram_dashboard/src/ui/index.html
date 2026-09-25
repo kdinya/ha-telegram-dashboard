@@ -166,10 +166,12 @@
                   <option value="uk" data-i18n="lang_uk">Ukrainian (Українська)</option>
                 </select>
               </div>
-              <div class="form-group">
-                <label for="setting-bot-token" data-i18n="settings_bot_token">Telegram Bot Token</label>
-                <input type="password" id="setting-bot-token" class="form-control" placeholder="123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11">
-                <small class="field-hint" data-i18n="settings_bot_token_hint">Get a token from @BotFather or specify it in add-on configuration.</small>
+              <div class="panel-notice-box">
+                <div class="notice-icon">ℹ️</div>
+                <div class="notice-content">
+                  <strong data-i18n="settings_ha_tg_integration_title">Home Assistant Telegram Bot Integration</strong>
+                  <p data-i18n="settings_ha_tg_integration_desc">Telegram Dashboard operates directly through the official Home Assistant telegram_bot integration. No bot token is required here.</p>
+                </div>
               </div>
               <div class="form-group">
                 <label for="setting-default-role" data-i18n="settings_default_role">Default role for new users</label>
@@ -178,6 +180,11 @@
                   <option value="member" data-i18n="role_member_hint">Family member (immediately active)</option>
                   <option value="admin" data-i18n="role_admin_hint">Administrator</option>
                 </select>
+              </div>
+              <div class="form-group">
+                <label for="setting-auto-delete" data-i18n="settings_auto_delete_timeout">Auto-delete inactive message (seconds)</label>
+                <input type="number" id="setting-auto-delete" class="form-control" min="0" step="10" placeholder="180">
+                <small class="field-hint" data-i18n="settings_auto_delete_timeout_hint">Automatically deletes the dashboard message after inactivity (0 to disable, default 180s / 3 min).</small>
               </div>
             </div>
 
@@ -201,7 +208,7 @@
                 <div class="tg-user-bubble-text">/start</div>
                 <div class="tg-bubble-time">12:00 ✓✓</div>
               </div>
-              <div class="tg-message-bubble">
+              <div class="tg-message-bubble tg-bot-bubble" id="preview-bot-bubble">
                 <div id="preview-text" class="tg-rendered-content"></div>
                 <div id="preview-buttons" class="tg-inline-keyboard"></div>
               </div>

@@ -572,12 +572,30 @@ select.form-control option {
 
 .tg-messages-area {
   flex: 1;
-  padding: 14px;
+  padding: 14px 14px 10px;
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  align-items: flex-start;
+  align-items: stretch;
+  scroll-behavior: smooth;
+}
+
+.tg-messages-area > :first-child {
+  margin-top: auto !important;
+}
+
+.tg-bot-bubble {
+  margin-bottom: 0 !important;
+  overflow: hidden;
+  will-change: height;
+  transition: width 0.15s ease, max-width 0.15s ease;
+}
+
+.tg-bot-bubble .tg-rendered-content,
+.tg-bot-bubble .tg-inline-keyboard {
+  transition: opacity 0.15s ease-in-out;
 }
 
 .tg-message-bubble {
@@ -2053,12 +2071,13 @@ body:has(.modal-overlay.open) {
 
 @media (max-width: 900px) {
   .phone-frame {
-    height: auto !important;
-    min-height: 480px !important;
+    width: 100% !important;
+    max-width: 340px !important;
+    height: 580px !important;
     max-height: 80vh !important;
-  }
-  .tg-messages-area {
-    padding-bottom: 24px !important;
+    min-height: 480px !important;
+    overflow: hidden !important;
+    margin: 0 auto;
   }
 }
 
@@ -2164,4 +2183,31 @@ body:has(.modal-overlay.open) {
 /* Add padding to bottom of panes so floating button never obscures last fields */
 .editor-pane {
   padding-bottom: 90px !important;
+}
+
+.panel-notice-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 20px;
+}
+.panel-notice-box .notice-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+.panel-notice-box .notice-content strong {
+  display: block;
+  font-size: 14px;
+  color: var(--primary, #38bdf8);
+  margin-bottom: 4px;
+}
+.panel-notice-box .notice-content p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary, #94a3b8);
+  line-height: 1.45;
 }
