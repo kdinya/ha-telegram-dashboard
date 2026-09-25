@@ -570,7 +570,7 @@ body {
   width: var(--tg-msg-width, 100%) !important;
   min-width: 0 !important;
   max-width: var(--tg-msg-width, 100%) !important;
-  margin-top: auto;
+  margin-top: 0; margin-bottom: 12px;
   overflow: hidden;
   transition: width 0.15s ease, max-width 0.15s ease;
 }
@@ -2004,4 +2004,39 @@ body:has(.modal-overlay.open) {
   text-align: left;
   margin-top: 6px;
   line-height: 1.3;
+}
+
+/* Sub-block header and single lock */
+.sub-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+#block-menu-sections.is-locked {
+  opacity: 0.72;
+  border-color: rgba(234, 179, 8, 0.4);
+  background: rgba(30, 41, 59, 0.35);
+  border-radius: 8px;
+  padding: 10px;
+  transition: all 0.2s ease;
+}
+
+/* Mobile preview scrolling and visible keyboard buttons */
+.tg-messages-area {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  max-height: 100%;
+}
+
+@media (max-width: 900px) {
+  .phone-frame {
+    height: auto !important;
+    min-height: 480px !important;
+    max-height: 80vh !important;
+  }
+  .tg-messages-area {
+    padding-bottom: 24px !important;
+  }
 }

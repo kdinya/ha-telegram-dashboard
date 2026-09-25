@@ -1613,7 +1613,6 @@ function renderMenuChecklist(selectedKeys) {
   let fullOrder = Array.isArray(sec.sections_order) ? [...sec.sections_order] : [];
   fullOrder = fullOrder.filter(k => validMenuKeys.includes(k));
   
-  // If no sections_order stored yet, start with current selected followed by unselected
   if (fullOrder.length === 0) {
     const currentSel = Array.isArray(selectedKeys) ? [...selectedKeys].filter(k => validMenuKeys.includes(k)) : [];
     const unsel = validMenuKeys.filter(k => !currentSel.includes(k));
@@ -1626,6 +1625,19 @@ function renderMenuChecklist(selectedKeys) {
   sec.sections_order = fullOrder;
 
   const currentSelected = Array.isArray(selectedKeys) ? [...selectedKeys].filter(k => validMenuKeys.includes(k)) : [];
+  const isBlockLocked = Boolean(sec.nav_buttons_locked);
+
+  // Update block header lock appearance
+  const blockEl = document.getElementById('block-menu-sections');
+  if (blockEl) {
+    blockEl.classList.toggle('is-locked', isBlockLocked);
+  }
+  const btnBlockLock = document.getElementById('btn-lock-nav-sections-block');
+  if (btnBlockLock) {
+    btnBlockLock.textContent = isBlockLocked ? '🔒' : '🔓';
+    btnBlockLock.classList.toggle('is-locked', isBlockLocked);
+    btnBlockLock.title = isBlockLocked ? (t('toast_item_unlocked') || 'Розблокувати') : (t('toast_item_locked') || 'Заблокувати');
+  }
 
   menuSectionsChecklist.innerHTML = '';
   menuSectionsChecklist.className = 'menu-sections-order-list';
@@ -1641,54 +1653,31 @@ function renderMenuChecklist(selectedKeys) {
     const canMoveUp = idx > 0;
     const canMoveDown = idx < fullOrder.length - 1;
 
-    const isLocked = Boolean(sec.locked_nav_sections && sec.locked_nav_sections[k]);
-    itemEl.className = `menu-section-order-item ${isChecked ? 'is-checked' : ''} ${isLocked ? 'is-locked' : ''}`;
-
     itemEl.innerHTML = `
       <label class="menu-section-label">
-        <input type="checkbox" value="${k}" ${isChecked ? 'checked' : ''} ${isLocked ? 'disabled' : ''}>
+        <input type="checkbox" value="${k}" ${isChecked ? 'checked' : ''} ${isBlockLocked ? 'disabled' : ''}>
         <span class="menu-section-icon">${s.icon || '📁'}</span>
         <span class="menu-section-name">${escapeHtml(cleanTitle)}</span>
       </label>
-      <div class="menu-section-actions">
-        <button type="button" class="btn-lock-elem-item btn-lock-nav-item ${isLocked ? 'is-locked' : ''}" title="${isLocked ? (t('toast_item_unlocked') || 'Розблокувати') : (t('toast_item_locked') || 'Заблокувати')}" data-key="${k}">
-          ${isLocked ? '🔒' : '🔓'}
-        </button>
-        <div class="menu-section-order-controls">
-          <button type="button" class="btn-order-arrow btn-order-up" title="${t('btn_move_up') || 'Вгору'}" ${canMoveUp && !isLocked ? '' : 'disabled style="opacity: 0.2; pointer-events: none;"'}>▲</button>
-          <button type="button" class="btn-order-arrow btn-order-down" title="${t('btn_move_down') || 'Вниз'}" ${canMoveDown && !isLocked ? '' : 'disabled style="opacity: 0.2; pointer-events: none;"'}>▼</button>
-        </div>
+      <div class="menu-section-order-controls">
+        <button type="button" class="btn-order-arrow btn-order-up" title="${t('btn_move_up') || 'Вгору'}" ${canMoveUp && !isBlockLocked ? '' : 'disabled style="opacity: 0.2; pointer-events: none;"'}>▲</button>
+        <button type="button" class="btn-order-arrow btn-order-down" title="${t('btn_move_down') || 'Вниз'}" ${canMoveDown && !isBlockLocked ? '' : 'disabled style="opacity: 0.2; pointer-events: none;"'}>▼</button>
       </div>
     `;
 
-    const btnLock = itemEl.querySelector('.btn-lock-nav-item');
-    if (btnLock) {
-      btnLock.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        sec.locked_nav_sections = sec.locked_nav_sections || {};
-        sec.locked_nav_sections[k] = !sec.locked_nav_sections[k];
-        showToast(sec.locked_nav_sections[k] ? t('toast_item_locked') : t('toast_item_unlocked'));
-        renderMenuChecklist(sec.sections);
-        syncCurrentSectionFromForm();
-      });
-    }
-
     const cb = itemEl.querySelector('input[type="checkbox"]');
     cb.addEventListener('change', () => {
-      if (sec.locked_nav_sections && sec.locked_nav_sections[k]) {
+      if (sec.nav_buttons_locked) {
         cb.checked = !cb.checked;
         showToast(t('toast_item_is_locked'), true);
         return;
       }
-      // Toggle checked state without changing fullOrder position!
       let updatedSelected = Array.isArray(sec.sections) ? [...sec.sections] : [];
       if (cb.checked) {
         if (!updatedSelected.includes(k)) updatedSelected.push(k);
       } else {
         updatedSelected = updatedSelected.filter(itemKey => itemKey !== k);
       }
-      // Keep selected items in the order defined by fullOrder
       updatedSelected = fullOrder.filter(itemKey => updatedSelected.includes(itemKey));
       sec.sections = updatedSelected;
       renderMenuChecklist(sec.sections);
@@ -1700,7 +1689,7 @@ function renderMenuChecklist(selectedKeys) {
     btnUp.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      if (!canMoveUp || (sec.locked_nav_sections && sec.locked_nav_sections[k])) return;
+      if (!canMoveUp || sec.nav_buttons_locked) return;
       const temp = fullOrder[idx - 1];
       fullOrder[idx - 1] = fullOrder[idx];
       fullOrder[idx] = temp;
@@ -1717,7 +1706,7 @@ function renderMenuChecklist(selectedKeys) {
     btnDown.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      if (!canMoveDown || (sec.locked_nav_sections && sec.locked_nav_sections[k])) return;
+      if (!canMoveDown || sec.nav_buttons_locked) return;
       const temp = fullOrder[idx + 1];
       fullOrder[idx + 1] = fullOrder[idx];
       fullOrder[idx] = temp;
@@ -2182,7 +2171,7 @@ function setupEventListeners() {
   function updatePreviewDimensions(w, msgW, save = true) {
     w = parseInt(w, 10) || BASE_WIDTH;
     msgW = parseInt(msgW, 10);
-    if (isNaN(msgW) || msgW < 60 || msgW > 100) msgW = BASE_MSG_WIDTH;
+    if (isNaN(msgW) || msgW < 20 || msgW > 100) msgW = BASE_MSG_WIDTH;
 
     document.documentElement.style.setProperty('--preview-frame-w', w + 'px');
     document.documentElement.style.setProperty('--tg-msg-width', msgW + '%');

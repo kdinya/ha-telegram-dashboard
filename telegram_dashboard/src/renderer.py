@@ -269,9 +269,6 @@ class MessageRenderer:
             spacer = "⠀" * width_chars
             rows.append(f"<code>{spacer}</code>")
 
-        updated = html.escape(str(state.get("updated_at", "—")))
-        rows.append(f"<i>⏱ Оновлено: {updated}</i>")
-
         return "\n".join(rows)
 
     def render_entity_list(self, section: dict, states: dict[str, Any]) -> str:
