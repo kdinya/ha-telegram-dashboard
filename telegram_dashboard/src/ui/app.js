@@ -1637,6 +1637,17 @@ function renderMenuChecklist(selectedKeys) {
     btnBlockLock.textContent = isBlockLocked ? '🔒' : '🔓';
     btnBlockLock.classList.toggle('is-locked', isBlockLocked);
     btnBlockLock.title = isBlockLocked ? (t('toast_item_unlocked') || 'Розблокувати') : (t('toast_item_locked') || 'Заблокувати');
+    if (!btnBlockLock.dataset.bound) {
+      btnBlockLock.dataset.bound = 'true';
+      btnBlockLock.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        sec.nav_buttons_locked = !sec.nav_buttons_locked;
+        showToast(sec.nav_buttons_locked ? t('toast_item_locked') : t('toast_item_unlocked'));
+        renderMenuChecklist(sec.sections);
+        syncCurrentSectionFromForm();
+      });
+    }
   }
 
   menuSectionsChecklist.innerHTML = '';
