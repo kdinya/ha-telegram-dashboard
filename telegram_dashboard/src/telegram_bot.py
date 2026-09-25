@@ -36,21 +36,23 @@ class TelegramBotRunner:
         return None
 
     async def send_message(
-        self, chat_id: int, text: str, reply_markup: dict | None = None, parse_mode: str = "HTML"
-    ) -> None:
+        self, chat_id: int | str, text: str, reply_markup: dict | None = None,
+        parse_mode: str = "HTML", disable_notification: bool = False
+    ) -> dict[str, Any] | None:
         payload: dict[str, Any] = {
             "chat_id": chat_id,
             "text": text,
             "parse_mode": parse_mode,
+            "disable_notification": disable_notification,
         }
         if reply_markup:
             payload["reply_markup"] = reply_markup
-        await self._post("sendMessage", payload)
+        return await self._post("sendMessage", payload)
 
     async def edit_message_text(
-        self, chat_id: int, message_id: int, text: str,
+        self, chat_id: int | str, message_id: int, text: str,
         reply_markup: dict | None = None, parse_mode: str = "HTML"
-    ) -> None:
+    ) -> dict[str, Any] | None:
         payload: dict[str, Any] = {
             "chat_id": chat_id,
             "message_id": message_id,
@@ -59,13 +61,48 @@ class TelegramBotRunner:
         }
         if reply_markup:
             payload["reply_markup"] = reply_markup
-        await self._post("editMessageText", payload)
+        return await self._post("editMessageText", payload)
 
-    async def answer_callback_query(self, callback_query_id: str, text: str | None = None) -> None:
-        payload: dict[str, Any] = {"callback_query_id": callback_query_id}
+    async def delete_message(self, chat_id: int | str, message_id: int) -> dict[str, Any] | None:
+        return await self._post("deleteMessage", {"chat_id": chat_id, "message_id": message_id})
+
+    async def answer_callback_query(
+        self, callback_query_id: str, text: str | None = None, show_alert: bool = False
+    ) -> dict[str, Any] | None:
+        payload: dict[str, Any] = {"callback_query_id": callback_query_id, "show_alert": show_alert}
         if text:
             payload["text"] = text
-        await self._post("answerCallbackQuery", payload)
+        return await self._post("answerCallbackQuery", payload)
+
+    async def send_photo(
+        self, chat_id: int | str, photo: str, caption: str | None = None,
+        reply_markup: dict | None = None, parse_mode: str = "HTML"
+    ) -> dict[str, Any] | None:
+        payload: dict[str, Any] = {
+            "chat_id": chat_id,
+            "photo": photo,
+            "parse_mode": parse_mode,
+        }
+        if caption:
+            payload["caption"] = caption
+        if reply_markup:
+            payload["reply_markup"] = reply_markup
+        return await self._post("sendPhoto", payload)
+
+    async def send_document(
+        self, chat_id: int | str, document: str, caption: str | None = None,
+        reply_markup: dict | None = None, parse_mode: str = "HTML"
+    ) -> dict[str, Any] | None:
+        payload: dict[str, Any] = {
+            "chat_id": chat_id,
+            "document": document,
+            "parse_mode": parse_mode,
+        }
+        if caption:
+            payload["caption"] = caption
+        if reply_markup:
+            payload["reply_markup"] = reply_markup
+        return await self._post("sendDocument", payload)
 
     async def _current_state(self) -> dict[str, Any]:
         if self.get_ha_state:

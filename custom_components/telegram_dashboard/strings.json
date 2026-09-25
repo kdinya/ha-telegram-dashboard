@@ -1,0 +1,17 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Telegram Dashboard",
+        "description": "Configure Telegram Bot Token to expose bot actions in Automations and Scripts.",
+        "data": {
+          "bot_token": "Telegram Bot Token",
+          "default_chat_id": "Default Chat ID (optional)"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid Telegram Bot Token."
+    }
+  }
+}

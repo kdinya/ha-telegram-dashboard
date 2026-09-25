@@ -1,0 +1,17 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Telegram Dashboard",
+        "description": "Вкажіть токен Telegram-бота для виклику дій бота з автоматизацій та скриптів.",
+        "data": {
+          "bot_token": "Токен Telegram-бота",
+          "default_chat_id": "Chat ID за замовчуванням (необов'язково)"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Некоректний токен бота."
+    }
+  }
+}

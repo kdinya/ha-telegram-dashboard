@@ -1,7 +1,7 @@
 name: "Telegram Dashboard (Beta)"
 slug: "telegram_dashboard"
 description: "[BETA] Interactive visual Telegram bot dashboard with role-based access control, areas, categories, scripts, automations and smart-speaker TTS"
-version: "1.0.3"
+version: "1.0.4"
 url: "https://github.com/kdinya/ha-telegram-dashboard"
 arch:
   - aarch64
@@ -12,6 +12,8 @@ arch:
 startup: application
 boot: auto
 init: false
+map:
+  - "config:rw"
 homeassistant_api: true
 panel_icon: mdi:send-circle
 panel_title: "Telegram Dashboard"

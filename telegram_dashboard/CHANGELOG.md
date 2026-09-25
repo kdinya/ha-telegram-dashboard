@@ -24,3 +24,11 @@
 - Initial Beta release: visual builder, RBAC, Telegram HTML rendering, full catalog (areas/domains/labels), speaker TTS and volume actions.
 - Fixed startup crash: `s6-overlay-suexec: fatal: can only run as pid 1`. App runs directly as PID 1.
 - Initial release with visual dashboard builder, RBAC, and modern HTML message styling.
+
+## [1.0.4] - 2026-09-25
+### Added
+- Native Home Assistant services in Automations and Scripts UI (`telegram_dashboard.send_message`, `edit_message`, `delete_message`, `answer_callback`, `send_photo`, `send_document`, `speak`).
+- Companion integration in `custom_components/telegram_dashboard/` with full visual selectors and translations.
+- Auto-sync companion integration into `/config/custom_components` on container start.
+- REST API endpoints on Ingress server for bot execution (`/api/bot/*`).
+- Docker volume map `config:rw` to enable direct integration sync into HA Core.

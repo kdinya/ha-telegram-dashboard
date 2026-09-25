@@ -92,12 +92,14 @@ class WebApp:
         ha_client: Any | None = None,
         bot_engine: Any | None = None,
         telegram_token: str | None = None,
+        bot_runner: Any | None = None,
     ) -> None:
         self.cm = config_manager
         self.renderer = renderer
         self.ha_client = ha_client
         self.bot_engine = bot_engine
         self.telegram_token = telegram_token or ""
+        self.bot_runner = bot_runner
         self.app = web.Application()
         self._setup_routes()
 
@@ -113,6 +115,12 @@ class WebApp:
         self.app.router.add_post("/api/preview", self.preview_render)
         self.app.router.add_get("/api/catalog", self.get_catalog)
         self.app.router.add_get("/api/entities", self.get_entities)
+        self.app.router.add_post("/api/bot/send_message", self.bot_send_message)
+        self.app.router.add_post("/api/bot/edit_message", self.bot_edit_message)
+        self.app.router.add_post("/api/bot/delete_message", self.bot_delete_message)
+        self.app.router.add_post("/api/bot/answer_callback", self.bot_answer_callback)
+        self.app.router.add_post("/api/bot/send_photo", self.bot_send_photo)
+        self.app.router.add_post("/api/bot/send_document", self.bot_send_document)
         if ui_path.exists():
             self.app.router.add_static("/ui", ui_path)
 
@@ -352,3 +360,115 @@ class WebApp:
                 "entities": _sample_entities(),
                 "warning": f"Home Assistant недоступний: {e}",
             })
+
+    async def bot_send_message(self, request: web.Request) -> web.Response:
+        if not self.bot_runner:
+            return web.json_response({"ok": False, "error": "Bot runner is not active"}, status=503)
+        data = await request.json()
+        chat_id = data.get("chat_id") or data.get("target")
+        text = data.get("message") or data.get("text", "")
+        if not chat_id or not text:
+            return web.json_response({"ok": False, "error": "chat_id and message are required"}, status=400)
+        parse_mode = data.get("parse_mode", "HTML")
+        disable_notification = bool(data.get("disable_notification", False))
+        reply_markup = data.get("reply_markup") or data.get("inline_keyboard")
+        if reply_markup and "inline_keyboard" not in reply_markup and isinstance(reply_markup, list):
+            reply_markup = {"inline_keyboard": reply_markup}
+
+        targets = chat_id if isinstance(chat_id, list) else [chat_id]
+        results = []
+        for cid in targets:
+            res = await self.bot_runner.send_message(
+                cid, text, reply_markup=reply_markup,
+                parse_mode=parse_mode, disable_notification=disable_notification
+            )
+            results.append(res)
+        return web.json_response({"ok": True, "results": results})
+
+    async def bot_edit_message(self, request: web.Request) -> web.Response:
+        if not self.bot_runner:
+            return web.json_response({"ok": False, "error": "Bot runner is not active"}, status=503)
+        data = await request.json()
+        chat_id = data.get("chat_id")
+        msg_id = data.get("message_id")
+        text = data.get("message") or data.get("text", "")
+        if not chat_id or not msg_id or not text:
+            return web.json_response({"ok": False, "error": "chat_id, message_id and message are required"}, status=400)
+        parse_mode = data.get("parse_mode", "HTML")
+        reply_markup = data.get("reply_markup") or data.get("inline_keyboard")
+        if reply_markup and "inline_keyboard" not in reply_markup and isinstance(reply_markup, list):
+            reply_markup = {"inline_keyboard": reply_markup}
+
+        res = await self.bot_runner.edit_message_text(
+            chat_id, int(msg_id), text, reply_markup=reply_markup, parse_mode=parse_mode
+        )
+        return web.json_response({"ok": True, "result": res})
+
+    async def bot_delete_message(self, request: web.Request) -> web.Response:
+        if not self.bot_runner:
+            return web.json_response({"ok": False, "error": "Bot runner is not active"}, status=503)
+        data = await request.json()
+        chat_id = data.get("chat_id")
+        msg_id = data.get("message_id")
+        if not chat_id or not msg_id:
+            return web.json_response({"ok": False, "error": "chat_id and message_id are required"}, status=400)
+        res = await self.bot_runner.delete_message(chat_id, int(msg_id))
+        return web.json_response({"ok": True, "result": res})
+
+    async def bot_answer_callback(self, request: web.Request) -> web.Response:
+        if not self.bot_runner:
+            return web.json_response({"ok": False, "error": "Bot runner is not active"}, status=503)
+        data = await request.json()
+        cb_id = data.get("callback_query_id")
+        if not cb_id:
+            return web.json_response({"ok": False, "error": "callback_query_id is required"}, status=400)
+        text = data.get("message") or data.get("text")
+        show_alert = bool(data.get("show_alert", False))
+        res = await self.bot_runner.answer_callback_query(cb_id, text=text, show_alert=show_alert)
+        return web.json_response({"ok": True, "result": res})
+
+    async def bot_send_photo(self, request: web.Request) -> web.Response:
+        if not self.bot_runner:
+            return web.json_response({"ok": False, "error": "Bot runner is not active"}, status=503)
+        data = await request.json()
+        chat_id = data.get("chat_id") or data.get("target")
+        photo = data.get("photo") or data.get("url")
+        if not chat_id or not photo:
+            return web.json_response({"ok": False, "error": "chat_id and photo are required"}, status=400)
+        caption = data.get("caption") or data.get("message")
+        parse_mode = data.get("parse_mode", "HTML")
+        reply_markup = data.get("reply_markup") or data.get("inline_keyboard")
+        if reply_markup and "inline_keyboard" not in reply_markup and isinstance(reply_markup, list):
+            reply_markup = {"inline_keyboard": reply_markup}
+
+        targets = chat_id if isinstance(chat_id, list) else [chat_id]
+        results = []
+        for cid in targets:
+            res = await self.bot_runner.send_photo(
+                cid, photo, caption=caption, reply_markup=reply_markup, parse_mode=parse_mode
+            )
+            results.append(res)
+        return web.json_response({"ok": True, "results": results})
+
+    async def bot_send_document(self, request: web.Request) -> web.Response:
+        if not self.bot_runner:
+            return web.json_response({"ok": False, "error": "Bot runner is not active"}, status=503)
+        data = await request.json()
+        chat_id = data.get("chat_id") or data.get("target")
+        doc = data.get("document") or data.get("url")
+        if not chat_id or not doc:
+            return web.json_response({"ok": False, "error": "chat_id and document are required"}, status=400)
+        caption = data.get("caption") or data.get("message")
+        parse_mode = data.get("parse_mode", "HTML")
+        reply_markup = data.get("reply_markup") or data.get("inline_keyboard")
+        if reply_markup and "inline_keyboard" not in reply_markup and isinstance(reply_markup, list):
+            reply_markup = {"inline_keyboard": reply_markup}
+
+        targets = chat_id if isinstance(chat_id, list) else [chat_id]
+        results = []
+        for cid in targets:
+            res = await self.bot_runner.send_document(
+                cid, doc, caption=caption, reply_markup=reply_markup, parse_mode=parse_mode
+            )
+            results.append(res)
+        return web.json_response({"ok": True, "results": results})

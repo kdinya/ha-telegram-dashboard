@@ -47,3 +47,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Interactive inline buttons with automatic `edit_message` navigation and state toggling.
 - Direct Supervisor API integration for zero-config Home Assistant communication.
 - Full pytest test suite and GitHub Actions CI workflow.
+
+## [1.0.4] - 2026-09-25
+### Added
+- Native Home Assistant services in Automations and Scripts UI (`telegram_dashboard.send_message`, `edit_message`, `delete_message`, `answer_callback`, `send_photo`, `send_document`, `speak`).
+- Companion integration in `custom_components/telegram_dashboard/` with full visual selectors and translations.
+- Auto-sync companion integration into `/config/custom_components` on container start.
+- REST API endpoints on Ingress server for bot execution (`/api/bot/*`).
+- Docker volume map `config:rw` to enable direct integration sync into HA Core.

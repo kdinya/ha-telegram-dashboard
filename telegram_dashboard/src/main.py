@@ -2,6 +2,7 @@
 import json
 import logging
 import os
+import shutil
 import sys
 from pathlib import Path
 
@@ -31,10 +32,33 @@ def load_options() -> dict:
     return {}
 
 
+def sync_custom_component() -> None:
+    """Sync companion integration into HA /config/custom_components if /config is mounted."""
+    config_dir = Path("/config")
+    if not config_dir.exists() or not os.access(config_dir, os.W_OK):
+        return
+    source = Path("/app/custom_components/telegram_dashboard")
+    if not source.exists():
+        # Check relative repo path
+        source = Path(__file__).resolve().parent.parent.parent / "custom_components" / "telegram_dashboard"
+    if not source.exists():
+        return
+    dest = config_dir / "custom_components" / "telegram_dashboard"
+    try:
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(source, dest, dirs_exist_ok=True)
+        logger.info("Successfully synced telegram_dashboard companion integration to %s", dest)
+    except Exception as e:
+        logger.warning("Could not sync custom_component to /config: %s", e)
+
+
 def main() -> None:
     data_dir = Path("/data")
     config_path = data_dir / "config.json" if data_dir.exists() else Path("config.json")
     options = load_options()
+
+    # Sync custom component into HA /config if mounted
+    sync_custom_component()
 
     cm = ConfigManager(config_path)
     cm.load()
@@ -105,7 +129,14 @@ def main() -> None:
     else:
         logger.info("Telegram token not provided yet; bot runner is idle")
 
-    web_app = WebApp(cm, renderer, ha_client=ha_client, bot_engine=bot_engine, telegram_token=telegram_token)
+    web_app = WebApp(
+        cm,
+        renderer,
+        ha_client=ha_client,
+        bot_engine=bot_engine,
+        telegram_token=telegram_token,
+        bot_runner=bot_runner,
+    )
 
     async def on_startup(app) -> None:
         if ha_client:

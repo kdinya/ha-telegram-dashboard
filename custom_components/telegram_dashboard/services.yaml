@@ -1,0 +1,200 @@
+send_message:
+  name: Send message
+  description: Send a text message to a Telegram chat through Telegram Dashboard
+  fields:
+    chat_id:
+      name: Chat ID
+      description: Target Telegram chat ID or list of IDs
+      example: 123456789
+      required: true
+      selector:
+        text:
+    message:
+      name: Message
+      description: Message body formatted according to parse_mode (HTML by default)
+      required: true
+      example: "⚠️ <b>Увага!</b> Виявлено рух у коридорі."
+      selector:
+        text:
+          multiline: true
+    parse_mode:
+      name: Parse mode
+      description: Text formatting syntax
+      default: HTML
+      selector:
+        select:
+          options:
+            - HTML
+            - Markdown
+            - MarkdownV2
+    disable_notification:
+      name: Silent notification
+      description: Send without sound
+      default: false
+      selector:
+        boolean:
+    inline_keyboard:
+      name: Inline keyboard
+      description: Optional inline keyboard rows as JSON list of lists
+      example: '[ [{"text": "Вимкнути", "callback_data": "/act_turn_off"}] ]'
+      selector:
+        object:
+
+edit_message:
+  name: Edit message
+  description: Edit an existing message in a Telegram chat
+  fields:
+    chat_id:
+      name: Chat ID
+      description: Target Telegram chat ID
+      required: true
+      selector:
+        text:
+    message_id:
+      name: Message ID
+      description: ID of the message to edit
+      required: true
+      selector:
+        number:
+          mode: box
+    message:
+      name: Message
+      description: Updated message text
+      required: true
+      selector:
+        text:
+          multiline: true
+    parse_mode:
+      name: Parse mode
+      default: HTML
+      selector:
+        select:
+          options:
+            - HTML
+            - Markdown
+            - MarkdownV2
+    inline_keyboard:
+      name: Inline keyboard
+      selector:
+        object:
+
+delete_message:
+  name: Delete message
+  description: Delete a message from a Telegram chat
+  fields:
+    chat_id:
+      name: Chat ID
+      required: true
+      selector:
+        text:
+    message_id:
+      name: Message ID
+      required: true
+      selector:
+        number:
+          mode: box
+
+answer_callback:
+  name: Answer callback query
+  description: Send a toast notification or alert in response to an inline button click
+  fields:
+    callback_query_id:
+      name: Callback Query ID
+      required: true
+      selector:
+        text:
+    message:
+      name: Toast notification text
+      selector:
+        text:
+    show_alert:
+      name: Show as modal alert
+      default: false
+      selector:
+        boolean:
+
+send_photo:
+  name: Send photo
+  description: Send an image or photo to a Telegram chat
+  fields:
+    chat_id:
+      name: Chat ID
+      required: true
+      selector:
+        text:
+    photo:
+      name: Photo URL or file path
+      required: true
+      selector:
+        text:
+    caption:
+      name: Caption
+      selector:
+        text:
+          multiline: true
+    parse_mode:
+      name: Parse mode
+      default: HTML
+      selector:
+        select:
+          options:
+            - HTML
+            - Markdown
+            - MarkdownV2
+    inline_keyboard:
+      name: Inline keyboard
+      selector:
+        object:
+
+send_document:
+  name: Send document
+  description: Send a file or document to a Telegram chat
+  fields:
+    chat_id:
+      name: Chat ID
+      required: true
+      selector:
+        text:
+    document:
+      name: Document URL or file path
+      required: true
+      selector:
+        text:
+    caption:
+      name: Caption
+      selector:
+        text:
+          multiline: true
+    parse_mode:
+      name: Parse mode
+      default: HTML
+      selector:
+        select:
+          options:
+            - HTML
+            - Markdown
+            - MarkdownV2
+
+speak:
+  name: Speak on smart speaker
+  description: Announce speech on a Home Assistant media player using TTS
+  fields:
+    entity_id:
+      name: Media player entity ID
+      required: true
+      example: media_player.living_room_speaker
+      selector:
+        entity:
+          domain: media_player
+    message:
+      name: Message to speak
+      required: true
+      example: "Увага! Пральна машина закінчила прання."
+      selector:
+        text:
+          multiline: true
+    tts_service:
+      name: TTS service
+      default: tts.google_translate_say
+      selector:
+        text:
