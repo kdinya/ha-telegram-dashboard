@@ -1641,20 +1641,46 @@ function renderMenuChecklist(selectedKeys) {
     const canMoveUp = idx > 0;
     const canMoveDown = idx < fullOrder.length - 1;
 
+    const isLocked = Boolean(sec.locked_nav_sections && sec.locked_nav_sections[k]);
+    itemEl.className = `menu-section-order-item ${isChecked ? 'is-checked' : ''} ${isLocked ? 'is-locked' : ''}`;
+
     itemEl.innerHTML = `
       <label class="menu-section-label">
-        <input type="checkbox" value="${k}" ${isChecked ? 'checked' : ''}>
+        <input type="checkbox" value="${k}" ${isChecked ? 'checked' : ''} ${isLocked ? 'disabled' : ''}>
         <span class="menu-section-icon">${s.icon || '📁'}</span>
         <span class="menu-section-name">${escapeHtml(cleanTitle)}</span>
       </label>
-      <div class="menu-section-order-controls">
-        <button type="button" class="btn-order-arrow btn-order-up" title="${t('btn_move_up') || 'Вгору'}" ${canMoveUp ? '' : 'disabled style="opacity: 0.2; pointer-events: none;"'}>▲</button>
-        <button type="button" class="btn-order-arrow btn-order-down" title="${t('btn_move_down') || 'Вниз'}" ${canMoveDown ? '' : 'disabled style="opacity: 0.2; pointer-events: none;"'}>▼</button>
+      <div class="menu-section-actions">
+        <button type="button" class="btn-lock-elem-item btn-lock-nav-item ${isLocked ? 'is-locked' : ''}" title="${isLocked ? (t('toast_item_unlocked') || 'Розблокувати') : (t('toast_item_locked') || 'Заблокувати')}" data-key="${k}">
+          ${isLocked ? '🔒' : '🔓'}
+        </button>
+        <div class="menu-section-order-controls">
+          <button type="button" class="btn-order-arrow btn-order-up" title="${t('btn_move_up') || 'Вгору'}" ${canMoveUp && !isLocked ? '' : 'disabled style="opacity: 0.2; pointer-events: none;"'}>▲</button>
+          <button type="button" class="btn-order-arrow btn-order-down" title="${t('btn_move_down') || 'Вниз'}" ${canMoveDown && !isLocked ? '' : 'disabled style="opacity: 0.2; pointer-events: none;"'}>▼</button>
+        </div>
       </div>
     `;
 
+    const btnLock = itemEl.querySelector('.btn-lock-nav-item');
+    if (btnLock) {
+      btnLock.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        sec.locked_nav_sections = sec.locked_nav_sections || {};
+        sec.locked_nav_sections[k] = !sec.locked_nav_sections[k];
+        showToast(sec.locked_nav_sections[k] ? t('toast_item_locked') : t('toast_item_unlocked'));
+        renderMenuChecklist(sec.sections);
+        syncCurrentSectionFromForm();
+      });
+    }
+
     const cb = itemEl.querySelector('input[type="checkbox"]');
     cb.addEventListener('change', () => {
+      if (sec.locked_nav_sections && sec.locked_nav_sections[k]) {
+        cb.checked = !cb.checked;
+        showToast(t('toast_item_is_locked'), true);
+        return;
+      }
       // Toggle checked state without changing fullOrder position!
       let updatedSelected = Array.isArray(sec.sections) ? [...sec.sections] : [];
       if (cb.checked) {
@@ -1674,7 +1700,7 @@ function renderMenuChecklist(selectedKeys) {
     btnUp.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      if (!canMoveUp) return;
+      if (!canMoveUp || (sec.locked_nav_sections && sec.locked_nav_sections[k])) return;
       const temp = fullOrder[idx - 1];
       fullOrder[idx - 1] = fullOrder[idx];
       fullOrder[idx] = temp;
@@ -1691,7 +1717,7 @@ function renderMenuChecklist(selectedKeys) {
     btnDown.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      if (!canMoveDown) return;
+      if (!canMoveDown || (sec.locked_nav_sections && sec.locked_nav_sections[k])) return;
       const temp = fullOrder[idx + 1];
       fullOrder[idx + 1] = fullOrder[idx];
       fullOrder[idx] = temp;
@@ -2023,7 +2049,7 @@ function loadSettings() {
   if (window.I18N) window.I18N.setLanguage(currentLang, false);
 
   $('setting-bot-token').value = config.telegram_token || '';
-  $('setting-theme').value = config.theme || 'cards';
+  if ($('setting-theme')) $('setting-theme').value = config.theme || 'cards';
   $('setting-default-role').value = config.default_role || 'guest';
   if (config.telegram_msg_width) {
     localStorage.setItem('preview_slider_msg_width', String(config.telegram_msg_width));
@@ -2036,7 +2062,8 @@ function applySettings() {
     config.language = $('setting-language').value;
   }
   config.telegram_token = $('setting-bot-token').value.trim();
-  config.theme = $('setting-theme').value;
+  if ($('setting-theme')) config.theme = $('setting-theme').value;
+  else config.theme = config.theme || 'cards';
   config.default_role = $('setting-default-role').value;
   const msgWVal = $('setting-tg-msg-width') ? parseInt($('setting-tg-msg-width').value, 10) : 100;
   config.telegram_msg_width = msgWVal || 100;

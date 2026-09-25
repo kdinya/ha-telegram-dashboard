@@ -1,5 +1,6 @@
 """Ingress Web UI and REST API server using aiohttp."""
 from __future__ import annotations
+from datetime import datetime
 
 import logging
 from pathlib import Path
@@ -236,7 +237,7 @@ class WebApp:
             "water_valve": {"open": True},
             "leaks": {"Кухня": {"on": False}, "Ванна": {"on": False}},
             "batteries": {"Зал": {"level": 88}, "Кухня": {"level": 64}},
-            "updated_at": "12:00:00",
+            "updated_at": datetime.now().strftime("%H:%M:%S"),
             # Sample entity states for realistic preview
             "light.living_room": {"state": "on", "attributes": {"friendly_name": "Світло у вітальні"}},
             "light.kitchen": {"state": "off", "attributes": {"friendly_name": "Світло на кухні"}},

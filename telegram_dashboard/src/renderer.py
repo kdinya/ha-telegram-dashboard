@@ -261,12 +261,16 @@ class MessageRenderer:
         if not has_items:
             rows.append("<i>Показники не налаштовані.</i>")
 
-        # Telegram bubble width spacer based on telegram_msg_width
+        # Telegram bubble width spacer based on telegram_msg_width (20-100%)
         width_pct = int(section.get("telegram_msg_width") or state.get("telegram_msg_width") or 100)
-        width_pct = max(60, min(100, width_pct))
-        width_chars = int(18 + (width_pct - 60) / 40 * 14)
-        spacer = "⠀" * width_chars
-        rows.append(f"<code>{spacer}</code>")
+        width_pct = max(20, min(100, width_pct))
+        width_chars = int((width_pct - 20) / 80 * 42)
+        if width_chars > 0:
+            spacer = "⠀" * width_chars
+            rows.append(f"<code>{spacer}</code>")
+
+        updated = html.escape(str(state.get("updated_at", "—")))
+        rows.append(f"<i>⏱ Оновлено: {updated}</i>")
 
         return "\n".join(rows)
 

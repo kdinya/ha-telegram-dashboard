@@ -223,9 +223,6 @@ class BotEngine:
                 {"text": "⬅️ Головна", "callback_data": f"/sec_{first_key}"},
             ])
 
-        # Bottom-most info button under all buttons
-        keyboard.append([{"text": f"⏱ Оновлено: {now_time}", "callback_data": f"/sec_{section_key}"}])
-
         return keyboard
 
     async def handle_navigation(
