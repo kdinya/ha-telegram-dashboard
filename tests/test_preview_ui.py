@@ -66,12 +66,21 @@ def test_preview_anchors_chat_to_bottom_and_colors_standard_buttons():
     assert ".tg-button.is-close" in styles
     assert "button.classList.add('is-back')" in app
     assert "button.classList.add('is-close')" in app
+    assert "tg-standard-icon" in app
+    assert "tg-back-icon" in styles
+    assert "tg-close-icon" in styles
 
 
 def test_navigation_list_grows_instead_of_clipping_sections():
     styles = (UI_DIR / "style.css").read_text(encoding="utf-8")
     assert "max-height: none" in styles
     assert "overflow: visible" in styles
+
+
+def test_mobile_preview_hides_editor_that_would_push_phone_down():
+    styles = (UI_DIR / "style.css").read_text(encoding="utf-8")
+    assert ".split-view:has(.preview-pane.mobile-active) .editor-pane" in styles
+    assert "display: none !important" in styles
 
 
 def test_section_command_and_save_flow_are_explained_and_translated():

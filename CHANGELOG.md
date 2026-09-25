@@ -9,6 +9,7 @@
 - Preview message width is stabilized, inline keyboard buttons remain visible, and the update time is shown below the buttons in non-italic small text.
 - Preview chat content stays bottom-aligned while message height changes, Back/Close buttons use blue/red accents, and long navigation lists expand instead of clipping.
 - Local editor buttons now clearly apply changes to the preview, while the single floating Save changes button persists the configuration.
+- Mobile preview no longer leaves the hidden editor above the phone; standard Back and Close controls now use explicit arrow and cross icons instead of relying on emoji glyph colors.
 
 ## [1.1.2]
 

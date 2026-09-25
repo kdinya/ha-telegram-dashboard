@@ -677,6 +677,21 @@ select.form-control option {
 .tg-button.is-close:hover {
   background-color: #991b1b;
 }
+.tg-standard-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15em;
+  height: 1.15em;
+  margin-right: 4px;
+  font-size: 1.35em;
+  font-weight: 800;
+  line-height: 1;
+  vertical-align: -0.12em;
+}
+.tg-back-icon { color: #93c5fd; }
+.tg-close-icon { color: #fecaca; }
+.tg-standard-label { vertical-align: middle; }
 .preview-timestamp {
   display: block;
   font-size: 11px;
@@ -896,6 +911,12 @@ select.form-control option {
     width: 100% !important;
     padding-bottom: 60px;
     overflow: visible !important;
+  }
+  .split-view:has(.preview-pane.mobile-active) .editor-pane {
+    display: none !important;
+  }
+  .split-view:has(.preview-pane.mobile-active) {
+    padding-top: 0;
   }
   .preview-header-mobile {
     display: flex;

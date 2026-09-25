@@ -2259,12 +2259,25 @@ function renderTelegramKeyboard(keyboard) {
       const cbData = Array.isArray(btn) ? btn[1] : (btn.callback_data || '');
       const normalizedText = String(text).toLowerCase();
       const normalizedCallback = String(cbData).toLowerCase();
-      if (normalizedCallback === 'td:/close' || normalizedCallback === '/close' || normalizedText.includes('закрити') || normalizedText.includes('close')) {
+      const isClose = normalizedCallback === 'td:/close' || normalizedCallback === '/close' || normalizedText.includes('закрити') || normalizedText.includes('close');
+      const isBack = normalizedCallback.startsWith('td:/sec_') && (normalizedText.includes('назад') || normalizedText.includes('back') || normalizedText.includes('головна'));
+      if (isClose) {
         button.classList.add('is-close');
-      } else if (normalizedCallback.startsWith('td:/sec_') && (normalizedText.includes('назад') || normalizedText.includes('back') || normalizedText.includes('головна'))) {
+      } else if (isBack) {
         button.classList.add('is-back');
       }
-      button.textContent = text;
+      if (isClose || isBack) {
+        const icon = document.createElement('span');
+        icon.className = `tg-standard-icon ${isClose ? 'tg-close-icon' : 'tg-back-icon'}`;
+        icon.textContent = isClose ? '×' : '←';
+        icon.setAttribute('aria-hidden', 'true');
+        const label = document.createElement('span');
+        label.className = 'tg-standard-label';
+        label.textContent = String(text).replace(/^[^\p{L}\p{N}]*/u, '').trim();
+        button.replaceChildren(icon, label);
+      } else {
+        button.textContent = text;
+      }
       button.title = cbData;
       button.addEventListener('click', () => handlePreviewButtonClick(cbData));
       rowEl.appendChild(button);
