@@ -2108,3 +2108,39 @@ body:has(.modal-overlay.open) {
     overflow: visible !important;
   }
 }
+
+/* Floating Save & Actions Bar */
+.floating-actions-bar {
+  position: fixed;
+  bottom: 24px;
+  right: 28px;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-floating-save {
+  padding: 12px 24px !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  border-radius: 50px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(37, 99, 235, 0.4) !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-floating-save:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(37, 99, 235, 0.6) !important;
+}
+
+.floating-actions-bar .desktop-toggle-preview {
+  border-radius: 50px !important;
+  padding: 10px 18px !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Add padding to bottom of panes so floating button never obscures last fields */
+.editor-pane {
+  padding-bottom: 90px !important;
+}

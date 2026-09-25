@@ -42,19 +42,13 @@
 
     <!-- Main Content -->
     <main class="content-area">
-      <!-- Non-overlapping Top Bar -->
-      <header class="top-header">
-        <div class="header-title">
-          <h1 data-i18n="header_title">Telegram Menu Builder</h1>
-          <p class="subtitle" data-i18n="header_subtitle">Manage sections, entities, widgets, and actions</p>
-        </div>
-        <div class="header-actions">
-          <button id="btn-toggle-preview" class="btn btn-secondary desktop-toggle-preview" data-i18n-title="btn_preview_title" title="Show or hide preview">
-            <span class="preview-toggle-icon">📱</span> <span class="preview-toggle-label" data-i18n="btn_preview">Preview</span>
-          </button>
-          <button id="btn-save" class="btn btn-primary" data-i18n="btn_save_changes">💾 Save changes</button>
-        </div>
-      </header>
+      <!-- Floating Actions (Bottom Right) -->
+      <div class="floating-actions-bar">
+        <button id="btn-toggle-preview" class="btn btn-secondary desktop-toggle-preview btn-floating" data-i18n-title="btn_preview_title" title="Show or hide preview">
+          <span class="preview-toggle-icon">📱</span> <span class="preview-toggle-label" data-i18n="btn_preview">Preview</span>
+        </button>
+        <button id="btn-save" class="btn btn-primary btn-floating-save" data-i18n="btn_save_changes">💾 Save changes</button>
+      </div>
 
       <div class="split-view" id="split-view">
         <!-- Editor Column -->
