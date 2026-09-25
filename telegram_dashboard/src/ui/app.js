@@ -2333,23 +2333,31 @@ function setupEventListeners() {
   // Drag-to-scroll emulation for telegram simulator chat
   const msgArea = document.querySelector('.tg-messages-area');
   if (msgArea) {
-    let isDown = false;
+    let pointerActive = false;
     let startY = 0;
-    let scrollTop = 0;
-
-    msgArea.addEventListener('mousedown', (e) => {
-      isDown = true;
-      startY = e.pageY - msgArea.offsetTop;
-      scrollTop = msgArea.scrollTop;
+    let startScrollTop = 0;
+    msgArea.addEventListener('pointerdown', (e) => {
+      pointerActive = true;
+      startY = e.clientY;
+      startScrollTop = msgArea.scrollTop;
+      msgArea.classList.add('is-dragging');
+      msgArea.setPointerCapture?.(e.pointerId);
     });
-    msgArea.addEventListener('mouseleave', () => { isDown = false; });
-    msgArea.addEventListener('mouseup', () => { isDown = false; });
-    msgArea.addEventListener('mousemove', (e) => {
-      if (!isDown) return;
-      e.preventDefault();
-      const y = e.pageY - msgArea.offsetTop;
-      const walk = (y - startY) * 1.5;
-      msgArea.scrollTop = scrollTop - walk;
+    const stopPointerDrag = (e) => {
+      pointerActive = false;
+      msgArea.classList.remove('is-dragging');
+      if (e?.pointerId !== undefined) msgArea.releasePointerCapture?.(e.pointerId);
+    };
+    msgArea.addEventListener('pointerup', stopPointerDrag);
+    msgArea.addEventListener('pointercancel', stopPointerDrag);
+    msgArea.addEventListener('pointerleave', (e) => {
+      if (e.pointerType === 'mouse') stopPointerDrag(e);
+    });
+    msgArea.addEventListener('pointermove', (e) => {
+      if (!pointerActive) return;
+      const delta = e.clientY - startY;
+      if (Math.abs(delta) > 2) e.preventDefault();
+      msgArea.scrollTop = startScrollTop - delta;
     });
   }
 

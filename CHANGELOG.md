@@ -10,6 +10,7 @@
 - Preview chat content stays bottom-aligned while message height changes, Back/Close buttons use blue/red accents, and long navigation lists expand instead of clipping.
 - Local editor buttons now clearly apply changes to the preview, while the single floating Save changes button persists the configuration.
 - Mobile preview no longer leaves the hidden editor above the phone; standard Back and Close controls now use explicit arrow and cross icons instead of relying on emoji glyph colors.
+- Preview messages can now be dragged vertically like a Telegram chat, and real Telegram buttons use blue/red markers that Telegram renders consistently.
 
 ## [1.1.2]
 

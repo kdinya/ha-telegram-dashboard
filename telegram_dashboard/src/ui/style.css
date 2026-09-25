@@ -587,11 +587,18 @@ select.form-control option {
   justify-content: flex-end;
   align-items: stretch;
   scroll-behavior: auto;
+  touch-action: none;
+  cursor: grab;
+}
+.tg-messages-area.is-dragging {
+  cursor: grabbing;
+  user-select: none;
 }
 
 .tg-bot-bubble {
   margin-bottom: 0 !important;
   overflow: visible;
+  flex: 0 0 auto;
   will-change: height;
   transition: width 0.15s ease, max-width 0.15s ease;
 }
@@ -614,6 +621,13 @@ select.form-control option {
   margin-top: 0; margin-bottom: 12px;
   overflow: hidden;
   transition: width 0.15s ease, max-width 0.15s ease;
+}
+.tg-message-bubble.tg-bot-bubble {
+  overflow: visible;
+  flex-shrink: 0;
+}
+.tg-message-bubble.tg-user-bubble {
+  flex-shrink: 0;
 }
 
 .tg-rendered-content {
@@ -911,6 +925,7 @@ select.form-control option {
     width: 100% !important;
     padding-bottom: 60px;
     overflow: visible !important;
+    margin-top: 12px;
   }
   .split-view:has(.preview-pane.mobile-active) .editor-pane {
     display: none !important;

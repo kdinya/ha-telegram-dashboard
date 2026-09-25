@@ -275,7 +275,7 @@ class WebApp:
         if user_role not in allowed_roles:
             return web.json_response({
                 "html": "⛔ <i>У вас немає доступу до цього розділу.</i>",
-                "keyboard": [[{"text": "⬅️ Назад", "callback_data": "/sec_main"}]],
+                "keyboard": [[{"text": "🔵 Назад", "callback_data": "/sec_main"}]],
             })
 
         # Render HTML using unified renderer
