@@ -123,6 +123,22 @@ class BotEngine:
             return "main"
         return next(iter(menu.keys()))
 
+
+    def find_menu_by_command(self, cmd: str) -> str | None:
+        """Find menu section key by Telegram command (e.g. /dashboard or /menu)."""
+        if not cmd:
+            return None
+        clean_cmd = cmd.strip().lower().lstrip("/")
+        menu = self.config.get("menu", {})
+        for sec_key, sec in menu.items():
+            sec_cmd = str(sec.get("command", "")).strip().lower().lstrip("/")
+            if sec_cmd and sec_cmd == clean_cmd:
+                return sec_key
+        # Default fallbacks for the primary menu
+        if clean_cmd in ("dashboard", "menu", "start", "home"):
+            return self._get_first_section_key()
+        return None
+
     def build_keyboard(
         self, section_key: str, user_id: int, page: int = 0, state: dict[str, Any] | None = None
     ) -> list[list[dict[str, str]]]:
@@ -150,7 +166,7 @@ class BotEngine:
                 if decision.allowed:
                     icon = sub_section.get("icon", "📁")
                     title = sub_section.get("title", sub_key)
-                    row.append({"text": f"{icon} {title}".strip(), "callback_data": f"/sec_{sub_key}"})
+                    row.append({"text": f"{icon} {title}".strip(), "callback_data": f"td:/sec_{sub_key}"})
                     if len(row) == 2:
                         keyboard.append(row)
                         row = []
@@ -167,14 +183,14 @@ class BotEngine:
                 global_idx = page * ENTITIES_PAGE_SIZE + idx
                 keyboard.append([{
                     "text": f"🔘 {friendly_name(ent)}",
-                    "callback_data": f"/tog_{section_key}_{global_idx}",
+                    "callback_data": f"td:/tog_{section_key}_{global_idx}",
                 }])
             nav_row: list[dict[str, str]] = []
             if page > 0:
-                nav_row.append({"text": "⬅️", "callback_data": f"/ent_{section_key}_{page - 1}"})
-            nav_row.append({"text": f"{page + 1}/{total_pages}", "callback_data": f"/ent_{section_key}_{page}"})
+                nav_row.append({"text": "⬅️", "callback_data": f"td:/ent_{section_key}_{page - 1}"})
+            nav_row.append({"text": f"{page + 1}/{total_pages}", "callback_data": f"td:/ent_{section_key}_{page}"})
             if page < total_pages - 1:
-                nav_row.append({"text": "➡️", "callback_data": f"/ent_{section_key}_{page + 1}"})
+                nav_row.append({"text": "➡️", "callback_data": f"td:/ent_{section_key}_{page + 1}"})
             keyboard.append(nav_row)
 
         # 3. Action / Control buttons
@@ -199,14 +215,14 @@ class BotEngine:
                         btn_text = f"🟢 {raw_label}"
                     elif ent_st_lower in ("off", "closed", "false"):
                         btn_text = f"🔴 {raw_label}"
-                keyboard.append([{"text": btn_text, "callback_data": f"/btn_{section_key}_{idx}"}])
+                keyboard.append([{"text": btn_text, "callback_data": f"td:/btn_{section_key}_{idx}"}])
         else:
             actions = section.get("actions", [])
             allowed_actions = self.access.filter_actions(user_id, actions)
             for idx, act in enumerate(allowed_actions):
                 act_id = act.get("id") or f"act_{idx}"
                 raw_label = act.get("label", "Дія")
-                keyboard.append([{"text": raw_label, "callback_data": f"/act_{act_id}"}])
+                keyboard.append([{"text": raw_label, "callback_data": f"td:/act_{act_id}"}])
 
         # 4. Standard footer buttons
         from datetime import datetime
@@ -216,11 +232,11 @@ class BotEngine:
             state["updated_at"] = now_time
 
         if section_key == first_key:
-            keyboard.append([{"text": "🔄 Оновити", "callback_data": f"/sec_{section_key}"}])
+            keyboard.append([{"text": "🔄 Оновити", "callback_data": f"td:/sec_{section_key}"}])
         else:
             keyboard.append([
-                {"text": "🔄 Оновити", "callback_data": f"/sec_{section_key}"},
-                {"text": "⬅️ Головна", "callback_data": f"/sec_{first_key}"},
+                {"text": "🔄 Оновити", "callback_data": f"td:/sec_{section_key}"},
+                {"text": "⬅️ Головна", "callback_data": f"td:/sec_{first_key}"},
             ])
 
         return keyboard
@@ -236,14 +252,14 @@ class BotEngine:
         if not section:
             return {
                 "text": "❌ Розділ не знайдено.",
-                "keyboard": [[{"text": "⬅️ Назад", "callback_data": f"/sec_{first_key}"}]],
+                "keyboard": [[{"text": "⬅️ Назад", "callback_data": f"td:/sec_{first_key}"}]],
             }
 
         decision = self.access.check_section(user_id, section_key, section)
         if not decision.allowed:
             return {
                 "text": f"⛔ <b>Доступ обмежено</b>\n\n{decision.reason}",
-                "keyboard": [[{"text": "⬅️ Головна", "callback_data": f"/sec_{first_key}"}]],
+                "keyboard": [[{"text": "⬅️ Головна", "callback_data": f"td:/sec_{first_key}"}]],
                 "parse_mode": "HTML",
             }
 

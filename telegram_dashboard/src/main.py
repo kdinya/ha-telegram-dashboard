@@ -69,7 +69,7 @@ def sync_custom_component() -> None:
         logger.warning("Could not sync custom_component to %s: %s", dest, e)
 
 
-def ensure_ha_integration_enabled(token: str = "") -> None:
+def ensure_ha_integration_enabled() -> None:
     """Ensure 'telegram_dashboard:' is present in configuration.yaml if present."""
     config_dir = get_ha_config_dir()
     if not config_dir:
@@ -100,7 +100,7 @@ def main() -> None:
 
     # Sync custom component into HA /config if mounted
     sync_custom_component()
-    ensure_ha_integration_enabled(options.get("telegram_token", ""))
+    ensure_ha_integration_enabled()
 
     cm = ConfigManager(config_path)
     cm.load()
@@ -158,25 +158,15 @@ def main() -> None:
         config_manager=cm,
     )
 
-    # Telegram token from options, env or config
-    telegram_token = (
-        options.get("telegram_token")
-        or os.environ.get("TELEGRAM_TOKEN")
-        or cm.config.get("telegram_token", "")
-    )
-    bot_runner = None
-    if telegram_token:
-        bot_runner = TelegramBotRunner(telegram_token, bot_engine, get_ha_state=get_ha_state)
-        logger.info("Telegram Bot Runner configured with token")
-    else:
-        logger.info("Telegram token not provided yet; bot runner is idle")
+    # Bridge through official HA telegram_bot integration
+    bot_runner = TelegramBotRunner(ha_client, bot_engine, get_ha_state=get_ha_state)
 
     web_app = WebApp(
         cm,
         renderer,
         ha_client=ha_client,
         bot_engine=bot_engine,
-        telegram_token=telegram_token,
+        telegram_token="",
         bot_runner=bot_runner,
     )
 

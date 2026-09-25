@@ -2202,6 +2202,7 @@ function setupEventListeners() {
       if (editSectionIconDisplay) editSectionIconDisplay.textContent = sec.icon || '📁';
       if (editSecTitle) {
         editSecTitle.value = stripLeadingEmoji(sec.title || '');
+    if (editSecCommand) { editSecCommand.value = sec.command || ''; }
       }
       modalEditSection?.classList.add('open');
       // Do not automatically autofocus title to prevent unwanted virtual keyboard popup on mobile
@@ -2219,6 +2220,10 @@ function setupEventListeners() {
     if (!sec) return;
     if (editSecTitle) {
       sec.title = stripLeadingEmoji(editSecTitle.value.trim()) || 'Розділ';
+    if (editSecCommand) {
+      const cmd = editSecCommand.value.trim();
+      if (cmd) { sec.command = cmd.startsWith('/') ? cmd : '/' + cmd; } else { delete sec.command; }
+    }
     }
     if (editSecIcon) {
       sec.icon = editSecIcon.value.trim() || '📁';

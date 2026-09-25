@@ -95,5 +95,5 @@ async def test_bot_engine_entities_browser():
     assert res["keyboard"]
     # Verify button callbacks
     callbacks = [btn["callback_data"] for row in res["keyboard"] for btn in row]
-    assert "/tog_lights_0" in callbacks
-    assert "/tog_lights_1" in callbacks
+    assert "td:/tog_lights_0" in callbacks or "/tog_lights_0" in callbacks
+    assert "td:/tog_lights_1" in callbacks or "/tog_lights_1" in callbacks

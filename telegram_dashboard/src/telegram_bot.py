@@ -1,108 +1,114 @@
-"""Lightweight async Telegram Bot polling service using aiohttp."""
+"""Telegram Bot integration bridge connecting through Home Assistant telegram_bot actions and events."""
 from __future__ import annotations
 
 import asyncio
 import logging
 from typing import Any, Callable, Awaitable
-import aiohttp
 
-logger = logging.getLogger("telegram_dashboard.bot_polling")
+logger = logging.getLogger("telegram_dashboard.telegram_bot")
+
+TD_CALLBACK_PREFIX = "td:"
 
 
 class TelegramBotRunner:
+    """Bridges Telegram messages and callbacks through Home Assistant telegram_bot integration."""
+
     def __init__(
-        self, token: str, bot_engine: Any, get_ha_state: Callable[[], Awaitable[dict[str, Any]]] | None = None
+        self,
+        ha_client: Any,
+        bot_engine: Any,
+        get_ha_state: Callable[[], Awaitable[dict[str, Any]]] | None = None,
     ) -> None:
-        self.token = token
+        self.ha_client = ha_client
         self.bot_engine = bot_engine
         self.get_ha_state = get_ha_state
-        self.base_url = f"https://api.telegram.org/bot{token}"
-        self._session: aiohttp.ClientSession | None = None
         self._running = False
-        self._task: asyncio.Task | None = None
-
-    async def _post(self, method: str, data: dict[str, Any]) -> dict[str, Any] | None:
-        if self._session is None or self._session.closed:
-            self._session = aiohttp.ClientSession()
-        url = f"{self.base_url}/{method}"
-        try:
-            async with self._session.post(url, json=data, timeout=30) as resp:
-                if resp.status == 200:
-                    return await resp.json()
-                text = await resp.text()
-                logger.warning("Telegram %s returned %s: %s", method, resp.status, text[:150])
-        except Exception as e:
-            logger.error("Telegram %s request error: %s", method, e)
-        return None
 
     async def send_message(
-        self, chat_id: int | str, text: str, reply_markup: dict | None = None,
-        parse_mode: str = "HTML", disable_notification: bool = False
+        self,
+        chat_id: int | str,
+        text: str,
+        reply_markup: dict | None = None,
+        parse_mode: str = "html",
+        disable_notification: bool = False,
     ) -> dict[str, Any] | None:
-        payload: dict[str, Any] = {
-            "chat_id": chat_id,
-            "text": text,
-            "parse_mode": parse_mode,
+        """Send message via Home Assistant telegram_bot.send_message action."""
+        if not self.ha_client:
+            logger.warning("ha_client is not configured; cannot send message")
+            return None
+
+        service_data: dict[str, Any] = {
+            "chat_id": [int(chat_id)],
+            "message": text,
+            "parse_mode": parse_mode.lower(),
             "disable_notification": disable_notification,
         }
-        if reply_markup:
-            payload["reply_markup"] = reply_markup
-        return await self._post("sendMessage", payload)
+        if reply_markup and "inline_keyboard" in reply_markup:
+            service_data["inline_keyboard"] = reply_markup["inline_keyboard"]
+
+        try:
+            return await self.ha_client.call_service("telegram_bot", "send_message", service_data=service_data)
+        except Exception as e:
+            logger.error("Failed to send message through HA telegram_bot: %s", e)
+            return None
 
     async def edit_message_text(
-        self, chat_id: int | str, message_id: int, text: str,
-        reply_markup: dict | None = None, parse_mode: str = "HTML"
+        self,
+        chat_id: int | str,
+        message_id: int,
+        text: str,
+        reply_markup: dict | None = None,
+        parse_mode: str = "html",
     ) -> dict[str, Any] | None:
-        payload: dict[str, Any] = {
-            "chat_id": chat_id,
-            "message_id": message_id,
-            "text": text,
-            "parse_mode": parse_mode,
+        """Edit message text via Home Assistant telegram_bot.edit_message action."""
+        if not self.ha_client:
+            logger.warning("ha_client is not configured; cannot edit message")
+            return None
+
+        service_data: dict[str, Any] = {
+            "chat_id": int(chat_id),
+            "message_id": int(message_id),
+            "message": text,
+            "parse_mode": parse_mode.lower(),
         }
-        if reply_markup:
-            payload["reply_markup"] = reply_markup
-        return await self._post("editMessageText", payload)
+        if reply_markup and "inline_keyboard" in reply_markup:
+            service_data["inline_keyboard"] = reply_markup["inline_keyboard"]
+
+        try:
+            return await self.ha_client.call_service("telegram_bot", "edit_message", service_data=service_data)
+        except Exception as e:
+            logger.error("Failed to edit message through HA telegram_bot: %s", e)
+            return None
 
     async def delete_message(self, chat_id: int | str, message_id: int) -> dict[str, Any] | None:
-        return await self._post("deleteMessage", {"chat_id": chat_id, "message_id": message_id})
+        """Delete message via Home Assistant telegram_bot.delete_message action."""
+        if not self.ha_client:
+            return None
+        service_data = {"chat_id": int(chat_id), "message_id": int(message_id)}
+        try:
+            return await self.ha_client.call_service("telegram_bot", "delete_message", service_data=service_data)
+        except Exception as e:
+            logger.error("Failed to delete message through HA telegram_bot: %s", e)
+            return None
 
     async def answer_callback_query(
-        self, callback_query_id: str, text: str | None = None, show_alert: bool = False
+        self, callback_query_id: str | int, text: str | None = None, show_alert: bool = False
     ) -> dict[str, Any] | None:
-        payload: dict[str, Any] = {"callback_query_id": callback_query_id, "show_alert": show_alert}
-        if text:
-            payload["text"] = text
-        return await self._post("answerCallbackQuery", payload)
-
-    async def send_photo(
-        self, chat_id: int | str, photo: str, caption: str | None = None,
-        reply_markup: dict | None = None, parse_mode: str = "HTML"
-    ) -> dict[str, Any] | None:
-        payload: dict[str, Any] = {
-            "chat_id": chat_id,
-            "photo": photo,
-            "parse_mode": parse_mode,
+        """Acknowledge callback query via Home Assistant telegram_bot.answer_callback_query action."""
+        if not self.ha_client:
+            return None
+        service_data: dict[str, Any] = {
+            "callback_query_id": int(callback_query_id),
+            "message": text or "",
+            "show_alert": show_alert,
         }
-        if caption:
-            payload["caption"] = caption
-        if reply_markup:
-            payload["reply_markup"] = reply_markup
-        return await self._post("sendPhoto", payload)
-
-    async def send_document(
-        self, chat_id: int | str, document: str, caption: str | None = None,
-        reply_markup: dict | None = None, parse_mode: str = "HTML"
-    ) -> dict[str, Any] | None:
-        payload: dict[str, Any] = {
-            "chat_id": chat_id,
-            "document": document,
-            "parse_mode": parse_mode,
-        }
-        if caption:
-            payload["caption"] = caption
-        if reply_markup:
-            payload["reply_markup"] = reply_markup
-        return await self._post("sendDocument", payload)
+        try:
+            return await self.ha_client.call_service(
+                "telegram_bot", "answer_callback_query", service_data=service_data
+            )
+        except Exception as e:
+            logger.error("Failed to answer callback query through HA telegram_bot: %s", e)
+            return None
 
     async def _current_state(self) -> dict[str, Any]:
         if self.get_ha_state:
@@ -112,13 +118,13 @@ class TelegramBotRunner:
                 logger.error("Failed to fetch state for bot: %s", e)
         return {}
 
-    def _extract_user_info(self, from_user: dict[str, Any]) -> tuple[int | None, str]:
-        user_id = from_user.get("id")
+    def _extract_user_info(self, event_data: dict[str, Any]) -> tuple[int | None, str]:
+        user_id = event_data.get("user_id") or event_data.get("from_id")
         if not user_id:
             return None, ""
-        first = (from_user.get("first_name") or "").strip()
-        last = (from_user.get("last_name") or "").strip()
-        username = (from_user.get("username") or "").strip()
+        first = (event_data.get("from_first_name") or "").strip()
+        last = (event_data.get("from_last_name") or "").strip()
+        username = (event_data.get("username") or "").strip()
         full_name = f"{first} {last}".strip()
         if full_name and username:
             display_name = f"{full_name} (@{username})"
@@ -130,126 +136,115 @@ class TelegramBotRunner:
             display_name = f"User {user_id}"
         return int(user_id), display_name
 
-    async def _process_update(self, update: dict[str, Any]) -> None:
+    async def handle_ha_command(self, data: dict[str, Any]) -> None:
+        """Handle incoming telegram_command event from Home Assistant."""
+        command = str(data.get("command", "")).strip()
+        chat_id = data.get("chat_id")
+        user_id, display_name = self._extract_user_info(data)
+
+        if not user_id or not chat_id or not command:
+            return
+
+        if hasattr(self.bot_engine, "auto_discover_user"):
+            self.bot_engine.auto_discover_user(user_id, display_name)
+
+        # Multi-menu routing: match command against configured menu commands
+        sec_key = None
+        if hasattr(self.bot_engine, "find_menu_by_command"):
+            sec_key = self.bot_engine.find_menu_by_command(command)
+        elif command.lstrip("/").lower() in ("dashboard", "menu", "start", "home"):
+            sec_key = "main"
+
+        if not sec_key:
+            # Not a Telegram Dashboard command; leave untouched for user automations
+            return
+
         state = await self._current_state()
+        res = await self.bot_engine.handle_navigation(user_id, sec_key, state)
+        reply_markup = {"inline_keyboard": res.get("keyboard", [])} if res.get("keyboard") else None
+        await self.send_message(chat_id, res.get("text", ""), reply_markup=reply_markup)
 
-        if "message" in update:
-            msg = update["message"]
-            from_user = msg.get("from") or {}
-            user_id, display_name = self._extract_user_info(from_user)
-            chat_id = msg.get("chat", {}).get("id")
-            text = (msg.get("text") or "").strip()
+    async def handle_ha_callback(self, data: dict[str, Any]) -> None:
+        """Handle incoming telegram_callback event from Home Assistant."""
+        cb_data = str(data.get("data", ""))
+        cb_id = data.get("id")
+        chat_id = data.get("chat_id")
+        msg = data.get("message") or {}
+        msg_id = msg.get("message_id") if isinstance(msg, dict) else data.get("message_id")
 
-            if not user_id or not chat_id:
-                return
+        # Ignore callbacks without our namespace prefix (let HA automations handle them)
+        if not cb_data.startswith(TD_CALLBACK_PREFIX):
+            return
 
-            if hasattr(self.bot_engine, "auto_discover_user"):
-                self.bot_engine.auto_discover_user(user_id, display_name)
+        # Strip our prefix for internal routing
+        action_data = cb_data[len(TD_CALLBACK_PREFIX):]
 
-            if text in ("/start", "/menu", "/home"):
-                res = await self.bot_engine.handle_navigation(user_id, "main", state)
-                reply_markup = {"inline_keyboard": res.get("keyboard", [])} if res.get("keyboard") else None
-                await self.send_message(chat_id, res.get("text", ""), reply_markup=reply_markup)
-            elif text.startswith("/"):
-                sec_key = text[1:].split()[0]
-                res = await self.bot_engine.handle_navigation(user_id, sec_key, state)
-                reply_markup = {"inline_keyboard": res.get("keyboard", [])} if res.get("keyboard") else None
-                await self.send_message(chat_id, res.get("text", ""), reply_markup=reply_markup)
-
-        elif "callback_query" in update:
-            cb = update["callback_query"]
-            cb_id = cb.get("id")
-            from_user = cb.get("from") or {}
-            user_id, display_name = self._extract_user_info(from_user)
-            data = cb.get("data", "")
-            msg = cb.get("message")
-            chat_id = msg.get("chat", {}).get("id") if msg else None
-            msg_id = msg.get("message_id") if msg else None
-
-            if not user_id or not chat_id or not msg_id:
-                if cb_id:
-                    await self.answer_callback_query(cb_id)
-                return
-
-            if hasattr(self.bot_engine, "auto_discover_user"):
-                self.bot_engine.auto_discover_user(user_id, display_name)
-
-            toast = None
-            if data.startswith("/sec_"):
-                sec_key = data[5:]
-                res = await self.bot_engine.handle_navigation(user_id, sec_key, state)
-                reply_markup = {"inline_keyboard": res.get("keyboard", [])} if res.get("keyboard") else None
-                await self.edit_message_text(chat_id, msg_id, res.get("text", ""), reply_markup=reply_markup)
-            elif data.startswith("/ent_"):
-                sec_key, _, tail = data[5:].rpartition("_")
-                page = int(tail) if tail.isdigit() else 0
-                res = await self.bot_engine.handle_navigation(user_id, sec_key, state, page=page)
-                reply_markup = {"inline_keyboard": res.get("keyboard", [])} if res.get("keyboard") else None
-                await self.edit_message_text(chat_id, msg_id, res.get("text", ""), reply_markup=reply_markup)
-            elif data.startswith("/btn_"):
-                sec_key, _, tail = data[5:].rpartition("_")
-                btn_id = tail if tail else "0"
-                res = await self.bot_engine.handle_button_click(user_id, sec_key, btn_id, state)
-                toast = res.get("toast")
-                ret_sec = res.get("section_key") or sec_key
-                await asyncio.sleep(0.3)
-                state = await self._current_state()
-                nav = await self.bot_engine.handle_navigation(user_id, ret_sec, state)
-                reply_markup = {"inline_keyboard": nav.get("keyboard", [])} if nav.get("keyboard") else None
-                await self.edit_message_text(chat_id, msg_id, nav.get("text", ""), reply_markup=reply_markup)
-            elif data.startswith("/act_"):
-                act_id = data[5:]
-                res = await self.bot_engine.handle_action(user_id, act_id, state)
-                toast = res.get("toast")
-                sec_key = res.get("section_key") or "main"
-                await asyncio.sleep(0.3)
-                state = await self._current_state()
-                nav = await self.bot_engine.handle_navigation(user_id, sec_key, state)
-                reply_markup = {"inline_keyboard": nav.get("keyboard", [])} if nav.get("keyboard") else None
-                await self.edit_message_text(chat_id, msg_id, nav.get("text", ""), reply_markup=reply_markup)
-            elif data.startswith("/tog_"):
-                sec_key, _, tail = data[5:].rpartition("_")
-                idx = int(tail) if tail.isdigit() else 0
-                res = await self.bot_engine.handle_entity_toggle(user_id, sec_key, idx)
-                toast = res.get("toast")
-                nav = await self.bot_engine.handle_navigation(user_id, sec_key, state)
-                reply_markup = {"inline_keyboard": nav.get("keyboard", [])} if nav.get("keyboard") else None
-                await self.edit_message_text(chat_id, msg_id, nav.get("text", ""), reply_markup=reply_markup)
-
+        user_id, display_name = self._extract_user_info(data)
+        if not user_id or not chat_id or not msg_id:
             if cb_id:
-                await self.answer_callback_query(cb_id, text=toast)
+                await self.answer_callback_query(cb_id)
+            return
 
-    async def _polling_loop(self) -> None:
-        logger.info("Starting Telegram Bot polling loop...")
-        offset = 0
-        while self._running:
-            try:
-                res = await self._post("getUpdates", {"offset": offset, "timeout": 20})
-                if res and res.get("ok"):
-                    for item in res.get("result", []):
-                        offset = item["update_id"] + 1
-                        asyncio.create_task(self._process_update(item))
-                else:
-                    await asyncio.sleep(2)
-            except asyncio.CancelledError:
-                break
-            except Exception as e:
-                logger.error("Error in bot polling loop: %s", e)
-                await asyncio.sleep(5)
+        if hasattr(self.bot_engine, "auto_discover_user"):
+            self.bot_engine.auto_discover_user(user_id, display_name)
+
+        state = await self._current_state()
+        toast = None
+
+        if action_data.startswith("/sec_"):
+            sec_key = action_data[5:]
+            res = await self.bot_engine.handle_navigation(user_id, sec_key, state)
+            reply_markup = {"inline_keyboard": res.get("keyboard", [])} if res.get("keyboard") else None
+            await self.edit_message_text(chat_id, int(msg_id), res.get("text", ""), reply_markup=reply_markup)
+        elif action_data.startswith("/ent_"):
+            sec_key, _, tail = action_data[5:].rpartition("_")
+            page = int(tail) if tail.isdigit() else 0
+            res = await self.bot_engine.handle_navigation(user_id, sec_key, state, page=page)
+            reply_markup = {"inline_keyboard": res.get("keyboard", [])} if res.get("keyboard") else None
+            await self.edit_message_text(chat_id, int(msg_id), res.get("text", ""), reply_markup=reply_markup)
+        elif action_data.startswith("/btn_"):
+            sec_key, _, tail = action_data[5:].rpartition("_")
+            btn_id = tail if tail else "0"
+            res = await self.bot_engine.handle_button_click(user_id, sec_key, btn_id, state)
+            toast = res.get("toast")
+            ret_sec = res.get("section_key") or sec_key
+            await asyncio.sleep(0.3)
+            state = await self._current_state()
+            nav = await self.bot_engine.handle_navigation(user_id, ret_sec, state)
+            reply_markup = {"inline_keyboard": nav.get("keyboard", [])} if nav.get("keyboard") else None
+            await self.edit_message_text(chat_id, int(msg_id), nav.get("text", ""), reply_markup=reply_markup)
+        elif action_data.startswith("/act_"):
+            act_id = action_data[5:]
+            res = await self.bot_engine.handle_action(user_id, act_id, state)
+            toast = res.get("toast")
+            sec_key = res.get("section_key") or "main"
+            await asyncio.sleep(0.3)
+            state = await self._current_state()
+            nav = await self.bot_engine.handle_navigation(user_id, sec_key, state)
+            reply_markup = {"inline_keyboard": nav.get("keyboard", [])} if nav.get("keyboard") else None
+            await self.edit_message_text(chat_id, int(msg_id), nav.get("text", ""), reply_markup=reply_markup)
+        elif action_data.startswith("/tog_"):
+            sec_key, _, tail = action_data[5:].rpartition("_")
+            idx = int(tail) if tail.isdigit() else 0
+            res = await self.bot_engine.handle_entity_toggle(user_id, sec_key, idx)
+            toast = res.get("toast")
+            nav = await self.bot_engine.handle_navigation(user_id, sec_key, state)
+            reply_markup = {"inline_keyboard": nav.get("keyboard", [])} if nav.get("keyboard") else None
+            await self.edit_message_text(chat_id, int(msg_id), nav.get("text", ""), reply_markup=reply_markup)
+
+        if cb_id:
+            await self.answer_callback_query(cb_id, text=toast)
 
     def start(self) -> None:
-        if self._running or not self.token:
+        """Register HA event listeners and start WebSocket connection."""
+        if self._running:
             return
         self._running = True
-        self._task = asyncio.create_task(self._polling_loop())
+        if self.ha_client and hasattr(self.ha_client, "register_event_listener"):
+            self.ha_client.register_event_listener("telegram_command", self.handle_ha_command)
+            self.ha_client.register_event_listener("telegram_callback", self.handle_ha_callback)
+            self.ha_client.start_websocket()
+            logger.info("TelegramBotRunner registered HA event listeners for telegram_command and telegram_callback")
 
     async def stop(self) -> None:
         self._running = False
-        if self._task and not self._task.done():
-            self._task.cancel()
-            try:
-                await self._task
-            except asyncio.CancelledError:
-                pass
-        if self._session and not self._session.closed:
-            await self._session.close()

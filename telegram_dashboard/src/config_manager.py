@@ -15,6 +15,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "menu": {
         "main": {
             "title": "🏠 Smart Home",
+            "command": "/dashboard",
             "type": "menu",
             "icon": "🏠",
             "roles": ["admin", "member", "guest"],

@@ -1,3 +1,16 @@
+## [1.1.0] - 2026-03-29
+
+### Added
+- Multi-menu routing by Telegram command: each menu section can now define its own trigger command (e.g. , , ).
+- Telegram Command input field in the web UI section settings modal with persistence to config.
+- Home Assistant  event bridge listening to  and  via HA WebSocket.
+- Callback namespace isolation ( prefix) so external Telegram automations and dashboard callbacks do not conflict.
+- Comprehensive test suite for HA bridge routing and namespace isolation ().
+
+### Changed
+- Shifted Telegram messaging from direct API polling to Home Assistant official  actions (, , , ).
+- Decoupled add-on runtime from direct Telegram bot tokens; communications are proxied cleanly through Home Assistant.
+
 ## 1.0.9
 
 ### Fixed
