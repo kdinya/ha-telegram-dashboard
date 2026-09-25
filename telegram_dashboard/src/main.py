@@ -96,7 +96,7 @@ def ensure_ha_integration_enabled() -> None:
 def main() -> None:
     data_dir = Path("/data")
     config_path = data_dir / "config.json" if data_dir.exists() else Path("config.json")
-    options = load_options()
+    _ = load_options()
 
     # Sync custom component into HA /config if mounted
     sync_custom_component()

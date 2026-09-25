@@ -123,7 +123,6 @@ class BotEngine:
             return "main"
         return next(iter(menu.keys()))
 
-
     def find_menu_by_command(self, cmd: str) -> str | None:
         """Find menu section key by Telegram command (e.g. /dashboard or /menu)."""
         if not cmd:
