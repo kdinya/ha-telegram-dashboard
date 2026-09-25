@@ -2162,6 +2162,7 @@ async function updatePreview() {
         previewHeightFrame = null;
       }
 
+      botBubble?.querySelectorAll('.preview-timestamp').forEach((node) => node.remove());
       previewText.innerHTML = data.html || 'Немає даних для показу';
       const previewTimestamp = previewText.querySelector(':scope > i:last-child');
       if (previewTimestamp) previewTimestamp.classList.add('preview-timestamp');

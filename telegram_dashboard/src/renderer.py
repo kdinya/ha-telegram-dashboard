@@ -265,9 +265,14 @@ class MessageRenderer:
         # sizes text bubbles by their longest rendered line, so relying only
         # on content makes otherwise identical dashboard messages jump in
         # width from one section to another.
-        width_pct = int(section.get("telegram_msg_width") or state.get("telegram_msg_width") or 60)
+        # Width is a global chat setting. A per-section value makes Telegram
+        # resize the bubble whenever navigation changes section.
+        width_pct = int(state.get("telegram_msg_width") or 60)
         width_pct = max(20, min(100, width_pct))
-        width_chars = int((width_pct - 20) / 80 * 42)
+        # Keep the same anchor length for every section. Telegram does not
+        # expose a CSS width for message bubbles; this invisible braille
+        # space is the stable minimum-width anchor used by every message.
+        width_chars = max(44, int((width_pct - 20) / 80 * 52))
         if width_chars > 0:
             spacer = "⠀" * width_chars
             rows.append(spacer)
