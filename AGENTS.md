@@ -83,7 +83,11 @@
    - All business logic (RBAC, Message Renderer, Config Manager, HA Connector, Bot Engine) must have 100% passing tests in `tests/`.
    - Run `pytest` before every release and commit.
 
-8. **Constructor Preview & Telegram Message Parity Invariant**:
+8. **UI Component Style Consistency Invariant**:
+   - Any new popup, modal, dialog, toast/notification, or dropdown (`<select>` or custom listbox) added anywhere in the UI must be styled strictly using the existing design system (CSS variables in `style.css`: colors, radii, shadows, typography, spacing). No ad-hoc or browser-default styling is allowed.
+   - Reuse existing shared classes (e.g. `.form-control`, `.panel-card`, `.modal`) instead of introducing new one-off styles; if a new shared class is needed, add it to `style.css` following the established naming and variable conventions.
+
+9. **Constructor Preview & Telegram Message Parity Invariant**:
    - Whenever menu sections or their elements (texts, entities, buttons, headings, icons) are edited, added, or removed in the constructor, the preview in the web UI must accurately and synchronously reflect all changes.
    - The rendered preview must strictly match the composition, formatting, hierarchy, and style of the message that is sent to Telegram. What is configured in the constructor must be identical in the UI preview and in the actual Telegram bot message delivery (WYSIWYG parity).
 

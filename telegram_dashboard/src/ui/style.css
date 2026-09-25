@@ -370,6 +370,26 @@ body {
   border-color: var(--border-color-focus);
 }
 
+select.form-control {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 36px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+select.form-control:hover {
+  border-color: var(--primary);
+}
+
+select.form-control option {
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+}
+
 .checkbox-group {
   display: flex;
   gap: 18px;
@@ -744,7 +764,7 @@ body {
 
 .toast {
   position: fixed;
-  bottom: 24px;
+  top: 24px;
   right: 24px;
   padding: 12px 20px;
   background-color: var(--primary);
@@ -752,15 +772,16 @@ body {
   border-radius: 8px;
   font-weight: 600;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-  transform: translateY(100px);
+  transform: translateY(-16px);
   opacity: 0;
   transition: all 0.3s;
   z-index: 2000;
+  pointer-events: none;
 }
 
 .toast.show {
   transform: translateY(0);
-  opacity: 1;
+  opacity: 0.92;
 }
 
 @media (max-width: 992px) {

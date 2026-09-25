@@ -84,7 +84,7 @@ def test_addon_config_sidebar_title_and_version():
     with open("telegram_dashboard/config.yaml", "r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
     assert cfg.get("panel_title") == "Telegram Dashboard"
-    assert cfg.get("version") == "1.0.8"
+    assert cfg.get("version") == "1.0.9"
 
 
 def test_render_section_with_dividers_and_spacers():

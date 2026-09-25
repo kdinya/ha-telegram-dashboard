@@ -145,7 +145,10 @@ class WebApp:
         return web.Response(text="Telegram Dashboard UI Loaded", content_type="text/html")
 
     async def get_config(self, request: web.Request) -> web.Response:
-        return web.json_response(self.cm.config)
+        data = dict(self.cm.config)
+        if not data.get("telegram_token"):
+            data["telegram_token"] = self.telegram_token or ""
+        return web.json_response(data)
 
     async def save_config(self, request: web.Request) -> web.Response:
         data = await request.json()

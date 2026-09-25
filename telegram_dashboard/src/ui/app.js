@@ -2108,8 +2108,9 @@ async function updatePreview() {
       renderTelegramKeyboard(data.keyboard || []);
       const bubble = document.querySelector('.tg-message-bubble');
       if (bubble) {
-        bubble.style.width = savedMsgW + '%';
-        bubble.style.maxWidth = savedMsgW + '%';
+        const msgW = (config && config.telegram_msg_width) || 60;
+        bubble.style.width = msgW + '%';
+        bubble.style.maxWidth = msgW + '%';
       }
     }
   } catch (e) {

@@ -1,3 +1,13 @@
+## 1.0.9
+
+### Fixed
+- Constructor live preview no longer crashes with a rendering error when updating the message bubble width.
+- Bot token field in Settings now correctly shows the token configured in the add-on options when no token has been set via the UI.
+
+### Changed
+- Dropdown menus across the UI restyled to match the app's dark design system instead of default browser styling.
+- Notification toast moved to the top-right corner with a slightly translucent look.
+
 ## 1.0.8
 
 ### Fixed
