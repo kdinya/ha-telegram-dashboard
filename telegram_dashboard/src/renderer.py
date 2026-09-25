@@ -194,12 +194,13 @@ class MessageRenderer:
                 t_text = str(t_item.get("text", "")).strip()
                 if not t_text:
                     continue
-                t_icon = t_item.get("icon") or "💬"
+                t_icon = str(t_item.get("icon") or "").strip()
                 t_heading = bool(t_item.get("is_heading", False))
+                icon_prefix = f"{t_icon} " if t_icon else ""
                 if t_heading:
-                    rows.append(f"<b>{t_icon} {html.escape(t_text)}</b>")
+                    rows.append(f"<b>{icon_prefix}{html.escape(t_text)}</b>")
                 else:
-                    rows.append(f"├ {t_icon} {html.escape(t_text)}")
+                    rows.append(f"├ {icon_prefix}{html.escape(t_text)}")
 
         # Configured entities
         entities = section.get("entities")

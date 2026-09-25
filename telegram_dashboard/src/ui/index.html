@@ -73,9 +73,10 @@
 
             <!-- Section Editor Form -->
             <div id="section-editor" class="panel-card">
-              <div class="panel-header">
-                <div>
+              <div class="panel-header section-editor-header">
+                <div class="section-title-wrap">
                   <h3>✏️ Основна назва розділу: <span id="editor-section-key" class="text-accent">main</span></h3>
+                  <span id="main-badge-wrap" class="badge-ok main-screen-badge" style="display: none;">⭐ Головний екран</span>
                 </div>
                 <button id="btn-delete-section" class="btn btn-danger btn-sm">🗑️ Видалити</button>
               </div>
@@ -97,9 +98,7 @@
                 </div>
               </div>
 
-              <div id="main-badge-wrap" style="margin-bottom: 12px; display: none;">
-                <span class="badge-ok" style="font-size: 13px; padding: 4px 10px;">⭐ Головний екран (відкривається при запуску бота)</span>
-              </div>
+
 
               <div class="form-group">
                 <label>Дозволені ролі</label>
@@ -246,8 +245,9 @@
         <h3>База іконок для розумного дому</h3>
         <button type="button" class="btn-close-modal" id="btn-close-icon-picker">✕</button>
       </div>
-      <div class="modal-search-wrap">
-        <input type="text" id="icon-search-input" class="form-control" placeholder="🔍 Пошук іконки (наприклад: лампа, клімат, замок)...">
+      <div class="modal-search-wrap" style="display: flex; gap: 8px; align-items: center;">
+        <input type="text" id="icon-search-input" class="form-control flex-1" placeholder="🔍 Пошук іконки (наприклад: лампа, клімат, замок)...">
+        <button type="button" id="btn-clear-icon-selection" class="btn btn-ghost btn-sm" style="white-space: nowrap;">🚫 Без іконки</button>
       </div>
       <div class="icon-categories-tabs" id="icon-categories-tabs"></div>
       <div class="icon-picker-grid" id="icon-picker-grid"></div>
@@ -342,6 +342,44 @@
   <div id="toast" class="toast">Повідомлення</div>
   <script src="ui/app.js"></script>
 
+
+  <!-- Add Section Modal -->
+  <div id="modal-add-section" class="modal-overlay">
+    <div class="modal-card modal-card-sm">
+      <div class="modal-header">
+        <h3>Додати новий розділ</h3>
+        <button type="button" class="btn-close-modal" id="btn-close-add-section-modal">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 16px 20px;">
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label for="new-section-title-input">Назва розділу</label>
+          <input type="text" id="new-section-title-input" class="form-control" placeholder="Наприклад: Клімат або Освітлення" autocomplete="off">
+        </div>
+        <p class="field-hint" style="margin: 0; font-size: 12px;">Ідентифікатор буде згенеровано автоматично з назви.</p>
+      </div>
+      <div class="modal-footer" style="padding: 12px 20px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border-color);">
+        <button type="button" class="btn btn-ghost btn-sm" id="btn-cancel-add-section">Скасувати</button>
+        <button type="button" class="btn btn-primary btn-sm" id="btn-confirm-add-section">Створити розділ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Dialog Modal -->
+  <div id="modal-confirm-dialog" class="modal-overlay">
+    <div class="modal-card modal-card-sm">
+      <div class="modal-header">
+        <h3 id="confirm-dialog-title">Підтвердження</h3>
+        <button type="button" class="btn-close-modal" id="btn-close-confirm-modal">✕</button>
+      </div>
+      <div class="modal-body" style="padding: 18px 20px;">
+        <p id="confirm-dialog-message" style="margin: 0; font-size: 14px; line-height: 1.5; color: var(--text-main);"></p>
+      </div>
+      <div class="modal-footer" style="padding: 12px 20px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border-color);">
+        <button type="button" class="btn btn-ghost btn-sm" id="btn-dialog-cancel">Скасувати</button>
+        <button type="button" class="btn btn-danger btn-sm" id="btn-dialog-confirm">Видалити</button>
+      </div>
+    </div>
+  </div>
 
 </body>
 </html>

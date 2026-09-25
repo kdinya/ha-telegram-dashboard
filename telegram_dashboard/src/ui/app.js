@@ -1,3 +1,36 @@
+
+// --- Custom Modal Helpers ---
+function showCustomConfirm(title, message, confirmText = 'Видалити', isDanger = true) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById('modal-confirm-dialog');
+    const titleEl = document.getElementById('confirm-dialog-title');
+    const msgEl = document.getElementById('confirm-dialog-message');
+    const btnConfirm = document.getElementById('btn-dialog-confirm');
+    const btnCancel = document.getElementById('btn-dialog-cancel');
+    const btnClose = document.getElementById('btn-close-confirm-modal');
+
+    titleEl.textContent = title;
+    msgEl.textContent = message;
+    btnConfirm.textContent = confirmText;
+    btnConfirm.className = isDanger ? 'btn btn-danger btn-sm' : 'btn btn-primary btn-sm';
+
+    const cleanup = () => {
+      modal.classList.remove('open');
+      btnConfirm.removeEventListener('click', onConfirm);
+      btnCancel.removeEventListener('click', onCancel);
+      btnClose.removeEventListener('click', onCancel);
+    };
+
+    const onConfirm = () => { cleanup(); resolve(true); };
+    const onCancel = () => { cleanup(); resolve(false); };
+
+    btnConfirm.addEventListener('click', onConfirm);
+    btnCancel.addEventListener('click', onCancel);
+    btnClose.addEventListener('click', onCancel);
+
+    modal.classList.add('open');
+  });
+}
 /**
  * Telegram Dashboard Web UI Client
  */
@@ -265,6 +298,22 @@ function setupIconPicker() {
     if (e.target === iconPickerModal) iconPickerModal.classList.remove('open');
   });
   iconSearchInput.addEventListener('input', renderIconGrid);
+
+  const btnClearIcon = document.getElementById('btn-clear-icon-selection');
+  if (btnClearIcon) {
+    btnClearIcon.addEventListener('click', () => {
+      if (activeIconTarget === 'inline_text_item' || activeIconTarget === 'text_item') {
+        const textIconInput = document.querySelector('#inline-edit-row .item-icon-val');
+        const textIconDisplay = document.querySelector('#inline-edit-row .item-icon-display');
+        if (textIconInput) textIconInput.value = '';
+        if (textIconDisplay) textIconDisplay.innerHTML = '<span class="icon-empty-slot" title="Без іконки">∅</span>';
+      } else {
+        secIcon.value = '';
+        secIconDisplay.textContent = '📁';
+      }
+      iconPickerModal.classList.remove('open');
+    });
+  }
 }
 
 function renderIconCategories() {
@@ -529,14 +578,15 @@ function createInlineEditRow(initialData = {}, onSave, onCancel) {
   row.className = 'add-text-inline-row';
   row.id = 'inline-edit-row';
 
-  const initialIcon = escapeHtml(initialData.icon || '💬');
+  const initialIcon = escapeHtml(initialData.icon || '');
   const initialText = escapeHtml(initialData.text || '');
   let isHeading = Boolean(initialData.is_heading);
+  const displayIcon = initialIcon ? initialIcon : '<span class="icon-empty-slot" title="Без іконки">∅</span>';
 
   row.innerHTML = `
     <div class="icon-input-wrap">
-      <button type="button" class="btn-icon-select btn-inline-icon-picker" title="Обрати іконку">
-        <span class="item-icon-display">${initialIcon}</span>
+      <button type="button" class="btn-icon-select btn-inline-icon-picker" title="Обрати іконку або залишити пустою">
+        <span class="item-icon-display">${displayIcon}</span>
       </button>
       <input type="hidden" class="item-icon-val" value="${initialIcon}">
     </div>
@@ -579,7 +629,7 @@ function createInlineEditRow(initialData = {}, onSave, onCancel) {
       return;
     }
     onSave({
-      icon: iconVal.value || '💬',
+      icon: (iconVal.value || '').trim(),
       text: text,
       is_heading: Boolean(isHeading)
     });
@@ -685,12 +735,14 @@ function renderSectionTexts(texts) {
       ? 'section-text-item-content section-text-item-heading'
       : 'section-text-item-content';
 
-    const safeIcon = escapeHtml(item.icon || '💬');
+    const rawIcon = (item.icon || '').trim();
+    const safeIcon = escapeHtml(rawIcon);
     const safeText = escapeHtml(item.text || '');
+    const iconSpan = safeIcon ? `<span class="section-text-item-icon">${safeIcon}</span>` : '';
 
     el.innerHTML = `
       <div class="section-text-item-main">
-        <span class="section-text-item-icon">${safeIcon}</span>
+        ${iconSpan}
         <span class="${contentClass}">${safeText}</span>
         ${badgeHtml}
       </div>
@@ -720,7 +772,7 @@ function renderSectionTexts(texts) {
 
   // If adding a new item, render inline edit row at the end of the list
   if (editingTextIdx === -1) {
-    const newRow = createInlineEditRow({ icon: '💬', text: '', is_heading: false }, (newData) => {
+    const newRow = createInlineEditRow({ icon: '', text: '', is_heading: false }, (newData) => {
       sec.texts.push(newData);
       editingTextIdx = null;
       renderSectionTexts(sec.texts);

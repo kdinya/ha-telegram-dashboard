@@ -1259,3 +1259,61 @@ body:has(.modal-overlay.open) {
     gap: 4px;
   }
 }
+
+/* --- Section Header and Badge Parity --- */
+.section-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.section-title-wrap {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.section-title-wrap h3 {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.main-screen-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  letter-spacing: 0.3px;
+}
+
+.icon-empty-slot {
+  display: inline-block;
+  color: var(--text-muted, #94a3b8);
+  font-size: 14px;
+  font-weight: bold;
+}
+
+/* Modal sizing modifiers */
+.modal-card-sm {
+  max-width: 420px;
+  width: 90%;
+}
+
+@media (max-width: 640px) {
+  .section-editor-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .section-title-wrap {
+    width: 100%;
+  }
+  .section-title-wrap h3 {
+    font-size: 15px;
+  }
+}
