@@ -1288,27 +1288,53 @@ function renderSectionElements(items) {
         ? `<span class="badge-text-type indent" title="${t('btn_toggle_indent_on')}">⇥ ${t('badge_indent')}</span>`
         : `<span class="badge-text-type" title="${t('btn_toggle_indent_off')}">${t('badge_no_indent')}</span>`;
 
+      const isLocked = Boolean(item.locked);
+      const lockTitle = isLocked ? t('btn_unlock') : t('btn_lock');
+      const lockIcon = isLocked ? '🔒' : '🔓';
+      const lockClass = isLocked ? 'btn-lock-elem-item is-locked' : 'btn-lock-elem-item';
+      const lockBadge = isLocked ? `<span class="badge-locked">🔒 ${t('badge_locked')}</span>` : '';
+      if (isLocked) el.classList.add('is-locked');
+      el.draggable = !isLocked;
+
       el.innerHTML = `
         <div class="item-drag-handle" title="Перетягніть для зміни порядку" aria-label="Перетягнути">⠿</div>
         <div class="section-text-item-main">
           ${iconSpan}
           <span class="section-text-item-content"><b>${safeLabel}</b>: <code>${escapeHtml(stateVal)}</code></span>
           <span class="badge-text-type entity">${t('badge_entity')}</span>
+          ${lockBadge}
           ${indentBadge}
         </div>
         <div class="section-text-item-actions">
-          <button type="button" class="btn-icon-action btn-edit-elem-item" title="Редагувати" data-idx="${idx}">✏️</button>
-          <button type="button" class="btn-icon-action btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}">🗑️</button>
+          <button type="button" class="btn-icon-action ${lockClass}" title="${lockTitle}" data-idx="${idx}">${lockIcon}</button>
+          <button type="button" class="btn-icon-action btn-edit-elem-item" title="Редагувати" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>✏️</button>
+          <button type="button" class="btn-icon-action btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>🗑️</button>
         </div>
       `;
 
+      el.querySelector('.btn-lock-elem-item').addEventListener('click', (e) => {
+        e.stopPropagation();
+        item.locked = !item.locked;
+        syncSectionLegacyCollections(sec);
+        renderSectionElements(sec.items);
+        showToast(item.locked ? t('toast_item_locked') : t('toast_item_unlocked'));
+      });
+
       el.querySelector('.btn-edit-elem-item').addEventListener('click', () => {
+        if (item.locked) {
+          showToast(t('toast_item_is_locked'), true);
+          return;
+        }
         editingItemIdx = idx;
         addingItemType = null;
         renderSectionElements(sec.items);
       });
 
       el.querySelector('.btn-remove-elem-item').addEventListener('click', async () => {
+        if (item.locked) {
+          showToast(t('toast_item_is_locked'), true);
+          return;
+        }
         const confirmed = await showCustomConfirm(
           t('confirm_dialog_title'),
           t('confirm_delete_entity_item_unified'),
@@ -1336,20 +1362,42 @@ function renderSectionElements(items) {
         stylePreview = '┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄';
       }
 
+      const isLocked = Boolean(item.locked);
+      const lockTitle = isLocked ? t('btn_unlock') : t('btn_lock');
+      const lockIcon = isLocked ? '🔒' : '🔓';
+      const lockClass = isLocked ? 'btn-lock-elem-item is-locked' : 'btn-lock-elem-item';
+      const lockBadge = isLocked ? `<span class="badge-locked">🔒 ${t('badge_locked')}</span>` : '';
+      if (isLocked) el.classList.add('is-locked');
+      el.draggable = !isLocked;
+
       el.innerHTML = `
         <div class="item-drag-handle" title="Перетягніть для зміни порядку" aria-label="Перетягнути">⠿</div>
         <div class="section-text-item-main section-divider-item-main">
           <span class="section-divider-preview"><code>${escapeHtml(stylePreview)}</code></span>
           <span class="badge-text-type divider">${t('badge_divider')}</span>
           <span class="badge-text-type">${escapeHtml(styleLabel)}</span>
+          ${lockBadge}
         </div>
         <div class="section-text-item-actions">
-          <button type="button" class="btn-icon-action btn-cycle-divider-style" title="${t('btn_change_divider_style')}" data-idx="${idx}">🔄</button>
-          <button type="button" class="btn-icon-action btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}">🗑️</button>
+          <button type="button" class="btn-icon-action ${lockClass}" title="${lockTitle}" data-idx="${idx}">${lockIcon}</button>
+          <button type="button" class="btn-icon-action btn-cycle-divider-style" title="${t('btn_change_divider_style')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>🔄</button>
+          <button type="button" class="btn-icon-action btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>🗑️</button>
         </div>
       `;
 
+      el.querySelector('.btn-lock-elem-item').addEventListener('click', (e) => {
+        e.stopPropagation();
+        item.locked = !item.locked;
+        syncSectionLegacyCollections(sec);
+        renderSectionElements(sec.items);
+        showToast(item.locked ? t('toast_item_locked') : t('toast_item_unlocked'));
+      });
+
       el.querySelector('.btn-cycle-divider-style').addEventListener('click', () => {
+        if (item.locked) {
+          showToast(t('toast_item_is_locked'), true);
+          return;
+        }
         const currentStyle = item.style || 'line';
         const styles = ['line', 'space', 'dashed'];
         const nextStyle = styles[(styles.indexOf(currentStyle) + 1) % styles.length];
@@ -1360,6 +1408,10 @@ function renderSectionElements(items) {
       });
 
       el.querySelector('.btn-remove-elem-item').addEventListener('click', async () => {
+        if (item.locked) {
+          showToast(t('toast_item_is_locked'), true);
+          return;
+        }
         const confirmed = await showCustomConfirm(
           t('confirm_dialog_title'),
           t('confirm_delete_divider_item'),
@@ -1392,27 +1444,53 @@ function renderSectionElements(items) {
         ? `<span class="badge-text-type indent" title="${t('btn_toggle_indent_on')}">⇥ ${t('badge_indent')}</span>`
         : `<span class="badge-text-type" title="${t('btn_toggle_indent_off')}">${t('badge_no_indent')}</span>`;
 
+      const isLocked = Boolean(item.locked);
+      const lockTitle = isLocked ? t('btn_unlock') : t('btn_lock');
+      const lockIcon = isLocked ? '🔒' : '🔓';
+      const lockClass = isLocked ? 'btn-lock-elem-item is-locked' : 'btn-lock-elem-item';
+      const lockBadge = isLocked ? `<span class="badge-locked">🔒 ${t('badge_locked')}</span>` : '';
+      if (isLocked) el.classList.add('is-locked');
+      el.draggable = !isLocked;
+
       el.innerHTML = `
         <div class="item-drag-handle" title="Перетягніть для зміни порядку" aria-label="Перетягнути">⠿</div>
         <div class="section-text-item-main">
           ${iconSpan}
           <span class="${contentClass}">${safeText}</span>
           ${badgeHtml}
+          ${lockBadge}
           ${indentBadge}
         </div>
         <div class="section-text-item-actions">
-          <button type="button" class="btn-icon-action btn-edit-elem-item" title="Редагувати" data-idx="${idx}">✏️</button>
-          <button type="button" class="btn-icon-action btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}">🗑️</button>
+          <button type="button" class="btn-icon-action ${lockClass}" title="${lockTitle}" data-idx="${idx}">${lockIcon}</button>
+          <button type="button" class="btn-icon-action btn-edit-elem-item" title="Редагувати" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>✏️</button>
+          <button type="button" class="btn-icon-action btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>🗑️</button>
         </div>
       `;
 
+      el.querySelector('.btn-lock-elem-item').addEventListener('click', (e) => {
+        e.stopPropagation();
+        item.locked = !item.locked;
+        syncSectionLegacyCollections(sec);
+        renderSectionElements(sec.items);
+        showToast(item.locked ? t('toast_item_locked') : t('toast_item_unlocked'));
+      });
+
       el.querySelector('.btn-edit-elem-item').addEventListener('click', () => {
+        if (item.locked) {
+          showToast(t('toast_item_is_locked'), true);
+          return;
+        }
         editingItemIdx = idx;
         addingItemType = null;
         renderSectionElements(sec.items);
       });
 
       el.querySelector('.btn-remove-elem-item').addEventListener('click', async () => {
+        if (item.locked) {
+          showToast(t('toast_item_is_locked'), true);
+          return;
+        }
         const confirmed = await showCustomConfirm(
           t('confirm_dialog_title'),
           t('confirm_delete_text_item'),
@@ -1985,9 +2063,8 @@ async function updatePreview() {
       renderTelegramKeyboard(data.keyboard || []);
       const bubble = document.querySelector('.tg-message-bubble');
       if (bubble) {
-        const savedMsgW = localStorage.getItem('preview_slider_msg_width') || '100';
-        bubble.style.width = savedMsgW + '%';
-        bubble.style.maxWidth = savedMsgW + '%';
+        bubble.style.width = '100%';
+        bubble.style.maxWidth = '100%';
       }
     }
   } catch (e) {
@@ -2043,171 +2120,50 @@ $('btn-toggle-preview').addEventListener('click', () => {
 // --- Live section name/icon sync ---
 function setupEventListeners() {
 
-  // Preview & Telegram Message Slider Controls
+  // Preview Slider Controls (Width only, auto-fit height on wide screens)
   const phoneFrame = $('phone-frame');
-  const previewPaneEl = $('preview-pane');
-  const chkAutoscale = $('setting-preview-autoscale');
-  const groupWidth = $('group-preview-width');
-  const groupHeight = $('group-preview-height');
-  const groupScale = $('group-preview-scale');
-  const groupTgMsgWidth = $('group-tg-msg-width');
   const rangeWidth = $('setting-preview-width');
-  const rangeHeight = $('setting-preview-height');
-  const rangeScale = $('setting-preview-scale');
-  const rangeTgMsgWidth = $('setting-tg-msg-width');
   const valWidth = $('preview-width-val');
-  const valHeight = $('preview-height-val');
-  const valScale = $('preview-scale-val');
-  const valTgMsgWidth = $('tg-msg-width-val');
   const btnResetPreviewSize = $('btn-reset-preview-size');
 
   const BASE_WIDTH = 320;
-  const BASE_HEIGHT = 600;
 
-  function updatePreviewDimensions(w, h, scale, msgW, save = true) {
-    const isAutoscale = !!(chkAutoscale && chkAutoscale.checked);
-
-    // Hide all preview dimension controls when autoscale is checked, keep only message width
-    if (groupWidth) groupWidth.style.display = isAutoscale ? 'none' : '';
-    if (groupHeight) groupHeight.style.display = isAutoscale ? 'none' : '';
-    if (groupScale) groupScale.style.display = isAutoscale ? 'none' : '';
-    if (btnResetPreviewSize) btnResetPreviewSize.style.display = isAutoscale ? 'none' : '';
-    if (groupTgMsgWidth) groupTgMsgWidth.style.display = '';
-
-    if (isAutoscale) {
-      const availableH = Math.max(380, window.innerHeight - 120);
-      const curW = parseInt(localStorage.getItem('preview_slider_width'), 10) || w || BASE_WIDTH;
-      const curH = parseInt(localStorage.getItem('preview_slider_height'), 10) || h || BASE_HEIGHT;
-      const ratio = curW / curH;
-      h = availableH;
-      w = Math.round(h * ratio);
-      scale = Math.round((h / BASE_HEIGHT) * 100);
-      if (previewPaneEl) previewPaneEl.classList.add('preview-autoscale');
-    } else {
-      if (previewPaneEl) previewPaneEl.classList.remove('preview-autoscale');
-    }
-
+  function updatePreviewDimensions(w, save = true) {
+    w = parseInt(w, 10) || BASE_WIDTH;
     document.documentElement.style.setProperty('--preview-frame-w', w + 'px');
-    document.documentElement.style.setProperty('--preview-frame-h', h + 'px');
-    document.documentElement.style.setProperty('--tg-msg-width', msgW + '%');
+    document.documentElement.style.setProperty('--tg-msg-width', '100%');
 
-    if (phoneFrame) {
-      phoneFrame.style.removeProperty('width');
-      phoneFrame.style.removeProperty('height');
-      phoneFrame.style.setProperty('--tg-msg-width', msgW + '%');
-    }
+    if (rangeWidth) rangeWidth.value = w;
+    if (valWidth) valWidth.textContent = w + ' px';
 
     const bubble = document.querySelector('.tg-message-bubble');
     if (bubble) {
-      bubble.style.width = msgW + '%';
+      bubble.style.width = '100%';
+      bubble.style.maxWidth = '100%';
     }
 
-    if (rangeWidth && !isAutoscale) rangeWidth.value = w;
-    if (rangeHeight && !isAutoscale) rangeHeight.value = h;
-    if (rangeScale && !isAutoscale) rangeScale.value = scale;
-    if (rangeTgMsgWidth) rangeTgMsgWidth.value = msgW;
-
-    if (valWidth) valWidth.textContent = w + ' px';
-    if (valHeight) valHeight.textContent = h + ' px';
-    if (valScale) valScale.textContent = scale + '%';
-    if (valTgMsgWidth) valTgMsgWidth.textContent = msgW + '%';
-
     if (save) {
-      localStorage.setItem('preview_slider_autoscale', isAutoscale ? 'true' : 'false');
-      if (!isAutoscale) {
-        localStorage.setItem('preview_slider_width', String(w));
-        localStorage.setItem('preview_slider_height', String(h));
-        localStorage.setItem('preview_slider_scale', String(scale));
-      }
-      localStorage.setItem('preview_slider_msg_width', String(msgW));
+      localStorage.setItem('preview_slider_width', String(w));
     }
   }
 
   function initPreviewControls() {
-    let savedAutoscale = localStorage.getItem('preview_slider_autoscale') === 'true';
     let savedW = parseInt(localStorage.getItem('preview_slider_width'), 10);
-    let savedH = parseInt(localStorage.getItem('preview_slider_height'), 10);
-    let savedScale = parseInt(localStorage.getItem('preview_slider_scale'), 10);
-    let savedMsgW = parseInt(localStorage.getItem('preview_slider_msg_width'), 10);
-
     if (isNaN(savedW)) savedW = BASE_WIDTH;
-    if (isNaN(savedH)) savedH = BASE_HEIGHT;
-    if (isNaN(savedScale)) savedScale = 100;
-    if (isNaN(savedMsgW)) savedMsgW = 100;
 
-    if (chkAutoscale) {
-      chkAutoscale.checked = savedAutoscale;
-      chkAutoscale.addEventListener('change', () => {
-        const w = rangeWidth ? (parseInt(rangeWidth.value, 10) || BASE_WIDTH) : BASE_WIDTH;
-        const msgW = rangeTgMsgWidth ? (parseInt(rangeTgMsgWidth.value, 10) || 100) : 100;
-        const sc = rangeScale ? (parseInt(rangeScale.value, 10) || 100) : 100;
-        const h = rangeHeight ? (parseInt(rangeHeight.value, 10) || BASE_HEIGHT) : BASE_HEIGHT;
-        updatePreviewDimensions(w, h, sc, msgW, true);
-      });
-    }
-
-    updatePreviewDimensions(savedW, savedH, savedScale, savedMsgW, false);
-
-    window.addEventListener('resize', () => {
-      if (chkAutoscale && chkAutoscale.checked) {
-        const msgW = rangeTgMsgWidth ? (parseInt(rangeTgMsgWidth.value, 10) || 100) : 100;
-        const savedW = parseInt(localStorage.getItem('preview_slider_width'), 10) || BASE_WIDTH;
-        const savedH = parseInt(localStorage.getItem('preview_slider_height'), 10) || BASE_HEIGHT;
-        updatePreviewDimensions(savedW, savedH, 100, msgW, false);
-      }
-    });
-
-    if (rangeScale) {
-      rangeScale.addEventListener('input', (e) => {
-        const sc = parseInt(e.target.value, 10) || 100;
-        const w = Math.round(BASE_WIDTH * (sc / 100));
-        const h = Math.round(BASE_HEIGHT * (sc / 100));
-        const msgW = rangeTgMsgWidth ? (parseInt(rangeTgMsgWidth.value, 10) || 100) : 100;
-        updatePreviewDimensions(w, h, sc, msgW, true);
-      });
-    }
+    updatePreviewDimensions(savedW, false);
 
     if (rangeWidth) {
       rangeWidth.addEventListener('input', (e) => {
         const w = parseInt(e.target.value, 10) || BASE_WIDTH;
-        const sc = Math.round((w / BASE_WIDTH) * 100);
-        const h = rangeHeight ? (parseInt(rangeHeight.value, 10) || BASE_HEIGHT) : BASE_HEIGHT;
-        const msgW = rangeTgMsgWidth ? (parseInt(rangeTgMsgWidth.value, 10) || 100) : 100;
-        updatePreviewDimensions(w, h, sc, msgW, true);
-      });
-    }
-
-    if (rangeHeight) {
-      rangeHeight.addEventListener('input', (e) => {
-        const h = parseInt(e.target.value, 10) || BASE_HEIGHT;
-        const w = rangeWidth ? (parseInt(rangeWidth.value, 10) || BASE_WIDTH) : BASE_WIDTH;
-        const sc = rangeScale ? (parseInt(rangeScale.value, 10) || 100) : 100;
-        const msgW = rangeTgMsgWidth ? (parseInt(rangeTgMsgWidth.value, 10) || 100) : 100;
-        updatePreviewDimensions(w, h, sc, msgW, true);
-      });
-    }
-
-    if (rangeTgMsgWidth) {
-      rangeTgMsgWidth.addEventListener('input', (e) => {
-        const msgW = parseInt(e.target.value, 10) || 100;
-        document.documentElement.style.setProperty('--tg-msg-width', msgW + '%');
-        if (phoneFrame) {
-          phoneFrame.style.setProperty('--tg-msg-width', msgW + '%');
-        }
-        const bubble = document.querySelector('.tg-message-bubble');
-        if (bubble) {
-          bubble.style.width = msgW + '%';
-        }
-        if (valTgMsgWidth) valTgMsgWidth.textContent = msgW + '%';
-        localStorage.setItem('preview_slider_msg_width', String(msgW));
+        updatePreviewDimensions(w, true);
       });
     }
 
     if (btnResetPreviewSize) {
       btnResetPreviewSize.addEventListener('click', () => {
-        if (chkAutoscale) chkAutoscale.checked = false;
-        updatePreviewDimensions(BASE_WIDTH, BASE_HEIGHT, 100, 100, true);
-        showToast('Розміри прев’ю скинуто до стандартних');
+        updatePreviewDimensions(BASE_WIDTH, true);
+        showToast(t('toast_reset_preview_size') || 'Ширину прев’ю скинуто до 320px');
       });
     }
   }
