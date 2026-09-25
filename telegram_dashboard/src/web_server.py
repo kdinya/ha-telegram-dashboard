@@ -47,11 +47,20 @@ def _sample_entities() -> list[dict[str, Any]]:
             "state": "cool",
         },
         {
+            "entity_id": "sensor.climate_living_room_temperature",
+            "friendly_name": "Клімат в кімнаті Температура",
+            "domain": "sensor",
+            "area": "Кімната",
+            "state": "21.5 °C",
+            "attributes": {"unit_of_measurement": "°C", "device_class": "temperature"},
+        },
+        {
             "entity_id": "sensor.living_room_temperature",
             "friendly_name": "Температура у вітальні",
             "domain": "sensor",
             "area": "Вітальня",
             "state": "22.5 °C",
+            "attributes": {"unit_of_measurement": "°C", "device_class": "temperature"},
         },
         {
             "entity_id": "binary_sensor.kitchen_leak",
@@ -351,6 +360,7 @@ class WebApp:
                     "domain": domain,
                     "area": area,
                     "state": s.get("state", ""),
+                    "attributes": attrs,
                 })
             return web.json_response({"ok": True, "entities": entities})
         except Exception as e:

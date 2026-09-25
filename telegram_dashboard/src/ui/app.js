@@ -521,6 +521,74 @@ function openEntityPicker(context, title) {
   renderEntityPickerList();
 }
 
+function splitEntityName(friendlyName, domain, attributes) {
+  if (!friendlyName) return { device: '', param: '' };
+
+  // 1. Check explicit separators: " - ", " — ", " : ", ": ", " | ", " / "
+  const sepMatch = friendlyName.match(/^(.+?)\s*(?:—|-|:|\||\/)\s*(.+)$/);
+  if (sepMatch && sepMatch[1].trim() && sepMatch[2].trim()) {
+    return { device: sepMatch[1].trim(), param: sepMatch[2].trim() };
+  }
+
+  // 2. Comprehensive list of known parameters/attributes (Ukrainian, English, common abbreviations)
+  const paramKeywords = [
+    // Multi-word parameters first
+    'рівень заряду', 'battery level', 'якість повітря', 'air quality',
+    'потужність сигналу', 'water leak', 'витік води', 'захист від протікання',
+    'нічний режим', 'night mode',
+    // Single word parameters
+    'температура', 'temperature', 'temp',
+    'вологість', 'humidity', 'hum',
+    'тиск', 'pressure',
+    'батарея', 'battery', 'batt',
+    'освітленість', 'яскравість', 'освітлення', 'illuminance', 'brightness', 'light',
+    'рух', 'motion', 'occupancy', 'присутність',
+    'стан', 'статус', 'state', 'status',
+    'потужність', 'power',
+    'енергія', 'energy',
+    'напруга', 'voltage',
+    'струм', 'current',
+    'швидкість', 'speed',
+    'co2', 'voc', 'pm2.5', 'pm10', 'pm1', 'pm25',
+    'відкриття', 'закриття', 'door', 'window', 'contact', 'контакт',
+    'затоплення', 'протікання', 'leak', 'moisture',
+    'дим', 'smoke', 'газ', 'gas', 'вібрація', 'vibration',
+    'вимикач', 'switch', 'реле', 'relay', 'розетка', 'socket', 'plug',
+    'кнопка', 'button', 'клапан', 'valve', 'замок', 'lock',
+    'сирена', 'siren', 'гучність', 'volume',
+    'доступність', 'availability', 'linkquality', 'rssi', 'ping'
+  ];
+
+  for (const kw of paramKeywords) {
+    const regex = new RegExp(`^(.+?)\\s+(${kw.replace('.', '\\.')})$`, 'i');
+    const m = friendlyName.match(regex);
+    if (m && m[1].trim() && m[2].trim()) {
+      return { device: m[1].trim(), param: m[2].trim() };
+    }
+  }
+
+  // 3. Check attributes.device_class if present
+  if (attributes && attributes.device_class) {
+    const dc = String(attributes.device_class).toLowerCase();
+    const dcRegex = new RegExp(`^(.+?)\\s+(${dc})$`, 'i');
+    const m = friendlyName.match(dcRegex);
+    if (m && m[1].trim() && m[2].trim()) {
+      return { device: m[1].trim(), param: m[2].trim() };
+    }
+  }
+
+  // 4. If name has 3 or more words, treat the last word as parameter if likely
+  const words = friendlyName.trim().split(/\s+/);
+  if (words.length >= 3) {
+    return {
+      device: words.slice(0, words.length - 1).join(' '),
+      param: words[words.length - 1]
+    };
+  }
+
+  return { device: '', param: friendlyName };
+}
+
 function renderEntityPickerList() {
   const search = (entitySearchInput.value || '').toLowerCase();
   const activeDomain = domainFiltersTabs.querySelector('.domain-tab-btn.active')?.dataset.domain || 'all';
@@ -549,16 +617,32 @@ function renderEntityPickerList() {
 
   entityPickerList.innerHTML = list.map(e => {
     const domain = escapeHtml(e.domain || (e.entity_id || '').split('.')[0] || '');
-    const friendlyName = escapeHtml(e.friendly_name || e.entity_id || '');
+    const fullFriendlyName = e.friendly_name || e.entity_id || '';
     const entityId = escapeHtml(e.entity_id || '');
     const stateVal = escapeHtml(String(e.state !== undefined && e.state !== null ? e.state : ''));
     const unit = escapeHtml(e.attributes && e.attributes.unit_of_measurement ? e.attributes.unit_of_measurement : '');
     const displayParam = unit ? `${stateVal} ${unit}` : stateVal;
+
+    const parts = splitEntityName(fullFriendlyName, domain, e.attributes);
+    const escapedDevice = escapeHtml(parts.device);
+    const escapedParam = escapeHtml(parts.param);
+    const escapedFullName = escapeHtml(fullFriendlyName);
+
+    const titleHtml = parts.device
+      ? `<div class="entity-item-titles">
+           <span class="entity-item-device" title="${escapedDevice}">${escapedDevice}</span>
+           <span class="entity-item-sep">›</span>
+           <span class="entity-item-param-name">${escapedParam}</span>
+         </div>`
+      : `<div class="entity-item-titles">
+           <span class="entity-item-param-name is-standalone">${escapedParam}</span>
+         </div>`;
+
     return `
-    <button type="button" class="entity-item" data-id="${entityId}" data-name="${friendlyName}" data-domain="${domain}">
+    <button type="button" class="entity-item" data-id="${entityId}" data-name="${escapedFullName}" data-domain="${domain}">
       <div class="entity-item-main">
         <div class="entity-item-header">
-          <span class="entity-item-name">${friendlyName}</span>
+          ${titleHtml}
           <span class="entity-item-domain-badge">${domain}</span>
         </div>
         <div class="entity-item-sub">

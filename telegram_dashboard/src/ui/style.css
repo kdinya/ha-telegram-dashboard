@@ -1522,3 +1522,50 @@ body:has(.modal-overlay.open) {
   color: #94a3b8;
   border-color: rgba(148, 163, 184, 0.25);
 }
+
+/* Visual separation of Device name and Parameter */
+.entity-item-titles {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.entity-item-device {
+  font-size: 12px;
+  font-weight: 500;
+  color: #94a3b8;
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  padding: 2px 7px;
+  border-radius: 4px;
+  max-width: 240px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+}
+
+.entity-item-sep {
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+  user-select: none;
+}
+
+.entity-item-param-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f8fafc;
+  letter-spacing: 0.2px;
+}
+
+.entity-item:hover .entity-item-param-name {
+  color: #38bdf8;
+}
+
+.entity-item:hover .entity-item-device {
+  border-color: rgba(56, 189, 248, 0.35);
+  color: #cbd5e1;
+}
