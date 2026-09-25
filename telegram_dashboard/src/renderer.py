@@ -154,7 +154,7 @@ class MessageRenderer:
         bat_block = "\n".join(bat_rows) if bat_rows else "├ <i>Всі заряди в нормі</i>"
 
         parts = [
-            "<blockquote><b>🏠 ДІМ І БЕЗПЕКА</b>",
+            "<b>🏠 ДІМ І БЕЗПЕКА</b>",
             f"<i>За бортом: {outside}°C • {people}</i>",
             "────────────────────────────",
             "<b>Клімат у кімнатах:</b>",
@@ -170,7 +170,7 @@ class MessageRenderer:
             "<b>Заряди пристроїв:</b>",
             bat_block,
             "────────────────────────────",
-            f"<i>⏱ Оновлено: {html.escape(str(state.get('updated_at', '—')))}</i></blockquote>"
+            f"<i>⏱ Оновлено: {html.escape(str(state.get('updated_at', '—')))}</i>"
         ])
         return "\n".join(parts)
 
@@ -180,7 +180,7 @@ class MessageRenderer:
         icon = section.get("icon") or "📁"
         note = html.escape(str(section.get("note") or section.get("description") or ""))
 
-        rows = [f"<blockquote><b>{icon} {title}</b>"]
+        rows = [f"<b>{icon} {title}</b>"]
         if note:
             rows.append(f"<i>{note}</i>")
 
@@ -262,13 +262,13 @@ class MessageRenderer:
             rows.append("<i>Показники не налаштовані.</i>")
 
         updated = html.escape(str(state.get("updated_at", "—")))
-        rows.append(f"<i>⏱ Оновлено: {updated}</i></blockquote>")
+        rows.append(f"<i>⏱ Оновлено: {updated}</i>")
         return "\n".join(rows)
 
     def render_entity_list(self, section: dict, states: dict[str, Any]) -> str:
         """Render an auto-generated entity browser section."""
         title = html.escape(str(section.get("title", "")))
-        rows = [f"<blockquote><b>{title}</b>", "────────────────────────────"]
+        rows = [f"<b>{title}</b>", "────────────────────────────"]
         count = 0
         for entity_id, value in sorted(states.items()):
             icon = DOMAIN_ICONS.get(entity_id.split(".", 1)[0], "🔘")
@@ -280,7 +280,7 @@ class MessageRenderer:
         if count == 0:
             rows.append("├ <i>Немає доступних сутностей</i>")
         rows.append("────────────────────────────")
-        rows.append(f"<i>Всього: {count}</i></blockquote>")
+        rows.append(f"<i>Всього: {count}</i>")
         return "\n".join(rows)
 
 

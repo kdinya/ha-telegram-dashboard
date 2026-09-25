@@ -24,7 +24,7 @@ async def test_bot_engine_navigation():
 
     # Guest can access climate section
     res_clim = await engine.handle_navigation(10, "climate", {})
-    assert "blockquote" in res_clim["text"]
+    assert "📁 Клімат" in res_clim["text"]
 
 
 @pytest.mark.asyncio

@@ -2041,8 +2041,10 @@ function setupEventListeners() {
   const phoneFrame = $('phone-frame');
   const previewPaneEl = $('preview-pane');
   const chkAutoscale = $('setting-preview-autoscale');
+  const groupWidth = $('group-preview-width');
   const groupHeight = $('group-preview-height');
   const groupScale = $('group-preview-scale');
+  const groupTgMsgWidth = $('group-tg-msg-width');
   const rangeWidth = $('setting-preview-width');
   const rangeHeight = $('setting-preview-height');
   const rangeScale = $('setting-preview-scale');
@@ -2059,13 +2061,20 @@ function setupEventListeners() {
   function updatePreviewDimensions(w, h, scale, msgW, save = true) {
     const isAutoscale = !!(chkAutoscale && chkAutoscale.checked);
 
+    // Hide all preview dimension controls when autoscale is checked, keep only message width
+    if (groupWidth) groupWidth.style.display = isAutoscale ? 'none' : '';
     if (groupHeight) groupHeight.style.display = isAutoscale ? 'none' : '';
     if (groupScale) groupScale.style.display = isAutoscale ? 'none' : '';
+    if (btnResetPreviewSize) btnResetPreviewSize.style.display = isAutoscale ? 'none' : '';
+    if (groupTgMsgWidth) groupTgMsgWidth.style.display = '';
 
     if (isAutoscale) {
-      const availableH = Math.max(380, window.innerHeight - 130);
-      const propH = Math.round(w * (BASE_HEIGHT / BASE_WIDTH));
-      h = Math.min(propH, availableH);
+      const availableH = Math.max(380, window.innerHeight - 120);
+      const curW = parseInt(localStorage.getItem('preview_slider_width'), 10) || w || BASE_WIDTH;
+      const curH = parseInt(localStorage.getItem('preview_slider_height'), 10) || h || BASE_HEIGHT;
+      const ratio = curW / curH;
+      h = availableH;
+      w = Math.round(h * ratio);
       scale = Math.round((h / BASE_HEIGHT) * 100);
       if (previewPaneEl) previewPaneEl.classList.add('preview-autoscale');
     } else {
@@ -2082,9 +2091,14 @@ function setupEventListeners() {
       phoneFrame.style.setProperty('--tg-msg-width', msgW + '%');
     }
 
-    if (rangeWidth) rangeWidth.value = w;
-    if (rangeHeight) rangeHeight.value = h;
-    if (rangeScale) rangeScale.value = scale;
+    const bubble = document.querySelector('.tg-message-bubble');
+    if (bubble) {
+      bubble.style.width = msgW + '%';
+    }
+
+    if (rangeWidth && !isAutoscale) rangeWidth.value = w;
+    if (rangeHeight && !isAutoscale) rangeHeight.value = h;
+    if (rangeScale && !isAutoscale) rangeScale.value = scale;
     if (rangeTgMsgWidth) rangeTgMsgWidth.value = msgW;
 
     if (valWidth) valWidth.textContent = w + ' px';
@@ -2094,9 +2108,11 @@ function setupEventListeners() {
 
     if (save) {
       localStorage.setItem('preview_slider_autoscale', isAutoscale ? 'true' : 'false');
-      localStorage.setItem('preview_slider_width', String(w));
-      localStorage.setItem('preview_slider_height', String(h));
-      localStorage.setItem('preview_slider_scale', String(scale));
+      if (!isAutoscale) {
+        localStorage.setItem('preview_slider_width', String(w));
+        localStorage.setItem('preview_slider_height', String(h));
+        localStorage.setItem('preview_slider_scale', String(scale));
+      }
       localStorage.setItem('preview_slider_msg_width', String(msgW));
     }
   }
@@ -2128,9 +2144,10 @@ function setupEventListeners() {
 
     window.addEventListener('resize', () => {
       if (chkAutoscale && chkAutoscale.checked) {
-        const w = rangeWidth ? (parseInt(rangeWidth.value, 10) || BASE_WIDTH) : BASE_WIDTH;
         const msgW = rangeTgMsgWidth ? (parseInt(rangeTgMsgWidth.value, 10) || 100) : 100;
-        updatePreviewDimensions(w, 0, 100, msgW, false);
+        const savedW = parseInt(localStorage.getItem('preview_slider_width'), 10) || BASE_WIDTH;
+        const savedH = parseInt(localStorage.getItem('preview_slider_height'), 10) || BASE_HEIGHT;
+        updatePreviewDimensions(savedW, savedH, 100, msgW, false);
       }
     });
 
@@ -2167,10 +2184,16 @@ function setupEventListeners() {
     if (rangeTgMsgWidth) {
       rangeTgMsgWidth.addEventListener('input', (e) => {
         const msgW = parseInt(e.target.value, 10) || 100;
-        const w = rangeWidth ? (parseInt(rangeWidth.value, 10) || BASE_WIDTH) : BASE_WIDTH;
-        const h = rangeHeight ? (parseInt(rangeHeight.value, 10) || BASE_HEIGHT) : BASE_HEIGHT;
-        const sc = rangeScale ? (parseInt(rangeScale.value, 10) || 100) : 100;
-        updatePreviewDimensions(w, h, sc, msgW, true);
+        document.documentElement.style.setProperty('--tg-msg-width', msgW + '%');
+        if (phoneFrame) {
+          phoneFrame.style.setProperty('--tg-msg-width', msgW + '%');
+        }
+        const bubble = document.querySelector('.tg-message-bubble');
+        if (bubble) {
+          bubble.style.width = msgW + '%';
+        }
+        if (valTgMsgWidth) valTgMsgWidth.textContent = msgW + '%';
+        localStorage.setItem('preview_slider_msg_width', String(msgW));
       });
     }
 

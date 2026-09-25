@@ -19,7 +19,7 @@ def test_render_main_html():
         "updated_at": "12:00:00"
     }
     rendered = renderer.render_main(state)
-    assert "<blockquote>" in rendered
+    assert "🏠 ДІМ І БЕЗПЕКА" in rendered
     assert "🏠 ДІМ І БЕЗПЕКА" in rendered
     assert "17.5°C" in rendered
     assert "🟢 <b>Відкритий</b>" in rendered

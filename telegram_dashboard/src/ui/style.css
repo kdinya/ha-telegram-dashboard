@@ -140,6 +140,9 @@ body {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
 }
 
 .top-header {
@@ -479,16 +482,17 @@ body {
   justify-content: flex-start;
   align-items: center;
   padding: 0;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
   transition: width 0.15s ease;
 }
 
-/* Auto-scale mode: preview stays in the visible part of the screen while editor scrolls */
 .preview-pane.preview-autoscale {
   position: sticky;
-  top: 90px;
+  top: 0;
   align-self: flex-start;
   max-height: calc(100vh - 110px);
-  overflow: visible;
 }
 
 .phone-frame {
@@ -556,6 +560,7 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
+  align-items: flex-start;
 }
 
 .tg-message-bubble {
@@ -564,8 +569,9 @@ body {
   padding: 12px;
   color: var(--tg-text);
   box-sizing: border-box;
-  width: var(--tg-msg-width, 100%);
-  max-width: var(--tg-msg-width, 100%);
+  align-self: flex-start;
+  width: var(--tg-msg-width, 100%) !important;
+  max-width: 100% !important;
   transition: width 0.15s ease, max-width 0.15s ease;
 }
 
@@ -805,8 +811,9 @@ body {
   }
   .phone-frame {
     width: 100% !important;
-    max-width: 100% !important;
-    height: var(--preview-frame-h, 600px);
+    max-width: 320px !important;
+    height: min(540px, calc(100vh - 160px)) !important;
+    margin: 0 auto;
   }
 }
 /* ---- Modal additions & entity picker ---- */
