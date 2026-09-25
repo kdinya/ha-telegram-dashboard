@@ -19,6 +19,7 @@
 - Виправлено: auto-discovery на невідомих commands/callbacks і небезпечний `default_role: admin`.
 - Виправлено: довільний `tts_service` поза domain `tts`.
 - Виправлено: ключові frontend interpolation points, preview HTML і Telegram dynamic state/unit escaping.
+- Виправлено: serialized/fsynced config persistence, tracked bounded WebSocket callbacks, malformed Telegram ID handling, short-screen preview sizing та dead Add button flow.
 - Залишилось: HTTP API auth/CSRF та runtime config-file atomicity — потребують окремого контракту з Supervisor Ingress, щоб не зламати штатний UI.
 
 ## Результати перевірок

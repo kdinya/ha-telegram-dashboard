@@ -53,6 +53,13 @@ class TelegramBotRunner:
         self._running = False
         self._auto_delete_tasks: dict[tuple[int, int], asyncio.Task] = {}
 
+    @staticmethod
+    def _safe_int(value: Any) -> int | None:
+        try:
+            return int(value)
+        except (TypeError, ValueError, OverflowError):
+            return None
+
     async def send_message(
         self,
         chat_id: int | str,
@@ -67,8 +74,12 @@ class TelegramBotRunner:
             logger.warning("ha_client is not configured; cannot send message")
             return None
 
+        safe_chat_id = self._safe_int(chat_id)
+        if safe_chat_id is None:
+            logger.warning("Ignoring send_message with invalid chat_id")
+            return None
         service_data: dict[str, Any] = {
-            "chat_id": [int(chat_id)],
+            "chat_id": [safe_chat_id],
             "message": text,
             "parse_mode": parse_mode.lower(),
             "disable_notification": disable_notification,
@@ -97,9 +108,14 @@ class TelegramBotRunner:
             logger.warning("ha_client is not configured; cannot edit message")
             return None
 
+        safe_chat_id = self._safe_int(chat_id)
+        safe_message_id = self._safe_int(message_id)
+        if safe_chat_id is None or safe_message_id is None:
+            logger.warning("Ignoring edit_message with invalid identifiers")
+            return None
         service_data: dict[str, Any] = {
-            "chat_id": int(chat_id),
-            "message_id": int(message_id),
+            "chat_id": safe_chat_id,
+            "message_id": safe_message_id,
             "message": text,
             "parse_mode": parse_mode.lower(),
         }
@@ -162,7 +178,12 @@ class TelegramBotRunner:
         """Delete message via Home Assistant telegram_bot.delete_message action."""
         if not self.ha_client:
             return None
-        service_data = {"chat_id": int(chat_id), "message_id": int(message_id)}
+        safe_chat_id = self._safe_int(chat_id)
+        safe_message_id = self._safe_int(message_id)
+        if safe_chat_id is None or safe_message_id is None:
+            logger.warning("Ignoring delete_message with invalid identifiers")
+            return None
+        service_data = {"chat_id": safe_chat_id, "message_id": safe_message_id}
         try:
             return await self.ha_client.call_service("telegram_bot", "delete_message", service_data=service_data)
         except Exception as e:
@@ -175,8 +196,12 @@ class TelegramBotRunner:
         """Acknowledge callback query via Home Assistant telegram_bot.answer_callback_query action."""
         if not self.ha_client:
             return None
+        safe_callback_id = self._safe_int(callback_query_id)
+        if safe_callback_id is None:
+            logger.warning("Ignoring answer_callback_query with invalid callback id")
+            return None
         service_data: dict[str, Any] = {
-            "callback_query_id": int(callback_query_id),
+            "callback_query_id": safe_callback_id,
             "message": text or "",
             "show_alert": show_alert,
         }
@@ -212,15 +237,16 @@ class TelegramBotRunner:
             display_name = f"@{username}"
         else:
             display_name = f"User {user_id}"
-        return int(user_id), display_name
+        safe_user_id = self._safe_int(user_id)
+        return safe_user_id, display_name if safe_user_id is not None else ""
 
     async def handle_ha_command(self, data: dict[str, Any]) -> None:
         """Handle incoming telegram_command event from Home Assistant."""
         command = str(data.get("command", "")).strip()
-        chat_id = data.get("chat_id")
+        chat_id = self._safe_int(data.get("chat_id"))
         user_id, display_name = self._extract_user_info(data)
 
-        if not user_id or not chat_id or not command:
+        if user_id is None or chat_id is None or not command:
             return
 
         # Multi-menu routing: match command against configured menu commands
@@ -276,9 +302,10 @@ class TelegramBotRunner:
         """Handle incoming telegram_callback event from Home Assistant."""
         cb_data = str(data.get("data", ""))
         cb_id = data.get("id")
-        chat_id = data.get("chat_id")
+        chat_id = self._safe_int(data.get("chat_id"))
         msg = data.get("message") or {}
-        msg_id = msg.get("message_id") if isinstance(msg, dict) else data.get("message_id")
+        msg_id_raw = msg.get("message_id") if isinstance(msg, dict) else data.get("message_id")
+        msg_id = self._safe_int(msg_id_raw)
 
         # Ignore callbacks without our namespace prefix (let HA automations handle them)
         if not cb_data.startswith(TD_CALLBACK_PREFIX):
@@ -288,7 +315,7 @@ class TelegramBotRunner:
         action_data = cb_data[len(TD_CALLBACK_PREFIX):]
 
         user_id, display_name = self._extract_user_info(data)
-        if not user_id or not chat_id or not msg_id:
+        if user_id is None or chat_id is None or msg_id is None:
             if cb_id:
                 await self.answer_callback_query(cb_id)
             return

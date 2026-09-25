@@ -2534,7 +2534,7 @@ function setupEventListeners() {
 
   if (btnActionAddButton) {
     btnActionAddButton.addEventListener('click', () => {
-      showToast(t('toast_buttons_coming_soon'));
+      document.getElementById('btn-add-button-item')?.click();
     });
   }
 
@@ -2576,7 +2576,7 @@ function setupEventListeners() {
     renderButtonsList(sec.buttons);
     updatePreview();
     document.getElementById('modal-button-config')?.classList.remove('open');
-    showToast('Кнопку додано');
+    showToast(t('toast_button_added'));
   });
 
   secTitle?.addEventListener('input', () => {

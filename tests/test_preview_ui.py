@@ -95,7 +95,7 @@ def test_preview_refresh_preserves_scroll_position_unless_already_at_bottom():
     assert "msgArea.scrollTop = wasAtBottom ? msgArea.scrollHeight : previousScrollTop" in app
     assert "is-overflowing" in app
     assert "height: calc(100dvh - 110px) !important" in styles
-    assert "min-height: 680px !important" in styles
+    assert "min-height: min(680px, calc(100dvh - 110px)) !important" in styles
 
 
 def test_section_command_and_save_flow_are_explained_and_translated():

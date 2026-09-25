@@ -34,3 +34,15 @@ def test_default_config_english_section_titles():
     assert "Water" in menu["water"]["title"]
     assert "Batteries" in menu["battery"]["title"]
     assert "System" in menu["system"]["title"]
+
+
+def test_save_is_newline_terminated_and_backup_is_valid(tmp_path: Path):
+    cfg_file = tmp_path / "config.json"
+    cm = ConfigManager(cfg_file)
+    cm.load()
+    cm.save()
+    first = cfg_file.read_bytes()
+    assert first.endswith(b"\n")
+    cm.upsert_user(55, "User", "guest")
+    assert cfg_file.with_suffix(".json.bak").read_bytes() == first
+    assert ConfigManager(cfg_file).load()["users"][0]["telegram_id"] == 55

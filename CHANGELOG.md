@@ -1,6 +1,8 @@
 ## [1.1.3]
 
 ### Fixed
+- Config writes are now serialized and fsynced with atomic backups; WebSocket event callbacks are bounded, tracked, and cleaned up on shutdown.
+- Malformed Telegram identifiers are rejected safely, mobile preview height adapts to short screens, and the section Add button opens the implemented configuration flow with localized feedback.
 - Security: Telegram callbacks now enforce section RBAC, entity label restrictions, and filtered entity-state rendering; live user-role changes take effect without restart.
 - Security: unknown Telegram events no longer create users, unscoped actions and non-TTS services are rejected, and preview/API-derived HTML is sanitized before DOM insertion.
 - Inactivity auto-delete now starts as soon as a dashboard message is sent and is reset by button interactions.

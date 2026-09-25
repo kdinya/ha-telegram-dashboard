@@ -225,7 +225,8 @@ btn_action_add_divider: "Add spacer",
       toast_select_entity_first_validation: "Please choose an entity first",
       confirm_delete_entity_item_unified: "Delete this entity from section?",
       toast_entity_coming_soon: "Adding entities will be available soon",
-      toast_buttons_coming_soon: "Adding buttons will be available soon"
+      toast_buttons_coming_soon: "Adding buttons will be available soon",
+      toast_button_added: "Button added"
     },
 
     uk: {
@@ -449,7 +450,8 @@ btn_action_add_divider: "Додати відступ",
       toast_select_entity_first_validation: "Будь ласка, оберіть сутність",
       confirm_delete_entity_item_unified: "Видалити цю сутність із розділу?",
       toast_entity_coming_soon: "Додавання ентіті буде доступне незабаром",
-      toast_buttons_coming_soon: "Додавання кнопок буде доступне незабаром"
+      toast_buttons_coming_soon: "Додавання кнопок буде доступне незабаром",
+      toast_button_added: "Кнопку додано"
     }
   };
 

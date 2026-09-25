@@ -5,6 +5,7 @@ import json
 import os
 import shutil
 import tempfile
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -108,6 +109,7 @@ class ConfigManager:
     def __init__(self, path: str | os.PathLike[str]) -> None:
         self._path = Path(path)
         self._config: dict[str, Any] | None = None
+        self._lock = threading.RLock()
 
     @property
     def path(self) -> Path:
@@ -115,16 +117,17 @@ class ConfigManager:
 
     def load(self) -> dict[str, Any]:
         """Load configuration from disk; fall back to defaults when absent."""
-        if self._path.exists():
-            raw = self._path.read_text(encoding="utf-8")
-            try:
-                parsed = json.loads(raw) if raw.strip() else dict(DEFAULT_CONFIG)
-            except json.JSONDecodeError as exc:
-                raise ConfigError(f"invalid JSON in {self._path}: {exc}") from exc
-            self._config = validate_config(parsed)
-        else:
-            self._config = validate_config(json.loads(json.dumps(DEFAULT_CONFIG)))
-        return self._config
+        with self._lock:
+            if self._path.exists():
+                raw = self._path.read_text(encoding="utf-8")
+                try:
+                    parsed = json.loads(raw) if raw.strip() else dict(DEFAULT_CONFIG)
+                except json.JSONDecodeError as exc:
+                    raise ConfigError(f"invalid JSON in {self._path}: {exc}") from exc
+                self._config = validate_config(parsed)
+            else:
+                self._config = validate_config(json.loads(json.dumps(DEFAULT_CONFIG)))
+            return self._config
 
     @property
     def config(self) -> dict[str, Any]:
@@ -134,23 +137,39 @@ class ConfigManager:
 
     def save(self, config: dict[str, Any] | None = None) -> None:
         """Validate and atomically persist the configuration with a backup."""
-        validated = validate_config(config if config is not None else self.config)
-        self._path.parent.mkdir(parents=True, exist_ok=True)
-        if self._path.exists():
+        with self._lock:
+            validated = validate_config(config if config is not None else self.config)
+            self._path.parent.mkdir(parents=True, exist_ok=True)
             backup = self._path.with_suffix(".json.bak")
-            shutil.copy2(self._path, backup)
-        fd, tmp_name = tempfile.mkstemp(
-            dir=str(self._path.parent), suffix=".tmp"
-        )
-        try:
-            with os.fdopen(fd, "w", encoding="utf-8") as handle:
-                json.dump(validated, handle, ensure_ascii=False, indent=2)
-            os.replace(tmp_name, self._path)
-        except BaseException:
-            if os.path.exists(tmp_name):
-                os.unlink(tmp_name)
-            raise
-        self._config = validated
+            tmp_name = None
+            backup_tmp = None
+            try:
+                if self._path.exists():
+                    backup_fd, backup_tmp = tempfile.mkstemp(dir=str(self._path.parent), suffix=".bak.tmp")
+                    with os.fdopen(backup_fd, "wb") as handle, self._path.open("rb") as source:
+                        shutil.copyfileobj(source, handle)
+                        handle.flush()
+                        os.fsync(handle.fileno())
+                    os.replace(backup_tmp, backup)
+                    backup_tmp = None
+                fd, tmp_name = tempfile.mkstemp(dir=str(self._path.parent), suffix=".tmp")
+                with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                    json.dump(validated, handle, ensure_ascii=False, indent=2)
+                    handle.write("\n")
+                    handle.flush()
+                    os.fsync(handle.fileno())
+                os.replace(tmp_name, self._path)
+                tmp_name = None
+                dir_fd = os.open(self._path.parent, os.O_DIRECTORY)
+                try:
+                    os.fsync(dir_fd)
+                finally:
+                    os.close(dir_fd)
+            finally:
+                for leftover in (tmp_name, backup_tmp):
+                    if leftover and os.path.exists(leftover):
+                        os.unlink(leftover)
+            self._config = validated
 
     # -- user management -------------------------------------------------
     def get_user(self, telegram_id: int) -> dict[str, Any] | None:

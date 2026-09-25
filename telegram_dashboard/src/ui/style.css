@@ -949,7 +949,7 @@ select.form-control option {
     max-width: 340px !important;
     height: calc(100dvh - 110px) !important;
     max-height: none !important;
-    min-height: 680px !important;
+    min-height: min(680px, calc(100dvh - 110px)) !important;
     margin: 0 auto;
   }
 }
@@ -2152,7 +2152,7 @@ body:has(.modal-overlay.open) {
     max-width: 340px !important;
     height: calc(100dvh - 110px) !important;
     max-height: none !important;
-    min-height: 680px !important;
+    min-height: min(680px, calc(100dvh - 110px)) !important;
     overflow: hidden !important;
     margin: 0 auto;
   }

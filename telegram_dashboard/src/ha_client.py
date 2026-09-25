@@ -20,6 +20,8 @@ class HAClient:
         self._session = session
         self._ws: aiohttp.ClientWebSocketResponse | None = None
         self._ws_task: asyncio.Task | None = None
+        self._callback_tasks: set[asyncio.Task] = set()
+        self._callback_slots = asyncio.Semaphore(32)
         self._ws_running = False
         self._msg_id = 1
         self._subscriptions: dict[str, list[Callable[[dict[str, Any]], Awaitable[None]]]] = {}
@@ -41,6 +43,11 @@ class HAClient:
                 await self._ws_task
             except (asyncio.CancelledError, Exception):
                 pass
+        callback_tasks = list(self._callback_tasks)
+        for task in callback_tasks:
+            task.cancel()
+        if callback_tasks:
+            await asyncio.gather(*callback_tasks, return_exceptions=True)
         if self._ws is not None and not self._ws.closed:
             await self._ws.close()
         if self._session is not None and not self._session.closed:
@@ -189,6 +196,21 @@ class HAClient:
         self._ws_running = True
         self._ws_task = asyncio.create_task(self._ws_loop())
 
+    async def _run_event_callback(
+        self, callback: Callable[[dict[str, Any]], Awaitable[None]], data: dict[str, Any]
+    ) -> None:
+        async with self._callback_slots:
+            try:
+                await callback(data)
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                logger.exception("Home Assistant event callback failed")
+
+    def _track_callback_task(self, task: asyncio.Task) -> None:
+        self._callback_tasks.add(task)
+        task.add_done_callback(self._callback_tasks.discard)
+
     async def _ws_loop(self) -> None:
         ws_url = self._get_ws_url()
         logger.info("Starting HA WebSocket client for %s...", ws_url)
@@ -238,7 +260,10 @@ class HAClient:
                                     event_type = self._sub_id_to_event.get(sub_id)
                                 callbacks = self._subscriptions.get(event_type or "", [])
                                 for cb in callbacks:
-                                    asyncio.create_task(cb(event_payload.get("data", {})))
+                                    task = asyncio.create_task(
+                                        self._run_event_callback(cb, event_payload.get("data", {}))
+                                    )
+                                    self._track_callback_task(task)
                         elif msg.type in (aiohttp.WSMsgType.CLOSED, aiohttp.WSMsgType.ERROR):
                             break
             except asyncio.CancelledError:

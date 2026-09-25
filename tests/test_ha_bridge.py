@@ -121,6 +121,17 @@ async def test_bridge_formats_inline_keyboard_for_ha():
 
 
 @pytest.mark.asyncio
+async def test_bridge_rejects_malformed_identifiers_without_calling_ha():
+    ha_client = MagicMock()
+    ha_client.call_service = AsyncMock(return_value={})
+    runner = TelegramBotRunner(ha_client, MagicMock())
+    assert await runner.send_message("not-an-id", "hello") is None
+    assert await runner.edit_message_text(1, "bad", "hello") is None
+    assert await runner.answer_callback_query("bad") is None
+    ha_client.call_service.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_command_message_is_auto_deleted_after_configured_timeout():
     config = {
         "auto_delete_timeout": 1,
