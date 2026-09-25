@@ -264,7 +264,12 @@ body {
   flex-wrap: wrap;
   gap: 12px;
 }
-
+.save-flow-hint {
+  margin: -10px 0 14px;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
 .sections-container {
   display: flex;
   flex-wrap: wrap;
@@ -579,9 +584,9 @@ select.form-control option {
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  justify-content: flex-end;
   align-items: stretch;
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
 }
 
 .tg-bot-bubble {
@@ -655,6 +660,22 @@ select.form-control option {
 
 .tg-button:hover {
   background-color: var(--tg-btn-hover);
+}
+.tg-button.is-back {
+  background-color: #2563eb;
+  border-color: #60a5fa;
+  color: #ffffff;
+}
+.tg-button.is-back:hover {
+  background-color: #1d4ed8;
+}
+.tg-button.is-close {
+  background-color: #b91c1c;
+  border-color: #f87171;
+  color: #ffffff;
+}
+.tg-button.is-close:hover {
+  background-color: #991b1b;
 }
 .preview-timestamp {
   display: block;
@@ -1843,8 +1864,8 @@ body:has(.modal-overlay.open) {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  max-height: 220px;
-  overflow-y: auto;
+  max-height: none;
+  overflow: visible;
   padding: 4px;
 }
 

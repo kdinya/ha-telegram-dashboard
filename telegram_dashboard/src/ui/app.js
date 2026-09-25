@@ -2235,7 +2235,7 @@ async function updatePreview() {
       if (msgArea) {
         if (!previewHeightAnimation) {
           requestAnimationFrame(() => {
-            msgArea.scrollTo({ top: msgArea.scrollHeight, behavior: 'smooth' });
+            msgArea.scrollTop = msgArea.scrollHeight;
           });
         }
       }
@@ -2257,6 +2257,13 @@ function renderTelegramKeyboard(keyboard) {
       button.className = 'tg-button';
       const text = Array.isArray(btn) ? btn[0] : (btn.text || '');
       const cbData = Array.isArray(btn) ? btn[1] : (btn.callback_data || '');
+      const normalizedText = String(text).toLowerCase();
+      const normalizedCallback = String(cbData).toLowerCase();
+      if (normalizedCallback === 'td:/close' || normalizedCallback === '/close' || normalizedText.includes('закрити') || normalizedText.includes('close')) {
+        button.classList.add('is-close');
+      } else if (normalizedCallback.startsWith('td:/sec_') && (normalizedText.includes('назад') || normalizedText.includes('back') || normalizedText.includes('головна'))) {
+        button.classList.add('is-back');
+      }
       button.textContent = text;
       button.title = cbData;
       button.addEventListener('click', () => handlePreviewButtonClick(cbData));

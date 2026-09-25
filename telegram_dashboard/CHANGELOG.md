@@ -7,6 +7,8 @@
 - Editor item controls stay above item content on narrow screens; the redundant Telegram integration notice was removed from Settings.
 - Section metadata editing works reliably, navigation-block locks stay scoped to their section, and entity search matches normalized names, IDs, areas, states, and device classes.
 - Preview message width is stabilized, inline keyboard buttons remain visible, and the update time is shown below the buttons in non-italic small text.
+- Preview chat content stays bottom-aligned while message height changes, Back/Close buttons use blue/red accents, and long navigation lists expand instead of clipping.
+- Local editor buttons now clearly apply changes to the preview, while the single floating Save changes button persists the configuration.
 
 ## [1.1.2]
 

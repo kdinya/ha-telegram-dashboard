@@ -54,3 +54,31 @@ def test_entity_picker_search_normalizes_ids_and_matches_state_metadata():
     assert "e.area_name" in app
     assert "e.attributes?.device_class" in app
     assert "e.state" in app
+
+
+def test_preview_anchors_chat_to_bottom_and_colors_standard_buttons():
+    styles = (UI_DIR / "style.css").read_text(encoding="utf-8")
+    app = (UI_DIR / "app.js").read_text(encoding="utf-8")
+
+    assert "justify-content: flex-end" in styles
+    assert "msgArea.scrollTop = msgArea.scrollHeight" in app
+    assert ".tg-button.is-back" in styles
+    assert ".tg-button.is-close" in styles
+    assert "button.classList.add('is-back')" in app
+    assert "button.classList.add('is-close')" in app
+
+
+def test_navigation_list_grows_instead_of_clipping_sections():
+    styles = (UI_DIR / "style.css").read_text(encoding="utf-8")
+    assert "max-height: none" in styles
+    assert "overflow: visible" in styles
+
+
+def test_section_command_and_save_flow_are_explained_and_translated():
+    html = (UI_DIR / "index.html").read_text(encoding="utf-8")
+    i18n = (UI_DIR / "i18n.js").read_text(encoding="utf-8")
+    assert 'data-i18n="label_section_command"' in html
+    assert 'data-i18n="section_command_hint"' in html
+    assert 'data-i18n="save_flow_hint"' in html
+    assert 'label_section_command:' in i18n
+    assert 'section_command_hint:' in i18n

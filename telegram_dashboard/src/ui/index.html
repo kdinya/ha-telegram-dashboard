@@ -60,6 +60,7 @@
                 <h3 data-i18n="sections_title">📂 Menu Sections</h3>
                 <button id="btn-add-section" class="btn btn-secondary btn-sm" data-i18n="btn_add_section">+ Add section</button>
               </div>
+              <p class="save-flow-hint" data-i18n="save_flow_hint">Local buttons apply changes to the preview. Use the main Save changes button to persist them.</p>
               <div id="sections-list" class="sections-container">
                 <!-- Pills -->
               </div>
@@ -343,8 +344,9 @@
         </div>
         <div class="form-row" style="margin-top: 12px; margin-bottom: 0;">
           <div class="form-group flex-1">
-            <label for="edit-sec-command" data-i18n="label_section_command">Telegram Command (optional, e.g. /dashboard)</label>
-            <input type="text" id="edit-sec-command" class="form-control" placeholder="/dashboard" autocomplete="off">
+            <label for="edit-sec-command" data-i18n="label_section_command">Telegram command to open this section (optional)</label>
+            <input type="text" id="edit-sec-command" class="form-control" data-i18n-placeholder="placeholder_section_command" placeholder="/dashboard" autocomplete="off">
+            <small class="field-hint" data-i18n="section_command_hint">If set, this command opens the section from Telegram. Leave empty if you do not need a separate command.</small>
           </div>
         </div>
       </div>
