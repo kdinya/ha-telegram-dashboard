@@ -9,7 +9,7 @@
 
 [![Add repository to my Home Assistant](https://my.home-assistant.io/badges/repository.svg)](https://my.home-assistant.io/redirect/repository/?repository_url=https%3A%2F%2Fgithub.com%2Fkdinya%2Fha-telegram-dashboard)
 
-> **Візуальний конструктор та менеджер інтерактивних Telegram-дашбордів для Home Assistant без написання сотень рядків YAML-коду.**
+> **Візуальний конструктор та менеджер інтерактивних Telegram-дашбордів для Home Assistant, що працює поверх офіційної інтеграції Telegram Bot.**
 
 ---
 

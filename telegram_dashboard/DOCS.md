@@ -1,19 +1,21 @@
 # Telegram Dashboard Documentation
 
-## Setup & Configuration
+## Огляд та архітектура
 
-1. **Get Telegram Bot Token:**
-   - Message `@BotFather` on Telegram.
-   - Run `/newbot` and follow instructions.
-   - Copy the HTTP API token into the add-on configuration tab.
+Telegram Dashboard працює як візуальне інтерактивне меню поверх **офіційної інтеграції Home Assistant Telegram Bot (`telegram_bot`)**.
+- **Транспорт та отримання повідомлень**: здійснюється виключно стандартною інтеграцією Home Assistant `telegram_bot`. Add-on не потребує окремого токена Telegram-бота і не виконує паралельного опитування (`getUpdates`).
+- **Меню та логіка**: Add-on генерує та оновлює структуру меню, інлайн-кнопки з актуальними станами сутностей, розділи прав доступу (RBAC) та обробку навігації.
 
-2. **Access Control (RBAC):**
-   - Open the Telegram Dashboard Ingress panel.
-   - Under the **Users** tab, register family members by Telegram User ID.
-   - Assign roles:
-     - `Admin`: Full access, including system reboot, PC commands, valve control.
-     - `Member`: Climate, media, lighting, standard sensors.
-     - `Guest`: Read-only view for selected sensors.
+## Налаштування
 
-3. **Menu Customization:**
-   - Use the visual editor to rearrange sections, add items, set alert thresholds, and customize icons.
+1. **Налаштуйте офіційну інтеграцію Telegram Bot у Home Assistant:**
+   - Додайте інтеграцію `telegram_bot` (платформи `polling` або `webhooks`) у вашому `configuration.yaml` або через налаштування Home Assistant.
+   - Переконайтеся, що Home Assistant успішно надсилає та приймає команди від вашого бота.
+
+2. **Запустіть Telegram Dashboard Add-on:**
+   - Встановіть та запустіть додаток.
+   - Усі налаштування токенів та дозволених чатів використовуються з офіційної інтеграції `telegram_bot`.
+
+3. **Команди виклику меню:**
+   - За замовчуванням головне меню відкривається за командою `/dashboard`.
+   - У налаштуваннях кожного розділу (іконка олівця) ви можете вказати власну Telegram-команду (наприклад, `/menu`, `/climate`, `/security`), яка відкриватиме цей розділ напряму.

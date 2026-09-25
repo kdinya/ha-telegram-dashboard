@@ -102,3 +102,17 @@ async def test_bridge_callback_isolation():
     })
     # edit_message + answer_callback_query
     assert ha_client.call_service.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_bridge_formats_inline_keyboard_for_ha():
+    from telegram_dashboard.src.telegram_bot import format_inline_keyboard_for_ha
+    raw_keyboard = [
+        [{"text": "🏠 Smart Home", "callback_data": "td:/sec_main"}],
+        [{"text": "🔄 Refresh", "callback_data": "td:/sec_main"}, {"text": "Web Link", "url": "https://example.com"}]
+    ]
+    ha_kb = format_inline_keyboard_for_ha(raw_keyboard)
+    assert ha_kb == [
+        [["🏠 Smart Home", "td:/sec_main"]],
+        [["🔄 Refresh", "td:/sec_main"], ["Web Link", "https://example.com"]]
+    ]

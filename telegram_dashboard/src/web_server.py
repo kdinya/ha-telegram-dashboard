@@ -100,14 +100,12 @@ class WebApp:
         renderer: MessageRenderer,
         ha_client: Any | None = None,
         bot_engine: Any | None = None,
-        telegram_token: str | None = None,
         bot_runner: Any | None = None,
     ) -> None:
         self.cm = config_manager
         self.renderer = renderer
         self.ha_client = ha_client
         self.bot_engine = bot_engine
-        self.telegram_token = telegram_token or ""
         self.bot_runner = bot_runner
         self.app = web.Application()
         self._setup_routes()
@@ -145,10 +143,7 @@ class WebApp:
         return web.Response(text="Telegram Dashboard UI Loaded", content_type="text/html")
 
     async def get_config(self, request: web.Request) -> web.Response:
-        data = dict(self.cm.config)
-        if not data.get("telegram_token"):
-            data["telegram_token"] = self.telegram_token or ""
-        return web.json_response(data)
+        return web.json_response(self.cm.config)
 
     async def save_config(self, request: web.Request) -> web.Response:
         data = await request.json()

@@ -32,6 +32,19 @@
 - Fix: saving an action recovers the chosen entity if the picker selection was lost.
 # Changelog
 
+## [1.1.1] - 2026-03-29
+
+### Fixed
+- Fixed inline keyboard buttons displaying the word 'text' in Telegram by converting button rows to Home Assistant's expected `[[text, callback_data]]` format.
+- Fixed simulator/live preview navigation when clicking buttons with the isolated `td:` namespace prefix.
+- Handled both array and dictionary button representations seamlessly in the simulator UI.
+
+### Changed
+- Removed deprecated Telegram bot token configuration, schema entries, and direct API `getUpdates` from the add-on.
+- Updated add-on description and documentation to clearly highlight operation on top of Home Assistant's official `telegram_bot` integration.
+- Added informative integration card to settings modal.
+
+
 ## [1.1.0] - 2026-03-29
 
 ### Added

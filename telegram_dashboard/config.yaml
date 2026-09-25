@@ -1,7 +1,7 @@
 name: "Telegram Dashboard (Beta)"
 slug: "telegram_dashboard"
-description: "[BETA] Interactive visual Telegram bot dashboard with role-based access control, areas, categories, scripts, automations and smart-speaker TTS"
-version: "1.1.0"
+description: "[BETA] Interactive visual Telegram dashboard for Home Assistant, working seamlessly via the official Telegram Bot integration"
+version: "1.1.1"
 url: "https://github.com/kdinya/ha-telegram-dashboard"
 arch:
   - aarch64
@@ -20,10 +20,8 @@ panel_title: "Telegram Dashboard"
 ingress: true
 ingress_port: 8099
 schema:
-  telegram_token: password
   log_level: list(debug|info|warning|error)?
   default_role: list(guest|member|admin)?
 options:
-  telegram_token: ""
   log_level: "info"
   default_role: "guest"

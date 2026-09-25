@@ -10,6 +10,34 @@ logger = logging.getLogger("telegram_dashboard.telegram_bot")
 TD_CALLBACK_PREFIX = "td:"
 
 
+def format_inline_keyboard_for_ha(
+    keyboard: list[list[dict[str, str]]] | None,
+) -> list[list[list[str]]] | None:
+    """Format inline keyboard for Home Assistant telegram_bot actions.
+
+    Home Assistant expects each row to contain entries formatted as:
+    [[text, callback_data_or_url], [text2, callback_data_or_url]]
+    When passed as dicts, HA unpacks dict keys ('text', 'callback_data'),
+    causing all buttons to display the label 'text'.
+    """
+    if not keyboard:
+        return None
+    ha_keyboard: list[list[list[str]]] = []
+    for row in keyboard:
+        ha_row: list[list[str]] = []
+        for btn in row:
+            if isinstance(btn, dict):
+                text = str(btn.get('text', ''))
+                data = str(btn.get('callback_data') or btn.get('url', ''))
+                ha_row.append([text, data])
+            elif isinstance(btn, (list, tuple)) and len(btn) >= 2:
+                ha_row.append([str(btn[0]), str(btn[1])])
+            else:
+                ha_row.append([str(btn), str(btn)])
+        ha_keyboard.append(ha_row)
+    return ha_keyboard
+
+
 class TelegramBotRunner:
     """Bridges Telegram messages and callbacks through Home Assistant telegram_bot integration."""
 
@@ -44,7 +72,7 @@ class TelegramBotRunner:
             "disable_notification": disable_notification,
         }
         if reply_markup and "inline_keyboard" in reply_markup:
-            service_data["inline_keyboard"] = reply_markup["inline_keyboard"]
+            service_data["inline_keyboard"] = format_inline_keyboard_for_ha(reply_markup["inline_keyboard"])
 
         try:
             return await self.ha_client.call_service("telegram_bot", "send_message", service_data=service_data)
@@ -72,7 +100,7 @@ class TelegramBotRunner:
             "parse_mode": parse_mode.lower(),
         }
         if reply_markup and "inline_keyboard" in reply_markup:
-            service_data["inline_keyboard"] = reply_markup["inline_keyboard"]
+            service_data["inline_keyboard"] = format_inline_keyboard_for_ha(reply_markup["inline_keyboard"])
 
         try:
             return await self.ha_client.call_service("telegram_bot", "edit_message", service_data=service_data)

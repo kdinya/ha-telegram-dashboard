@@ -166,7 +166,6 @@ def main() -> None:
         renderer,
         ha_client=ha_client,
         bot_engine=bot_engine,
-        telegram_token="",
         bot_runner=bot_runner,
     )
 

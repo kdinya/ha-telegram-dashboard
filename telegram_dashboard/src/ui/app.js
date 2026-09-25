@@ -2048,7 +2048,6 @@ function loadSettings() {
   if ($('setting-language')) $('setting-language').value = currentLang;
   if (window.I18N) window.I18N.setLanguage(currentLang, false);
 
-  $('setting-bot-token').value = config.telegram_token || '';
   if ($('setting-theme')) $('setting-theme').value = config.theme || 'cards';
   $('setting-default-role').value = config.default_role || 'guest';
   if (config.telegram_msg_width) {
@@ -2060,7 +2059,6 @@ function applySettings() {
   if ($('setting-language')) {
     config.language = $('setting-language').value;
   }
-  config.telegram_token = $('setting-bot-token').value.trim();
   if ($('setting-theme')) config.theme = $('setting-theme').value;
   else config.theme = config.theme || 'cards';
   config.default_role = $('setting-default-role').value;
@@ -2127,9 +2125,11 @@ function renderTelegramKeyboard(keyboard) {
     row.forEach(btn => {
       const button = document.createElement('button');
       button.className = 'tg-button';
-      button.textContent = btn.text;
-      button.title = btn.callback_data;
-      button.addEventListener('click', () => handlePreviewButtonClick(btn.callback_data));
+      const text = Array.isArray(btn) ? btn[0] : (btn.text || '');
+      const cbData = Array.isArray(btn) ? btn[1] : (btn.callback_data || '');
+      button.textContent = text;
+      button.title = cbData;
+      button.addEventListener('click', () => handlePreviewButtonClick(cbData));
       rowEl.appendChild(button);
     });
     previewButtons.appendChild(rowEl);
@@ -2138,16 +2138,20 @@ function renderTelegramKeyboard(keyboard) {
 
 function handlePreviewButtonClick(callbackData) {
   if (!callbackData) return;
-  if (callbackData.startsWith('/sec_')) {
-    const secKey = callbackData.replace('/sec_', '');
-    if (config.menu[secKey]) {
+  let actionData = String(callbackData);
+  if (actionData.startsWith('td:')) {
+    actionData = actionData.slice(3);
+  }
+  if (actionData.startsWith('/sec_')) {
+    const secKey = actionData.replace('/sec_', '');
+    if (config && config.menu && config.menu[secKey]) {
       currentSectionKey = secKey;
       renderSectionsPills();
       loadSectionIntoEditor(secKey);
       updatePreview();
     }
-  } else if (callbackData.startsWith('/act_') || callbackData.startsWith('/tog_')) {
-    showToast(`Натиснуто: ${callbackData}`);
+  } else if (actionData.startsWith('/act_') || actionData.startsWith('/tog_') || actionData.startsWith('/btn_') || actionData.startsWith('/ent_')) {
+    showToast(`Натиснуто: ${actionData}`);
   }
 }
 
