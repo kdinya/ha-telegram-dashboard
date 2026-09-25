@@ -60,6 +60,7 @@ class TelegramBotRunner:
         reply_markup: dict | None = None,
         parse_mode: str = "html",
         disable_notification: bool = False,
+        return_response: bool = False,
     ) -> dict[str, Any] | None:
         """Send message via Home Assistant telegram_bot.send_message action."""
         if not self.ha_client:
@@ -76,7 +77,9 @@ class TelegramBotRunner:
             service_data["inline_keyboard"] = format_inline_keyboard_for_ha(reply_markup["inline_keyboard"])
 
         try:
-            return await self.ha_client.call_service("telegram_bot", "send_message", service_data=service_data)
+            return await self.ha_client.call_service(
+                "telegram_bot", "send_message", service_data=service_data, return_response=return_response
+            )
         except Exception as e:
             logger.error("Failed to send message through HA telegram_bot: %s", e)
             return None
@@ -109,7 +112,6 @@ class TelegramBotRunner:
             logger.error("Failed to edit message through HA telegram_bot: %s", e)
             return None
 
-
     def schedule_auto_delete(self, chat_id: int | str, message_id: int) -> None:
         """Schedule automatic message deletion after period of inactivity."""
         try:
@@ -122,7 +124,11 @@ class TelegramBotRunner:
 
         timeout = 180
         if hasattr(self.bot_engine, "config"):
-            timeout = int(self.bot_engine.config.get("auto_delete_timeout", 180))
+            try:
+                timeout = int(self.bot_engine.config.get("auto_delete_timeout", 180))
+            except (TypeError, ValueError):
+                logger.warning("Invalid auto_delete_timeout; using default of 180 seconds")
+                timeout = 180
 
         if timeout <= 0:
             return
@@ -135,7 +141,9 @@ class TelegramBotRunner:
             except asyncio.CancelledError:
                 pass
             finally:
-                self._auto_delete_tasks.pop((cid, mid), None)
+                key = (cid, mid)
+                if self._auto_delete_tasks.get(key) is asyncio.current_task():
+                    self._auto_delete_tasks.pop(key, None)
 
         self._auto_delete_tasks[(cid, mid)] = asyncio.create_task(_auto_delete_coro())
 
@@ -232,7 +240,37 @@ class TelegramBotRunner:
         state = await self._current_state()
         res = await self.bot_engine.handle_navigation(user_id, sec_key, state)
         reply_markup = {"inline_keyboard": res.get("keyboard", [])} if res.get("keyboard") else None
-        await self.send_message(chat_id, res.get("text", ""), reply_markup=reply_markup)
+        response = await self.send_message(
+            chat_id, res.get("text", ""), reply_markup=reply_markup, return_response=True
+        )
+        message_id = self._extract_sent_message_id(response, chat_id)
+        if message_id is not None:
+            self.schedule_auto_delete(chat_id, message_id)
+        else:
+            logger.warning("Home Assistant did not return a message_id; auto-delete cannot be scheduled")
+
+    @staticmethod
+    def _extract_sent_message_id(response: Any, chat_id: int | str) -> int | None:
+        """Extract Telegram message_id from HA's return_response payload."""
+        expected_chat_id = int(chat_id)
+        pending = [response]
+        while pending:
+            value = pending.pop()
+            if isinstance(value, dict):
+                chats = value.get("chats")
+                if isinstance(chats, list):
+                    for chat in chats:
+                        if not isinstance(chat, dict):
+                            continue
+                        try:
+                            if int(chat.get("chat_id", expected_chat_id)) == expected_chat_id:
+                                return int(chat["message_id"])
+                        except (KeyError, TypeError, ValueError):
+                            continue
+                pending.extend(value.values())
+            elif isinstance(value, list):
+                pending.extend(value)
+        return None
 
     async def handle_ha_callback(self, data: dict[str, Any]) -> None:
         """Handle incoming telegram_callback event from Home Assistant."""
@@ -327,3 +365,10 @@ class TelegramBotRunner:
 
     async def stop(self) -> None:
         self._running = False
+        tasks = list(self._auto_delete_tasks.values())
+        self._auto_delete_tasks.clear()
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)

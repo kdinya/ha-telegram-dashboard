@@ -3,7 +3,7 @@
 > ⚠️ **BETA**: проєкт у активній розробці. Можливі зміни структури конфігурації та поведінки. Повідомляйте про проблеми в Issues.
 
 [![Home Assistant Add-on](https://img.shields.io/badge/Home%20Assistant-Add--on-blue.svg)](https://www.home-assistant.io/)
-[![Version](https://img.shields.io/badge/version-1.0.9-green.svg)](https://github.com/kdinya/ha-telegram-dashboard/releases)
+[![Version](https://img.shields.io/badge/version-1.1.3-green.svg)](https://github.com/kdinya/ha-telegram-dashboard/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Code Style: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 

@@ -301,6 +301,10 @@ const toastEl = $('toast');
 const previewPane = $('preview-pane');
 const previewText = $('preview-text');
 const previewButtons = $('preview-buttons');
+let previewRenderSequence = 0;
+let previewHeightAnimation = null;
+let previewHeightFrame = null;
+let previewScrollBehaviorToRestore = null;
 const haEntitiesDatalist = $('ha-entities-datalist');
 
 // Icon picker elements
@@ -2092,6 +2096,7 @@ $('btn-save').addEventListener('click', async () => {
 // --- Realtime Preview ---
 async function updatePreview() {
   if (!config || !config.menu) return;
+  const renderSequence = ++previewRenderSequence;
   try {
     const res = await fetch('api/preview', {
       method: 'POST',
@@ -2104,6 +2109,7 @@ async function updatePreview() {
     });
     if (res.ok) {
       const data = await res.json();
+      if (renderSequence !== previewRenderSequence) return;
       const botBubble = document.getElementById('preview-bot-bubble') || document.querySelector('.tg-bot-bubble') || document.querySelector('.tg-message-bubble:not(.tg-user-bubble)');
       const msgArea = document.querySelector('.tg-messages-area');
 
@@ -2114,6 +2120,19 @@ async function updatePreview() {
       }
 
       const prevHeight = (botBubble && botBubble.offsetHeight > 0) ? botBubble.offsetHeight : 0;
+      if (previewHeightAnimation && botBubble) {
+        botBubble.style.height = `${prevHeight}px`;
+        if (msgArea && previewScrollBehaviorToRestore !== null) {
+          msgArea.style.scrollBehavior = previewScrollBehaviorToRestore;
+        }
+        previewScrollBehaviorToRestore = null;
+        previewHeightAnimation.cancel();
+        previewHeightAnimation = null;
+      }
+      if (previewHeightFrame !== null) {
+        cancelAnimationFrame(previewHeightFrame);
+        previewHeightFrame = null;
+      }
 
       previewText.innerHTML = data.html || 'Немає даних для показу';
       renderTelegramKeyboard(data.keyboard || []);
@@ -2124,27 +2143,56 @@ async function updatePreview() {
         botBubble.style.maxWidth = msgW + '%';
 
         if (prevHeight > 0) {
-          // Temporarily measure natural height
           botBubble.style.height = 'auto';
           const newHeight = botBubble.offsetHeight;
 
           if (Math.abs(newHeight - prevHeight) > 1) {
-            botBubble.style.transition = 'none';
-            botBubble.style.height = prevHeight + 'px';
-            void botBubble.offsetHeight; // force reflow
+            botBubble.style.height = `${prevHeight}px`;
+            void botBubble.offsetHeight;
+            const animation = botBubble.animate(
+              [{ height: `${prevHeight}px` }, { height: `${newHeight}px` }],
+              { duration: 280, easing: 'cubic-bezier(0.25, 1, 0.5, 1)', fill: 'forwards' }
+            );
+            previewHeightAnimation = animation;
 
-            botBubble.style.transition = 'height 0.28s cubic-bezier(0.25, 1, 0.5, 1)';
-            botBubble.style.height = newHeight + 'px';
-
-            const onEnd = () => {
-              botBubble.style.height = '';
-              botBubble.style.transition = '';
-              botBubble.removeEventListener('transitionend', onEnd);
-              if (msgArea) {
+            if (msgArea) {
+              const previousScrollBehavior = msgArea.style.scrollBehavior;
+              previewScrollBehaviorToRestore = previousScrollBehavior;
+              msgArea.style.scrollBehavior = 'auto';
+              const keepChatBottomAnchored = () => {
+                if (previewHeightAnimation !== animation) return;
                 msgArea.scrollTop = msgArea.scrollHeight;
-              }
-            };
-            botBubble.addEventListener('transitionend', onEnd);
+                if (animation.playState === 'finished') return;
+                previewHeightFrame = requestAnimationFrame(keepChatBottomAnchored);
+              };
+              previewHeightFrame = requestAnimationFrame(keepChatBottomAnchored);
+              animation.onfinish = () => {
+                if (previewHeightAnimation !== animation) return;
+                botBubble.style.height = '';
+                previewHeightAnimation = null;
+                animation.cancel();
+                if (previewHeightFrame !== null) cancelAnimationFrame(previewHeightFrame);
+                previewHeightFrame = null;
+                msgArea.scrollTop = msgArea.scrollHeight;
+                msgArea.style.scrollBehavior = previousScrollBehavior;
+                previewScrollBehaviorToRestore = null;
+              };
+              animation.oncancel = () => {
+                if (previewHeightAnimation !== animation) return;
+                previewHeightAnimation = null;
+                if (previewHeightFrame !== null) cancelAnimationFrame(previewHeightFrame);
+                previewHeightFrame = null;
+                msgArea.style.scrollBehavior = previousScrollBehavior;
+                previewScrollBehaviorToRestore = null;
+              };
+            } else {
+              animation.onfinish = () => {
+                if (previewHeightAnimation !== animation) return;
+                botBubble.style.height = '';
+                animation.cancel();
+                previewHeightAnimation = null;
+              };
+            }
           } else {
             botBubble.style.height = '';
           }
@@ -2152,12 +2200,15 @@ async function updatePreview() {
       }
 
       if (msgArea) {
-        requestAnimationFrame(() => {
-          msgArea.scrollTo({ top: msgArea.scrollHeight, behavior: 'smooth' });
-        });
+        if (!previewHeightAnimation) {
+          requestAnimationFrame(() => {
+            msgArea.scrollTo({ top: msgArea.scrollHeight, behavior: 'smooth' });
+          });
+        }
       }
     }
   } catch (e) {
+    if (renderSequence !== previewRenderSequence) return;
     previewText.textContent = 'Помилка рендеру превʼю: ' + e.message;
   }
 }

@@ -1,3 +1,9 @@
+## [1.1.3] - 2026-09-25
+
+### Fixed
+- Inactivity auto-delete now starts as soon as a dashboard message is sent and is reset by button interactions.
+- Telegram preview keeps the chat bottom-anchored throughout message-height changes, including on narrow screens.
+
 ## [1.1.2] - 2026-03-29
 
 ### Added
@@ -9,31 +15,6 @@
 - **Removed leftover bot token field**: cleaned up the token input from the Settings tab and replaced it with an informative banner explaining the official Home Assistant `telegram_bot` integration.
 - **Preview close simulation**: clicking "✖️ Закрити" in the simulator clears the message view with a button to reopen.
 - **Cleaned legacy polling**: removed deprecated direct Telegram `getUpdates` from user synchronization.
-
-## [1.1.1] - 2026-03-29
-
-### Fixed
-- Fixed inline keyboard buttons displaying the word 'text' in Telegram by converting button rows to Home Assistant's expected `[[text, callback_data]]` format.
-- Fixed simulator/live preview navigation when clicking buttons with the isolated `td:` namespace prefix.
-- Handled both array and dictionary button representations seamlessly in the simulator UI.
-
-### Changed
-- Removed deprecated Telegram bot token configuration, schema entries, and direct API `getUpdates` from the add-on.
-- Updated add-on description and documentation to clearly highlight operation on top of Home Assistant's official `telegram_bot` integration.
-- Added informative integration card to settings modal.
-
-## [1.1.0] - 2026-03-29
-
-### Added
-- Multi-menu routing by Telegram command: each menu section can now define its own trigger command (e.g. , , ).
-- Telegram Command input field in the web UI section settings modal with persistence to config.
-- Home Assistant  event bridge listening to  and  via HA WebSocket.
-- Callback namespace isolation ( prefix) so external Telegram automations and dashboard callbacks do not conflict.
-- Comprehensive test suite for HA bridge routing and namespace isolation ().
-
-### Changed
-- Shifted Telegram messaging from direct API polling to Home Assistant official  actions (, , , ).
-- Decoupled add-on runtime from direct Telegram bot tokens; communications are proxied cleanly through Home Assistant.
 
 ## 1.0.9
 
@@ -56,44 +37,8 @@
 - Navigation section buttons: added interactive up/down arrow controls to reorder buttons per section with live preview and Telegram message parity.
 - Modern high-resolution add-on icon and logo for Home Assistant supervisor store and add-on UI header.
 
-## 1.0.7
-
-### Changed
-- Entity picker: filters grouped into 4 logical categories — Controls & Devices, Sensors & States, Automations & Scripts, Home Assistant & System.
-- Entity picker: improved multi-token search across friendly names, entity IDs and areas (word order no longer matters).
-
-## 1.0.6
-
-### Fixed
-- Fixed inline text editor crash (`nameInput` → `inputVal`): "Add text" now works again.
-- Entity picker: removed restrictive domain filters — search matches by name and entity ID directly.
-- Fixed Home Assistant REST payload for service calls (entity_id flattened to top level).
-- Fixed `/api/template` plain-text response parsing.
-- Telegram bot: section-level access checks enforced in callback handlers before executing actions.
-- Companion integration: configured Telegram bot token is auto-written to `configuration.yaml` during sync, so automation actions work without manual re-entry.
-- Fixed TTS service call splitting domain and service for media players.
-- Web API now accurately reports Telegram send failures instead of pretending success.
-
-## 1.0.5
-
-### Security & Fixes
-- Security: HTML-escape entity and button labels in constructor lists to prevent stored attribute injection.
-- Security: HTML-escape dynamic entity state strings.
-- HA Integration: companion integration auto-sync to `/homeassistant` with services for Automations and Scripts.
-- Integration: cleanup dead ternary in inline_keyboard payload builder.
-
-## 1.0.3
-
-### Added
-- Home Assistant sidebar: full add-on title `panel_title: "Telegram Dashboard"`.
-- Interactive entity builder across all sections with 3-row input layout (icon + name + indent toggle, entity selector, cancel/save).
-- Sequential ordering of section elements (texts and entities appear in order above the 3 add buttons and render synchronously in UI preview and Telegram message).
-- Real-time preview and Telegram bot rendering for entities (icon, name, value).
-- Full bilingual localization (`en` and `uk`).
-
 ## 1.0.1
 
-### Fixed
 - Fix: correct Home Assistant API base URL so the entity picker and bot states work (entities are no longer empty).
 - Fix: bot token from add-on options is now passed to user sync; sync no longer depends on config.json.
 - Fix: entity picker falls back to sample entities with a visible warning when HA is unreachable.
@@ -103,3 +48,100 @@
 - UI: background no longer scrolls behind open modals.
 - UI: entity selection fields show area, state, full entity id and never truncate names.
 - Fix: saving an action recovers the chosen entity if the picker selection was lost.
+# Changelog
+
+## [1.1.1] - 2026-03-29
+
+### Fixed
+- Fixed inline keyboard buttons displaying the word 'text' in Telegram by converting button rows to Home Assistant's expected `[[text, callback_data]]` format.
+- Fixed simulator/live preview navigation when clicking buttons with the isolated `td:` namespace prefix.
+- Handled both array and dictionary button representations seamlessly in the simulator UI.
+
+### Changed
+- Removed deprecated Telegram bot token configuration, schema entries, and direct API `getUpdates` from the add-on.
+- Updated add-on description and documentation to clearly highlight operation on top of Home Assistant's official `telegram_bot` integration.
+- Added informative integration card to settings modal.
+
+
+## [1.1.0] - 2026-03-29
+
+### Added
+- Multi-menu routing by Telegram command: each menu section can now define its own trigger command (e.g. , , ).
+- Telegram Command input field in the web UI section settings modal with persistence to config.
+- Home Assistant  event bridge listening to  and  via HA WebSocket.
+- Callback namespace isolation ( prefix) so external Telegram automations and dashboard callbacks do not conflict.
+- Comprehensive test suite for HA bridge routing and namespace isolation ().
+
+### Changed
+- Shifted Telegram messaging from direct API polling to Home Assistant official  actions (, , , ).
+- Decoupled add-on runtime from direct Telegram bot tokens; communications are proxied cleanly through Home Assistant.
+
+## [1.0.7] - 2026-03-31
+
+### Changed
+- Grouped Entity Picker filters into 4 logical categories: Controls & Devices, Sensors & States, Automations & Scripts, and Home Assistant & System.
+- Improved search in Entity Picker: supports multi-token search across friendly names, entity IDs, and areas without strict order.
+
+## [1.0.6] - 2026-03-31
+
+### Fixed
+- Fixed ReferenceError in  (focusInput referencing undefined nameInput instead of inputVal), allowing inline text creation to work seamlessly.
+- Removed restrictive domain tabs in Entity Picker so all entities are searchable by name and entity ID directly.
+- Fixed  REST payload by flattening target entity_id to top-level for Home Assistant REST API.
+- Fixed  to support plain-text template response parsing.
+- Enforced section-level permission checks in Telegram bot callback handlers before executing button or entity actions.
+- Automatically write configured Telegram bot token to Home Assistant  during companion integration sync so automation actions (, , etc.) work without manual re-entry.
+- Split TTS service call domain and service in  handler for Home Assistant media players.
+- Accurately propagate Telegram send message failure status codes in web API.
+
+## [1.0.3] - 2026-09-25
+### Added
+- Home Assistant sidebar: set full add-on name `panel_title: "Telegram Dashboard"`.
+- Constructor: full interactive "Add entity" builder for all sections placed under already created items and above action buttons.
+- 3-row entity configuration block:
+  1) Icon picker with library/no-icon support, custom display name field, and toggle button for indent.
+  2) Home Assistant entity selector (grouped dropdown and visual modal picker).
+  3) Cancel and Save buttons.
+- Unified sequential element ordering: texts and entities are displayed in exact creation order under already created items and synchronously rendered in UI preview and Telegram messages.
+- Real-time WYSIWYG parity for entities: preview displays icon, name, and live/formatted value with or without tree indent.
+- Complete English (`en`) and Ukrainian (`uk`) localization for entity builder, indent toggles, and deletion confirmations.
+
+## [1.0.2] - 2026-09-24
+### Fixed
+- Added `panel_icon: "mdi:telegram"` to display official Telegram icon on Home Assistant sidebar.
+- Constructor UI: direct entities and action buttons with live status indication.
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.0.0] - 2026-09-24
+
+### Fixed
+- Add-on startup crash with `s6-overlay-suexec: fatal: can only run as pid 1`. The app now runs directly as PID 1 (`ENTRYPOINT []`), independent of Docker `--init` behavior.
+- Added official My Home Assistant one-click installation button to README.
+
+### Added
+- First public release of Telegram Dashboard Home Assistant Add-on.
+- Visual Ingress Web UI builder for interactive Telegram dashboards.
+- Role-Based Access Control (RBAC) with granular user permissions per section and action.
+- Advanced Telegram HTML message renderer with quotes (`<blockquote>`), hierarchy trees (`├`, `└`), and visual battery progress bars (`[▰▰▰▰▱▱]`).
+- Interactive inline buttons with automatic `edit_message` navigation and state toggling.
+- Direct Supervisor API integration for zero-config Home Assistant communication.
+- Full pytest test suite and GitHub Actions CI workflow.
+
+## [1.0.5] - 2026-09-25
+### Security & Bug Fixes
+- UI: HTML-escape entity and button labels in `renderEntitiesList` and `renderButtonsList` to prevent stored DOM/attribute injection.
+- UI: HTML-escape dynamic entity state badge values.
+- Add-on & HA: Ensure companion custom integration is synced to `/homeassistant` config directory with automated `telegram_dashboard:` entry.
+- Integration: Cleaned dead ternary logic in `inline_keyboard` payload builder.
+
+## [1.0.4] - 2026-09-25
+### Added
+- Native Home Assistant services in Automations and Scripts UI (`telegram_dashboard.send_message`, `edit_message`, `delete_message`, `answer_callback`, `send_photo`, `send_document`, `speak`).
+- Companion integration in `custom_components/telegram_dashboard/` with full visual selectors and translations.
+- Auto-sync companion integration into `/config/custom_components` on container start.
+- REST API endpoints on Ingress server for bot execution (`/api/bot/*`).
+- Docker volume map `config:rw` to enable direct integration sync into HA Core.

@@ -72,7 +72,12 @@ class HAClient:
         return await self._get("/api/states")
 
     async def call_service(
-        self, domain: str, service: str, target: dict | None = None, service_data: dict | None = None
+        self,
+        domain: str,
+        service: str,
+        target: dict | None = None,
+        service_data: dict | None = None,
+        return_response: bool = False,
     ) -> Any:
         payload: dict[str, Any] = {}
         if service_data:
@@ -84,7 +89,10 @@ class HAClient:
                     payload[k] = v[0]
                 else:
                     payload[k] = v
-        return await self._post(f"/api/services/{domain}/{service}", payload)
+        endpoint = f"/api/services/{domain}/{service}"
+        if return_response:
+            endpoint += "?return_response"
+        return await self._post(endpoint, payload)
 
     async def render_template(self, template: str) -> Any:
         """Render a Jinja template through the HA REST API (/api/template)."""

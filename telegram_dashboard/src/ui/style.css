@@ -2127,28 +2127,6 @@ body:has(.modal-overlay.open) {
   margin-left: auto;
 }
 
-/* Auto-expand preview height on narrow/mobile view and enable chat scroll */
-.tg-messages-area {
-  cursor: grab;
-  user-select: none;
-}
-.tg-messages-area:active {
-  cursor: grabbing;
-}
-
-@media (max-width: 900px) {
-  .preview-pane {
-    max-height: none !important;
-    overflow: visible !important;
-  }
-  .phone-frame {
-    height: auto !important;
-    max-height: none !important;
-    min-height: 480px !important;
-    overflow: visible !important;
-  }
-}
-
 /* Floating Save & Actions Bar */
 .floating-actions-bar {
   position: fixed;

@@ -1,7 +1,7 @@
 name: "Telegram Dashboard (Beta)"
 slug: "telegram_dashboard"
 description: "[BETA] Interactive visual Telegram dashboard for Home Assistant, working seamlessly via the official Telegram Bot integration"
-version: "1.1.2"
+version: "1.1.3"
 url: "https://github.com/kdinya/ha-telegram-dashboard"
 arch:
   - aarch64

@@ -1,3 +1,9 @@
+## [1.1.3] - 2026-09-25
+
+### Fixed
+- Inactivity auto-delete now starts as soon as a dashboard message is sent and is reset by button interactions.
+- Telegram preview keeps the chat bottom-anchored throughout message-height changes, including on narrow screens.
+
 ## [1.1.2] - 2026-03-29
 
 ### Added
