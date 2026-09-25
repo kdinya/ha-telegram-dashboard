@@ -1,12 +1,14 @@
-## [1.1.3] - 2026-09-25
+## [1.1.3]
 
 ### Fixed
 - Inactivity auto-delete now starts as soon as a dashboard message is sent and is reset by button interactions.
 - Telegram preview animates message-height changes smoothly on narrow screens without a large empty gap above the chat.
 - Bot preview now uses the configured Home Assistant Telegram bot name and starts chat messages directly below the header.
 - Editor item controls stay above item content on narrow screens; the redundant Telegram integration notice was removed from Settings.
+- Section metadata editing works reliably, navigation-block locks stay scoped to their section, and entity search matches normalized names, IDs, areas, states, and device classes.
+- Preview message width is stabilized, inline keyboard buttons remain visible, and the update time is shown below the buttons in non-italic small text.
 
-## [1.1.2] - 2026-03-29
+## [1.1.2]
 
 ### Added
 - **Default "🔙 Назад" & "✖️ Закрити" buttons**: all sub-sections now feature a standard Back button, and every dashboard message includes a Close button that deletes the message from the chat.
@@ -52,8 +54,7 @@
 - Fix: saving an action recovers the chosen entity if the picker selection was lost.
 # Changelog
 
-## [1.1.1] - 2026-03-29
-
+## [1.1.1]
 ### Fixed
 - Fixed inline keyboard buttons displaying the word 'text' in Telegram by converting button rows to Home Assistant's expected `[[text, callback_data]]` format.
 - Fixed simulator/live preview navigation when clicking buttons with the isolated `td:` namespace prefix.
@@ -65,8 +66,7 @@
 - Added informative integration card to settings modal.
 
 
-## [1.1.0] - 2026-03-29
-
+## [1.1.0]
 ### Added
 - Multi-menu routing by Telegram command: each menu section can now define its own trigger command (e.g. , , ).
 - Telegram Command input field in the web UI section settings modal with persistence to config.
@@ -78,14 +78,12 @@
 - Shifted Telegram messaging from direct API polling to Home Assistant official  actions (, , , ).
 - Decoupled add-on runtime from direct Telegram bot tokens; communications are proxied cleanly through Home Assistant.
 
-## [1.0.7] - 2026-03-31
-
+## [1.0.7]
 ### Changed
 - Grouped Entity Picker filters into 4 logical categories: Controls & Devices, Sensors & States, Automations & Scripts, and Home Assistant & System.
 - Improved search in Entity Picker: supports multi-token search across friendly names, entity IDs, and areas without strict order.
 
-## [1.0.6] - 2026-03-31
-
+## [1.0.6]
 ### Fixed
 - Fixed ReferenceError in  (focusInput referencing undefined nameInput instead of inputVal), allowing inline text creation to work seamlessly.
 - Removed restrictive domain tabs in Entity Picker so all entities are searchable by name and entity ID directly.
@@ -96,7 +94,7 @@
 - Split TTS service call domain and service in  handler for Home Assistant media players.
 - Accurately propagate Telegram send message failure status codes in web API.
 
-## [1.0.3] - 2026-09-25
+## [1.0.3]
 ### Added
 - Home Assistant sidebar: set full add-on name `panel_title: "Telegram Dashboard"`.
 - Constructor: full interactive "Add entity" builder for all sections placed under already created items and above action buttons.
@@ -108,7 +106,7 @@
 - Real-time WYSIWYG parity for entities: preview displays icon, name, and live/formatted value with or without tree indent.
 - Complete English (`en`) and Ukrainian (`uk`) localization for entity builder, indent toggles, and deletion confirmations.
 
-## [1.0.2] - 2026-09-24
+## [1.0.2]
 ### Fixed
 - Added `panel_icon: "mdi:telegram"` to display official Telegram icon on Home Assistant sidebar.
 - Constructor UI: direct entities and action buttons with live status indication.
@@ -118,8 +116,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0] - 2026-09-24
-
+## [1.0.0]
 ### Fixed
 - Add-on startup crash with `s6-overlay-suexec: fatal: can only run as pid 1`. The app now runs directly as PID 1 (`ENTRYPOINT []`), independent of Docker `--init` behavior.
 - Added official My Home Assistant one-click installation button to README.
@@ -133,14 +130,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Direct Supervisor API integration for zero-config Home Assistant communication.
 - Full pytest test suite and GitHub Actions CI workflow.
 
-## [1.0.5] - 2026-09-25
+## [1.0.5]
 ### Security & Bug Fixes
 - UI: HTML-escape entity and button labels in `renderEntitiesList` and `renderButtonsList` to prevent stored DOM/attribute injection.
 - UI: HTML-escape dynamic entity state badge values.
 - Add-on & HA: Ensure companion custom integration is synced to `/homeassistant` config directory with automated `telegram_dashboard:` entry.
 - Integration: Cleaned dead ternary logic in `inline_keyboard` payload builder.
 
-## [1.0.4] - 2026-09-25
+## [1.0.4]
 ### Added
 - Native Home Assistant services in Automations and Scripts UI (`telegram_dashboard.send_message`, `edit_message`, `delete_message`, `answer_callback`, `send_photo`, `send_document`, `speak`).
 - Companion integration in `custom_components/telegram_dashboard/` with full visual selectors and translations.

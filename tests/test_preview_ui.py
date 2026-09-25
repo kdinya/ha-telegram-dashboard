@@ -35,3 +35,22 @@ def test_preview_chat_starts_at_header_and_item_controls_stack_above_content():
     assert actions_rule is not None
     assert "position: relative" in actions_rule.group(1)
     assert "z-index: 5" in actions_rule.group(1)
+
+
+def test_section_editor_declares_command_input_and_rebinds_navigation_lock():
+    html = (UI_DIR / "index.html").read_text(encoding="utf-8")
+    app = (UI_DIR / "app.js").read_text(encoding="utf-8")
+
+    assert 'id="edit-sec-command"' in html
+    assert "const editSecCommand = $('edit-sec-command')" in app
+    assert "btnBlockLock.onclick =" in app
+    assert "btnBlockLock.dataset.bound" not in app
+
+
+def test_entity_picker_search_normalizes_ids_and_matches_state_metadata():
+    app = (UI_DIR / "app.js").read_text(encoding="utf-8")
+
+    assert ".normalize('NFKC')" in app
+    assert "e.area_name" in app
+    assert "e.attributes?.device_class" in app
+    assert "e.state" in app

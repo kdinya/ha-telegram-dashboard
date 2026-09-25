@@ -119,3 +119,14 @@ def test_render_section_with_dividers_and_spacers():
     assert "Блок три" in rendered
     # Full-width dividers widen the Telegram bubble (no short legacy dividers remain)
     assert not any(line == "─" * 14 for line in lines)
+
+
+def test_render_section_uses_unstyled_width_anchor_before_update_time():
+    rendered = MessageRenderer().render_section(
+        {"title": "Кухня", "items": [{"type": "text", "text": "Стан"}]},
+        {"telegram_msg_width": 60, "updated_at": "12:00:00"},
+    )
+    lines = rendered.splitlines()
+    timestamp_index = next(i for i, line in enumerate(lines) if "Оновлено" in line)
+    assert timestamp_index > 0
+    assert lines[timestamp_index - 1] and "<code>" not in lines[timestamp_index - 1]

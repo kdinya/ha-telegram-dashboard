@@ -281,6 +281,7 @@ const btnEditSectionIconPicker = $('btn-edit-section-icon-picker');
 const editSecIcon = $('edit-sec-icon');
 const editSectionIconDisplay = $('edit-section-icon-display');
 const editSecTitle = $('edit-sec-title');
+const editSecCommand = $('edit-sec-command');
 const secTitle = $('sec-title');
 const secIcon = $('sec-icon');
 const secIconDisplay = $('sec-icon-display');
@@ -662,7 +663,13 @@ function isSystemEntity(eid, name, domain) {
 }
 
 function renderEntityPickerList() {
-  const rawSearch = (entitySearchInput.value || '').toLowerCase().trim();
+  const normalizeSearchValue = (value) => String(value || '')
+    .toLocaleLowerCase()
+    .normalize('NFKC')
+    .replace(/[._:/\\-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const rawSearch = normalizeSearchValue(entitySearchInput.value);
   const activeGroup = domainFiltersTabs.querySelector('.domain-tab-btn.active')?.dataset.domain || 'all';
 
   let list = availableEntities;
@@ -676,10 +683,13 @@ function renderEntityPickerList() {
   if (rawSearch) {
     const tokens = rawSearch.split(/\s+/).filter(Boolean);
     list = list.filter(e => {
-      const fn = (e.friendly_name || '').toLowerCase();
-      const eid = (e.entity_id || '').toLowerCase();
-      const area = (e.area || '').toLowerCase();
-      const combined = `${fn} ${eid} ${area}`;
+      const fn = e.friendly_name || '';
+      const eid = e.entity_id || '';
+      const area = e.area || e.area_name || e.area_id || '';
+      const state = e.state || '';
+      const deviceClass = e.attributes?.device_class || '';
+      const domain = e.domain || eid.split('.')[0] || '';
+      const combined = normalizeSearchValue(`${fn} ${eid} ${area} ${state} ${deviceClass} ${domain}`);
       return tokens.every(tok => combined.includes(tok));
     });
   }
@@ -1656,17 +1666,18 @@ function renderMenuChecklist(selectedKeys) {
     btnBlockLock.textContent = isBlockLocked ? '🔒' : '🔓';
     btnBlockLock.classList.toggle('is-locked', isBlockLocked);
     btnBlockLock.title = isBlockLocked ? (t('toast_item_unlocked') || 'Розблокувати') : (t('toast_item_locked') || 'Заблокувати');
-    if (!btnBlockLock.dataset.bound) {
-      btnBlockLock.dataset.bound = 'true';
-      btnBlockLock.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        sec.nav_buttons_locked = !sec.nav_buttons_locked;
-        showToast(sec.nav_buttons_locked ? t('toast_item_locked') : t('toast_item_unlocked'));
-        renderMenuChecklist(sec.sections);
-        syncCurrentSectionFromForm();
-      });
-    }
+    // Rebind on every render; a one-time listener would retain a stale
+    // closure and toggle the lock state of the previously selected section.
+    btnBlockLock.onclick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const currentSec = config?.menu?.[currentSectionKey];
+      if (!currentSec) return;
+      currentSec.nav_buttons_locked = !currentSec.nav_buttons_locked;
+      showToast(currentSec.nav_buttons_locked ? t('toast_item_locked') : t('toast_item_unlocked'));
+      renderMenuChecklist(currentSec.sections);
+      syncCurrentSectionFromForm();
+    };
   }
 
   menuSectionsChecklist.innerHTML = '';
@@ -1931,7 +1942,9 @@ function syncCurrentSectionFromForm() {
 
   const checked = [];
   document.getElementById('menu-sections-checklist')?.querySelectorAll('input:checked').forEach(i => checked.push(i.value));
-  sec.sections = checked;
+  if (document.getElementById('menu-sections-checklist')) {
+    sec.sections = checked;
+  }
 }
 
 // --- Users ---
@@ -2150,7 +2163,12 @@ async function updatePreview() {
       }
 
       previewText.innerHTML = data.html || 'Немає даних для показу';
+      const previewTimestamp = previewText.querySelector(':scope > i:last-child');
+      if (previewTimestamp) previewTimestamp.classList.add('preview-timestamp');
       renderTelegramKeyboard(data.keyboard || []);
+      if (previewTimestamp && previewButtons.parentElement === botBubble) {
+        previewButtons.after(previewTimestamp);
+      }
 
       if (botBubble) {
         const msgW = (config && config.telegram_msg_width) || 75;
