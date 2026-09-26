@@ -113,7 +113,9 @@ def test_section_items_support_touch_reorder_and_localized_drag_labels():
     styles = (UI_DIR / "style.css").read_text(encoding="utf-8")
     i18n = (UI_DIR / "i18n.js").read_text(encoding="utf-8")
     assert "const reorderSectionItems = (fromIdx, toIdx)" in app
-    assert "e.target.closest('.item-drag-handle')" in app
+    assert "const isInteractiveTarget = (target)" in app
+    assert "isInteractiveTarget(e.target)" in app
+    assert "e.target.closest('.item-drag-handle')" not in app
     assert "addEventListener('pointermove'" in app
     assert "pointercancel', stopPointerReorder" in app
     assert "addEventListener('touchstart'" in app

@@ -1608,8 +1608,11 @@ function renderSectionElements(items) {
     });
 
     // Native HTML5 drag-and-drop is unavailable on many touch browsers.
-    // Use the handle for touch/pen while keeping native desktop DnD intact.
+    // Use the whole item row for touch/pen while keeping native desktop DnD intact.
     let pointerDrag = null;
+    const isInteractiveTarget = (target) => Boolean(
+      target.closest('button, input, select, textarea, a, .entity-select-display')
+    );
     const clearPointerDropMarkers = () => {
       container.querySelectorAll('.section-text-item').forEach(node => {
         node.classList.remove('drag-over-top', 'drag-over-bottom');
@@ -1636,7 +1639,7 @@ function renderSectionElements(items) {
       pointerDrag = null;
     };
     el.addEventListener('pointerdown', (e) => {
-      if (e.pointerType === 'mouse' || e.pointerType === 'touch' || item.locked || !e.target.closest('.item-drag-handle')) return;
+      if (e.pointerType === 'mouse' || e.pointerType === 'touch' || item.locked || isInteractiveTarget(e.target)) return;
       pointerDrag = { pointerId: e.pointerId, startY: e.clientY, moved: false };
       el.setPointerCapture?.(e.pointerId);
     });
@@ -1669,7 +1672,7 @@ function renderSectionElements(items) {
       touchDrag = null;
     };
     el.addEventListener('touchstart', (e) => {
-      if (item.locked || !e.target.closest('.item-drag-handle') || e.touches.length !== 1) return;
+      if (item.locked || isInteractiveTarget(e.target) || e.touches.length !== 1) return;
       const point = e.touches[0];
       touchDrag = { startY: point.clientY, moved: false };
       e.preventDefault();

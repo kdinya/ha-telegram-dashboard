@@ -1749,6 +1749,7 @@ body:has(.modal-overlay.open) {
 /* Drag & Drop Styles for section items */
 .section-text-item {
   position: relative;
+  touch-action: none;
   transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
 }
 
