@@ -1334,7 +1334,7 @@ function renderSectionElements(items) {
 
     const el = document.createElement('div');
     el.className = 'section-text-item';
-    el.draggable = true;
+    el.draggable = false;
     el.dataset.idx = String(idx);
 
     if (item.type === 'entity') {
@@ -1354,7 +1354,7 @@ function renderSectionElements(items) {
       const lockIcon = isLocked ? '🔒' : '🔓';
       const lockClass = isLocked ? 'btn-lock-elem-item is-locked' : 'btn-lock-elem-item';
       if (isLocked) el.classList.add('is-locked');
-      el.draggable = !isLocked;
+      el.draggable = false;
 
       el.innerHTML = `
         <div class="item-drag-handle" title="${t('drag_handle_title')}" aria-label="${t('drag_handle_aria')}">⠿</div>
@@ -1426,7 +1426,7 @@ function renderSectionElements(items) {
       const lockIcon = isLocked ? '🔒' : '🔓';
       const lockClass = isLocked ? 'btn-lock-elem-item is-locked' : 'btn-lock-elem-item';
       if (isLocked) el.classList.add('is-locked');
-      el.draggable = !isLocked;
+      el.draggable = false;
 
       el.innerHTML = `
         <div class="item-drag-handle" title="${t('drag_handle_title')}" aria-label="${t('drag_handle_aria')}">⠿</div>
@@ -1506,7 +1506,7 @@ function renderSectionElements(items) {
       const lockIcon = isLocked ? '🔒' : '🔓';
       const lockClass = isLocked ? 'btn-lock-elem-item is-locked' : 'btn-lock-elem-item';
       if (isLocked) el.classList.add('is-locked');
-      el.draggable = !isLocked;
+      el.draggable = false;
 
       el.innerHTML = `
         <div class="item-drag-handle" title="${t('drag_handle_title')}" aria-label="${t('drag_handle_aria')}">⠿</div>
@@ -1563,6 +1563,15 @@ function renderSectionElements(items) {
     }
 
     
+    // Enable native HTML5 drag only on desktop mouse press, keeping touch scroll clean
+    el.addEventListener('mousedown', (e) => {
+      if (e.button === 0 && !item.locked && !isInteractiveTarget(e.target)) {
+        el.draggable = true;
+      }
+    });
+    el.addEventListener('mouseup', () => { el.draggable = false; });
+    el.addEventListener('mouseleave', () => { el.draggable = false; });
+
     // Drag and Drop reordering
     el.addEventListener('dragstart', (e) => {
       e.dataTransfer.setData('text/plain', String(idx));
@@ -1571,6 +1580,7 @@ function renderSectionElements(items) {
     });
 
     el.addEventListener('dragend', () => {
+      el.draggable = false;
       el.classList.remove('is-dragging');
       container.querySelectorAll('.section-text-item').forEach(node => {
         node.classList.remove('drag-over-top', 'drag-over-bottom');
@@ -1707,6 +1717,7 @@ function renderSectionElements(items) {
       touchDrag = null;
     };
     el.addEventListener('touchstart', (e) => {
+      el.draggable = false;
       if (item.locked || isInteractiveTarget(e.target) || e.touches.length !== 1) return;
       const point = e.touches[0];
       touchDrag = {

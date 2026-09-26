@@ -1343,6 +1343,7 @@ body:has(.modal-overlay.open) {
   flex-direction: column;
   gap: 8px;
   margin-bottom: 12px;
+  touch-action: pan-y;
 }
 
 .section-text-item {
