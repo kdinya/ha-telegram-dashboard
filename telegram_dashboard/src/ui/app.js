@@ -158,7 +158,6 @@ let config = null;
 
 let undoStack = [];
 let redoStack = [];
-let itemsFilterQuery = "";
 
 function recordHistory() {
   if (!config) return;
@@ -1341,17 +1340,7 @@ function renderSectionElements(items) {
   if (!sec) return;
   ensureSectionItems(sec);
 
-  const searchInput = $('items-search-input');
-  if (searchInput && !searchInput.dataset.bound) {
-    searchInput.dataset.bound = 'true';
-    searchInput.addEventListener('input', (e) => {
-      itemsFilterQuery = e.target.value.trim().toLowerCase();
-      renderSectionElements(sec.items);
-    });
-  }
 
-  const query = (itemsFilterQuery || '').toLowerCase();
-  let visibleCount = 0;
 
   const reorderSectionItems = (fromIdx, toIdx) => {
     if (!Number.isInteger(fromIdx) || !Number.isInteger(toIdx)) return false;
@@ -1368,20 +1357,6 @@ function renderSectionElements(items) {
   };
 
   sec.items.forEach((item, idx) => {
-    if (query) {
-      let matches = false;
-      if (item.type === 'entity') {
-        matches = (item.label || '').toLowerCase().includes(query) || (item.entity_id || '').toLowerCase().includes(query);
-      } else if (item.type === 'text') {
-        matches = (item.text || '').toLowerCase().includes(query);
-      } else if (item.type === 'divider' || item.type === 'spacer') {
-        matches = 'divider лінія відступ розділювач'.includes(query);
-      } else {
-        matches = (item.label || item.text || '').toLowerCase().includes(query);
-      }
-      if (!matches) return;
-    }
-    visibleCount++;
     try {
     if (editingItemIdx === idx) {
       if (item.type === 'entity') {
