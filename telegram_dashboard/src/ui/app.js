@@ -1284,6 +1284,19 @@ function renderSectionElements(items) {
   if (!sec) return;
   ensureSectionItems(sec);
 
+  const reorderSectionItems = (fromIdx, toIdx) => {
+    if (!Number.isInteger(fromIdx) || !Number.isInteger(toIdx)) return false;
+    if (fromIdx === toIdx || fromIdx === toIdx - 1) return false;
+    const [movedItem] = sec.items.splice(fromIdx, 1);
+    const targetIdx = fromIdx < toIdx ? toIdx - 1 : toIdx;
+    sec.items.splice(targetIdx, 0, movedItem);
+    syncSectionLegacyCollections(sec);
+    renderSectionElements(sec.items);
+    updatePreview();
+    showToast(t('toast_order_updated'));
+    return true;
+  };
+
   sec.items.forEach((item, idx) => {
     try {
     if (editingItemIdx === idx) {
@@ -1342,7 +1355,7 @@ function renderSectionElements(items) {
       el.draggable = !isLocked;
 
       el.innerHTML = `
-        <div class="item-drag-handle" title="Перетягніть для зміни порядку" aria-label="Перетягнути">⠿</div>
+        <div class="item-drag-handle" title="${t('drag_handle_title')}" aria-label="${t('drag_handle_aria')}">⠿</div>
         <div class="section-text-item-main">
           ${iconSpan}
           <span class="section-text-item-content"><b>${safeLabel}</b>: <code>${escapeHtml(stateVal)}</code></span>
@@ -1350,7 +1363,7 @@ function renderSectionElements(items) {
           ${indentBadge}
         </div>
         <div class="section-text-item-actions">
-          <button type="button" class="btn-icon-action btn-edit-elem-item" title="Редагувати" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>✏️</button>
+          <button type="button" class="btn-icon-action btn-edit-elem-item" title="${t('btn_edit_item_title')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>✏️</button>
           <button type="button" class="btn-icon-action btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>🗑️</button>
           <button type="button" class="btn-icon-action ${lockClass}" title="${lockTitle}" data-idx="${idx}">${lockIcon}</button>
         </div>
@@ -1414,7 +1427,7 @@ function renderSectionElements(items) {
       el.draggable = !isLocked;
 
       el.innerHTML = `
-        <div class="item-drag-handle" title="Перетягніть для зміни порядку" aria-label="Перетягнути">⠿</div>
+        <div class="item-drag-handle" title="${t('drag_handle_title')}" aria-label="${t('drag_handle_aria')}">⠿</div>
         <div class="section-text-item-main section-divider-item-main">
           <span class="section-divider-preview"><code>${escapeHtml(stylePreview)}</code></span>
           <span class="badge-text-type divider">${t('badge_divider')}</span>
@@ -1494,7 +1507,7 @@ function renderSectionElements(items) {
       el.draggable = !isLocked;
 
       el.innerHTML = `
-        <div class="item-drag-handle" title="Перетягніть для зміни порядку" aria-label="Перетягнути">⠿</div>
+        <div class="item-drag-handle" title="${t('drag_handle_title')}" aria-label="${t('drag_handle_aria')}">⠿</div>
         <div class="section-text-item-main">
           ${iconSpan}
           <span class="${contentClass}">${safeText}</span>
@@ -1502,7 +1515,7 @@ function renderSectionElements(items) {
           ${indentBadge}
         </div>
         <div class="section-text-item-actions">
-          <button type="button" class="btn-icon-action btn-edit-elem-item" title="Редагувати" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>✏️</button>
+          <button type="button" class="btn-icon-action btn-edit-elem-item" title="${t('btn_edit_item_title')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>✏️</button>
           <button type="button" class="btn-icon-action btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>🗑️</button>
           <button type="button" class="btn-icon-action ${lockClass}" title="${lockTitle}" data-idx="${idx}">${lockIcon}</button>
         </div>
@@ -1591,15 +1604,55 @@ function renderSectionElements(items) {
       if (e.clientY >= rect.top + rect.height / 2) {
         toIdx = idx + 1;
       }
-      if (fromIdx === toIdx || fromIdx === toIdx - 1) return;
-      const [movedItem] = sec.items.splice(fromIdx, 1);
-      const targetIdx = fromIdx < toIdx ? toIdx - 1 : toIdx;
-      sec.items.splice(targetIdx, 0, movedItem);
-      syncSectionLegacyCollections(sec);
-      renderSectionElements(sec.items);
-      updatePreview();
-      showToast('Порядок елементів оновлено');
+      reorderSectionItems(fromIdx, toIdx);
     });
+
+    // Native HTML5 drag-and-drop is unavailable on many touch browsers.
+    // Use the handle for touch/pen while keeping native desktop DnD intact.
+    let pointerDrag = null;
+    const clearPointerDropMarkers = () => {
+      container.querySelectorAll('.section-text-item').forEach(node => {
+        node.classList.remove('drag-over-top', 'drag-over-bottom');
+      });
+    };
+    const pointerTargetAt = (clientY) => {
+      const nodes = [...container.querySelectorAll('.section-text-item')].filter(node => node !== el);
+      for (const node of nodes) {
+        const rect = node.getBoundingClientRect();
+        if (clientY < rect.top + rect.height / 2) return { node, toIdx: Number(node.dataset.idx) };
+        if (clientY < rect.bottom) return { node, toIdx: Number(node.dataset.idx) + 1 };
+      }
+      return { node: null, toIdx: sec.items.length };
+    };
+    const stopPointerReorder = (e) => {
+      if (!pointerDrag || e.pointerId !== pointerDrag.pointerId) return;
+      if (pointerDrag.moved) {
+        const { toIdx } = pointerTargetAt(e.clientY);
+        reorderSectionItems(Number(el.dataset.idx), toIdx);
+      }
+      el.classList.remove('is-dragging');
+      clearPointerDropMarkers();
+      el.releasePointerCapture?.(e.pointerId);
+      pointerDrag = null;
+    };
+    el.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse' || item.locked || !e.target.closest('.item-drag-handle')) return;
+      pointerDrag = { pointerId: e.pointerId, startY: e.clientY, moved: false };
+      el.setPointerCapture?.(e.pointerId);
+    });
+    el.addEventListener('pointermove', (e) => {
+      if (!pointerDrag || e.pointerId !== pointerDrag.pointerId) return;
+      if (!pointerDrag.moved && Math.abs(e.clientY - pointerDrag.startY) < 6) return;
+      pointerDrag.moved = true;
+      e.preventDefault();
+      el.classList.add('is-dragging');
+      clearPointerDropMarkers();
+      const { node, toIdx } = pointerTargetAt(e.clientY);
+      if (node && toIdx <= Number(el.dataset.idx)) node.classList.add('drag-over-top');
+      else if (node) node.classList.add('drag-over-bottom');
+    }, { passive: false });
+    el.addEventListener('pointerup', stopPointerReorder);
+    el.addEventListener('pointercancel', stopPointerReorder);
 
     container.appendChild(el);
     } catch (err) {

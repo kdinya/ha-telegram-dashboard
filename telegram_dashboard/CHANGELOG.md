@@ -3,6 +3,7 @@
 ### Fixed
 - CI now runs HTTP Ingress smoke tests, companion-integration contract checks, `compileall`, and `pyflakes`; confirmed unused Python imports were removed.
 - Mobile preview can now be dragged from any part of the preview page, including the phone frame, without trapping the gesture in the chat scroller.
+- Section elements can now be reordered on touch/pen devices through the drag handle while preserving desktop drag-and-drop and locked-item behavior; drag labels and order notifications are localized.
 - Config writes are now serialized and fsynced with atomic backups; WebSocket event callbacks are bounded, tracked, and cleaned up on shutdown.
 - Malformed Telegram identifiers are rejected safely, mobile preview height adapts to short screens, and the section Add button opens the implemented configuration flow with localized feedback.
 - Security: Telegram callbacks now enforce section RBAC, entity label restrictions, and filtered entity-state rendering; live user-role changes take effect without restart.

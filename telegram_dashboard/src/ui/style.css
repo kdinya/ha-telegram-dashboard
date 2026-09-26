@@ -1761,6 +1761,7 @@ body:has(.modal-overlay.open) {
   color: #64748b;
   cursor: grab;
   user-select: none;
+  touch-action: none;
   font-size: 16px;
   line-height: 1;
   padding: 0 4px;

@@ -108,6 +108,20 @@ def test_mobile_preview_drag_scrolls_page_from_phone_frame():
     assert ".preview-pane.is-page-dragging" in styles
 
 
+def test_section_items_support_touch_reorder_and_localized_drag_labels():
+    app = (UI_DIR / "app.js").read_text(encoding="utf-8")
+    styles = (UI_DIR / "style.css").read_text(encoding="utf-8")
+    i18n = (UI_DIR / "i18n.js").read_text(encoding="utf-8")
+    assert "const reorderSectionItems = (fromIdx, toIdx)" in app
+    assert "e.target.closest('.item-drag-handle')" in app
+    assert "addEventListener('pointermove'" in app
+    assert "pointercancel', stopPointerReorder" in app
+    assert "touch-action: none" in styles
+    for key in ("btn_edit_item_title", "drag_handle_title", "drag_handle_aria", "toast_order_updated"):
+        assert i18n.count(f"{key}:") == 2
+        assert f"t('{key}')" in app
+
+
 def test_section_command_and_save_flow_are_explained_and_translated():
     html = (UI_DIR / "index.html").read_text(encoding="utf-8")
     i18n = (UI_DIR / "i18n.js").read_text(encoding="utf-8")
