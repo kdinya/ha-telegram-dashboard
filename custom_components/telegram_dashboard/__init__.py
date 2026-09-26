@@ -5,19 +5,12 @@ from Automations and Scripts ("Add action" picker) without YAML.
 """
 from __future__ import annotations
 
-import logging
-
 import voluptuous as vol
-from homeassistant.const import CONF_TOKEN, CONF_NAME
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.service import async_register_admin_service  # noqa: F401
-from .config_flow import TelegramDashboardConfigFlow  # noqa: F401
-from .const import CONF_BOT_TOKEN, CONF_ADDON_BASE_URL, DOMAIN
-
-_LOGGER = logging.getLogger(__name__)
+from .const import CONF_BOT_TOKEN, DOMAIN
 
 CONFIG_SCHEMA = vol.Schema(
     {DOMAIN: vol.Schema({vol.Optional(CONF_BOT_TOKEN): cv.string})},

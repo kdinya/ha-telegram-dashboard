@@ -20,6 +20,8 @@
 - Виправлено: довільний `tts_service` поза domain `tts`.
 - Виправлено: ключові frontend interpolation points, preview HTML і Telegram dynamic state/unit escaping.
 - Виправлено: serialized/fsynced config persistence, tracked bounded WebSocket callbacks, malformed Telegram ID handling, short-screen preview sizing та dead Add button flow.
+- Додано: реальний aiohttp HTTP smoke test для Ingress routes, companion integration copy/manifest/service contract checks, `compileall` і `pyflakes` у CI.
+- Dead-code перевірка Python через `pyflakes` більше не знаходить unused imports або невикористовувані локальні символи; залишені `pass` є навмисними обробниками cancellation/fallback.
 - Залишилось: HTTP API auth/CSRF та runtime config-file atomicity — потребують окремого контракту з Supervisor Ingress, щоб не зламати штатний UI.
 
 ## Результати перевірок

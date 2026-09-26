@@ -1,6 +1,5 @@
 """Test localization dictionary parity and default language configuration."""
 import json
-import re
 import subprocess
 from pathlib import Path
 from telegram_dashboard.src.config_manager import DEFAULT_CONFIG

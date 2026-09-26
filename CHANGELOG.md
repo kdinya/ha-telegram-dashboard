@@ -1,6 +1,7 @@
 ## [1.1.3]
 
 ### Fixed
+- CI now runs HTTP Ingress smoke tests, companion-integration contract checks, `compileall`, and `pyflakes`; confirmed unused Python imports were removed.
 - Config writes are now serialized and fsynced with atomic backups; WebSocket event callbacks are bounded, tracked, and cleaned up on shutdown.
 - Malformed Telegram identifiers are rejected safely, mobile preview height adapts to short screens, and the section Add button opens the implemented configuration flow with localized feedback.
 - Security: Telegram callbacks now enforce section RBAC, entity label restrictions, and filtered entity-state rendering; live user-role changes take effect without restart.

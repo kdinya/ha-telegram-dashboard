@@ -20,13 +20,15 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest pytest-asyncio flake8 pyyaml -r telegram_dashboard/requirements.txt
+          pip install pytest pytest-asyncio flake8 pyflakes pyyaml -r telegram_dashboard/requirements.txt
 
       - name: Lint with flake8 and check JS syntax
         run: |
           flake8 telegram_dashboard/src tests --max-line-length=120 --ignore=E203,W503,F401
+          pyflakes telegram_dashboard custom_components tests
           node --check telegram_dashboard/src/ui/app.js
           node --check telegram_dashboard/src/ui/i18n.js
+          python -m compileall -q telegram_dashboard custom_components
 
       - name: Run unit tests
         run: |

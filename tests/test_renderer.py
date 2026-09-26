@@ -1,4 +1,4 @@
-from telegram_dashboard.src.renderer import MessageRenderer, battery_bar, battery_line
+from telegram_dashboard.src.renderer import MessageRenderer, battery_bar
 
 
 def test_battery_bar():

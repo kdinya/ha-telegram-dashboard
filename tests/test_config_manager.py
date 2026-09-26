@@ -1,6 +1,5 @@
 from pathlib import Path
-from telegram_dashboard.src.config_manager import ConfigManager, ConfigError
-import pytest
+from telegram_dashboard.src.config_manager import ConfigManager
 
 
 def test_default_config_load(tmp_path: Path):

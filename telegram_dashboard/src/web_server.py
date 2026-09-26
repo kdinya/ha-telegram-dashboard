@@ -5,7 +5,6 @@ from datetime import datetime
 import logging
 from pathlib import Path
 from typing import Any
-import aiohttp
 from aiohttp import web
 from .config_manager import ConfigManager
 from .renderer import MessageRenderer
