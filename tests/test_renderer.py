@@ -150,3 +150,15 @@ def test_render_section_escapes_dynamic_entity_state_and_unit():
     )
     assert "<b>unsafe</b>" not in rendered
     assert "&lt;b&gt;unsafe&lt;/b&gt;" in rendered
+
+
+def test_truncate_telegram_html():
+    from telegram_dashboard.src.renderer import truncate_telegram_html
+    short_text = "<b>Hello</b> world"
+    assert truncate_telegram_html(short_text, 100) == short_text
+
+    long_text = "<b>" + "word " * 1000 + "</b>"
+    truncated = truncate_telegram_html(long_text, 200)
+    assert len(truncated) <= 200
+    assert "</b>" in truncated
+    assert "скорочено" in truncated

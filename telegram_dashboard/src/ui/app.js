@@ -1939,7 +1939,7 @@ function renderEntitiesList(entities) {
   const container = document.getElementById('entities-list');
   if (!container) return;
   if (!entities || !entities.length) {
-    container.innerHTML = '<p class="field-hint">Ентіті ще не додані. Натисніть «+ Додати ентіті».</p>';
+    container.innerHTML = `<p class="field-hint">${escapeHtml(t('hint_no_entities'))}</p>`;
     return;
   }
 
@@ -2002,7 +2002,7 @@ function renderButtonsList(buttons) {
   const container = document.getElementById('buttons-list');
   if (!container) return;
   if (!buttons || !buttons.length) {
-    container.innerHTML = '<p class="field-hint">Кнопки ще не додані. Натисніть «+ Додати кнопку».</p>';
+    container.innerHTML = `<p class="field-hint">${escapeHtml(t('hint_no_buttons'))}</p>`;
     return;
   }
 
@@ -2211,16 +2211,61 @@ async function deleteUser(id) {
 }
 
 const btnAddUserEl = $('btn-add-user');
-if (btnAddUserEl) {
-  btnAddUserEl.addEventListener('click', async () => {
-    const tid = prompt('Введіть Telegram ID користувача (число):');
-    if (!tid || isNaN(tid)) return;
-    const name = prompt("Введіть ім'я або юзернейм:") || 'Користувач';
-    const role = prompt('Оберіть роль (admin, member, guest):', 'member') || 'member';
-    const user = { telegram_id: parseInt(tid, 10), name, role };
-    await saveUser(user);
-    config.users.push(user);
-    renderUsers();
+const modalAddUser = $('modal-add-user');
+const btnCloseAddUserModal = $('btn-close-add-user-modal');
+const btnCancelAddUser = $('btn-cancel-add-user');
+const btnSubmitAddUser = $('btn-submit-add-user');
+const inputNewUserTid = $('new-user-tid-input');
+const inputNewUserName = $('new-user-name-input');
+const selectNewUserRole = $('new-user-role-select');
+
+function closeAddUserModal() {
+  if (modalAddUser) modalAddUser.classList.remove('open');
+}
+
+if (btnAddUserEl && modalAddUser) {
+  btnAddUserEl.addEventListener('click', () => {
+    if (inputNewUserTid) inputNewUserTid.value = '';
+    if (inputNewUserName) inputNewUserName.value = '';
+    if (selectNewUserRole) selectNewUserRole.value = 'member';
+    modalAddUser.classList.add('open');
+  });
+}
+
+if (btnCloseAddUserModal) btnCloseAddUserModal.addEventListener('click', closeAddUserModal);
+if (btnCancelAddUser) btnCancelAddUser.addEventListener('click', closeAddUserModal);
+if (modalAddUser) {
+  modalAddUser.addEventListener('click', (e) => {
+    if (e.target === modalAddUser) closeAddUserModal();
+  });
+}
+
+if (btnSubmitAddUser) {
+  btnSubmitAddUser.addEventListener('click', async () => {
+    const rawTid = inputNewUserTid?.value.trim();
+    const tid = parseInt(rawTid, 10);
+    if (!rawTid || isNaN(tid) || tid <= 0) {
+      showToast(t('toast_user_invalid_id'), true);
+      return;
+    }
+    const name = inputNewUserName?.value.trim() || t('fallback_user_name');
+    const role = selectNewUserRole?.value || 'member';
+    const user = { telegram_id: tid, name, role };
+    try {
+      await saveUser(user);
+      config.users = config.users || [];
+      const existingIdx = config.users.findIndex(u => u.telegram_id === tid);
+      if (existingIdx >= 0) {
+        config.users[existingIdx] = user;
+      } else {
+        config.users.push(user);
+      }
+      renderUsers();
+      closeAddUserModal();
+      showToast(t('toast_user_added'));
+    } catch (err) {
+      showToast(t('toast_error') + (err.message || ''), true);
+    }
   });
 }
 
@@ -2568,8 +2613,8 @@ function handlePreviewButtonClick(callbackData) {
       outgoing.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
       botBubble.appendChild(outgoing);
 
-      previewText.innerHTML = '<i>💬 Повідомлення закрито (видалено з чату)</i>';
-      previewButtons.innerHTML = '<div class=tg-btn-row><button class=tg-button id=btn-preview-reopen>🔄 Відкрити знову</button></div>';
+      previewText.innerHTML = `<i>${escapeHtml(t('preview_closed_msg'))}</i>`;
+      previewButtons.innerHTML = `<div class=tg-btn-row><button class=tg-button id=btn-preview-reopen>${escapeHtml(t('preview_reopen_btn'))}</button></div>`;
       const timestampEl = document.getElementById('preview-timestamp');
       if (timestampEl) timestampEl.hidden = true;
 
@@ -2622,8 +2667,8 @@ function handlePreviewButtonClick(callbackData) {
       anim.oncancel = finishCloseAnim;
       return;
     }
-    previewText.innerHTML = '<i>💬 Повідомлення закрито (видалено з чату)</i>';
-    previewButtons.innerHTML = '<div class=tg-btn-row><button class=tg-button id=btn-preview-reopen>🔄 Відкрити знову</button></div>';
+    previewText.innerHTML = `<i>${escapeHtml(t('preview_closed_msg'))}</i>`;
+    previewButtons.innerHTML = `<div class=tg-btn-row><button class=tg-button id=btn-preview-reopen>${escapeHtml(t('preview_reopen_btn'))}</button></div>`;
     const reopenBtn = document.getElementById('btn-preview-reopen');
     if (reopenBtn) {
       reopenBtn.addEventListener('click', () => {
@@ -2642,7 +2687,7 @@ function handlePreviewButtonClick(callbackData) {
       updatePreview();
     }
   } else if (actionData.startsWith('/act_') || actionData.startsWith('/tog_') || actionData.startsWith('/btn_') || actionData.startsWith('/ent_')) {
-    showToast(`Натиснуто: ${actionData}`);
+    showToast(`${t('toast_action_pressed')}${actionData}`);
   }
 }
 
@@ -2947,7 +2992,7 @@ document.addEventListener('DOMContentLoaded', init);
 function renderSectionDevicesList(entities) {
   if (!sectionDevicesList) return;
   if (!entities.length) {
-    sectionDevicesList.innerHTML = '<p class="field-hint">Пристрої ще не додані. Натисніть "+ Додати пристрій зі списку".</p>';
+    sectionDevicesList.innerHTML = `<p class="field-hint">${escapeHtml(t('hint_no_devices'))}</p>`;
     return;
   }
   sectionDevicesList.innerHTML = entities.map((eid, index) => {
@@ -2997,7 +3042,7 @@ function addDeviceToSection(eid) {
   }
   renderSectionDevicesList(sec.entities);
   updatePreview();
-  showToast('Пристрій додано');
+  showToast(t('toast_device_added'));
 }
 
 // Widget configuration modal elements
@@ -3045,7 +3090,7 @@ function setupWidgetConfig() {
       renderWidgetsList(sec.widgets);
       updatePreview();
       widgetConfigModal.classList.remove('open');
-      showToast('Показник додано');
+      showToast(t('toast_indicator_added'));
     });
   }
 }

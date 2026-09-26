@@ -120,6 +120,41 @@ def format_entity_value(entity_id: str, raw_state: Any, custom_unit: str = "") -
     return DOMAIN_ICONS.get(domain, "🔹"), val_display or "—"
 
 
+def truncate_telegram_html(text: str, max_chars: int = 4096) -> str:
+    """Safely truncate text to fit Telegram 4096 character limit and close unclosed tags."""
+    if len(text) <= max_chars:
+        return text
+    notice = "\n… <i>[скорочено: ліміт 4096]</i>"
+    cut_limit = max_chars - len(notice) - 50
+    if cut_limit <= 0:
+        return text[:max_chars]
+    cut_idx = text.rfind("\n", 0, cut_limit)
+    if cut_idx == -1 or cut_idx < cut_limit // 2:
+        cut_idx = cut_limit
+    truncated = text[:cut_idx]
+
+    import re
+    tag_pattern = re.compile(r"<\s*(/)?\s*([a-zA-Z0-9_-]+)(?:\s+[^>]*)?>")
+    open_tags: list[str] = []
+    for match in tag_pattern.finditer(truncated):
+        is_close = bool(match.group(1))
+        tag_name = match.group(2).lower()
+        if tag_name in ("br", "hr"):
+            continue
+        if is_close:
+            if open_tags and open_tags[-1] == tag_name:
+                open_tags.pop()
+            elif tag_name in open_tags:
+                for i in range(len(open_tags) - 1, -1, -1):
+                    if open_tags[i] == tag_name:
+                        open_tags.pop(i)
+                        break
+        else:
+            open_tags.append(tag_name)
+    closing_str = "".join(f"</{tag}>" for tag in reversed(open_tags))
+    return truncated + closing_str + notice
+
+
 class MessageRenderer:
     """Renders menu sections into styled Telegram HTML messages."""
 
@@ -178,7 +213,7 @@ class MessageRenderer:
             "────────────────────────────",
             f"<i>⏱ Оновлено: {html.escape(str(state.get('updated_at', '—')))}</i>"
         ])
-        return "\n".join(parts)
+        return truncate_telegram_html("\n".join(parts))
 
     def render_section(self, section: dict[str, Any], state: dict[str, Any]) -> str:
         """Render one section with header, note and 'Назва: Дані' entities."""
@@ -286,7 +321,7 @@ class MessageRenderer:
         updated = html.escape(str(state.get("updated_at", "—")))
         rows.append(f"<i>⏱ Оновлено: {updated}</i>")
 
-        return "\n".join(rows)
+        return truncate_telegram_html("\n".join(rows))
 
     def render_entity_list(self, section: dict, states: dict[str, Any]) -> str:
         """Render an auto-generated entity browser section."""
@@ -304,7 +339,7 @@ class MessageRenderer:
             rows.append("├ <i>Немає доступних сутностей</i>")
         rows.append("────────────────────────────")
         rows.append(f"<i>Всього: {count}</i>")
-        return "\n".join(rows)
+        return truncate_telegram_html("\n".join(rows))
 
 
 TelegramRenderer = MessageRenderer
