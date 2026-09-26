@@ -185,7 +185,10 @@ function undo() {
     const prevState = undoStack.pop();
     config = JSON.parse(prevState);
     updateHistoryButtons();
-    renderSections();
+    renderSectionsPills();
+    if (!config.menu || !config.menu[currentSectionKey]) {
+      currentSectionKey = Object.keys(config.menu || {})[0] || 'main';
+    }
     loadSectionIntoEditor(currentSectionKey);
     updatePreview();
     showToast(t("toast_undo"));
@@ -201,7 +204,10 @@ function redo() {
     const nextState = redoStack.pop();
     config = JSON.parse(nextState);
     updateHistoryButtons();
-    renderSections();
+    renderSectionsPills();
+    if (!config.menu || !config.menu[currentSectionKey]) {
+      currentSectionKey = Object.keys(config.menu || {})[0] || 'main';
+    }
     loadSectionIntoEditor(currentSectionKey);
     updatePreview();
     showToast(t("toast_redo"));
@@ -434,6 +440,28 @@ async function init() {
   setupEntityPicker();
   setupActionConfig();
   setupWidgetConfig();
+  // Setup Undo / Redo listeners
+  const btnUndoEl = document.getElementById('btn-undo');
+  const btnRedoEl = document.getElementById('btn-redo');
+  btnUndoEl?.addEventListener('click', undo);
+  btnRedoEl?.addEventListener('click', redo);
+
+  window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+      const tag = document.activeElement?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || document.activeElement?.isContentEditable) {
+        return;
+      }
+      if (e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if (e.key === 'y' || ((e.key === 'z' || e.key === 'Z') && e.shiftKey)) {
+        e.preventDefault();
+        redo();
+      }
+    }
+  });
+
   await fetchEntities();
   await loadConfig();
   void loadTelegramBotName();

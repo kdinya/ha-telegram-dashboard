@@ -121,7 +121,6 @@ class TelegramBotRunner:
             "message_id": safe_message_id,
             "message": text,
             "parse_mode": parse_mode.lower(),
-            "disable_notification": disable_notification,
         }
         if reply_markup and "inline_keyboard" in reply_markup:
             service_data["inline_keyboard"] = format_inline_keyboard_for_ha(reply_markup["inline_keyboard"])
