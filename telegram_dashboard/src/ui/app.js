@@ -2378,6 +2378,7 @@ function setupEventListeners() {
     let startY = 0;
     let startScrollTop = 0;
     msgArea.addEventListener('pointerdown', (e) => {
+      if (e.pointerType !== 'mouse') return;
       pointerActive = true;
       startY = e.clientY;
       startScrollTop = msgArea.scrollTop;
@@ -2400,6 +2401,46 @@ function setupEventListeners() {
       if (Math.abs(delta) > 2) e.preventDefault();
       msgArea.scrollTop = startScrollTop - delta;
     });
+  }
+
+  // Touch/pen gestures must scroll the whole preview page, not only the
+  // inner Telegram messages area. This also makes the phone frame draggable.
+  const previewPage = document.querySelector('.preview-pane');
+  if (previewPage) {
+    let pagePointerActive = false;
+    let pageStartY = 0;
+    let pageStartScrollY = 0;
+    let pagePointerId = null;
+
+    const stopPagePointerDrag = (e) => {
+      if (!pagePointerActive) return;
+      pagePointerActive = false;
+      pagePointerId = null;
+      previewPage.classList.remove('is-page-dragging');
+      if (e?.pointerId !== undefined) previewPage.releasePointerCapture?.(e.pointerId);
+    };
+
+    previewPage.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse' || e.button > 0) return;
+      pagePointerActive = true;
+      pageStartY = e.clientY;
+      pageStartScrollY = window.scrollY || document.scrollingElement?.scrollTop || 0;
+      pagePointerId = e.pointerId;
+      previewPage.setPointerCapture?.(e.pointerId);
+    });
+
+    previewPage.addEventListener('pointermove', (e) => {
+      if (!pagePointerActive || e.pointerId !== pagePointerId) return;
+      const delta = e.clientY - pageStartY;
+      if (Math.abs(delta) < 4) return;
+      e.preventDefault();
+      previewPage.classList.add('is-page-dragging');
+      window.scrollTo(0, Math.max(0, pageStartScrollY - delta));
+    }, { passive: false });
+
+    previewPage.addEventListener('pointerup', stopPagePointerDrag);
+    previewPage.addEventListener('pointercancel', stopPagePointerDrag);
+    previewPage.addEventListener('lostpointercapture', stopPagePointerDrag);
   }
 
 

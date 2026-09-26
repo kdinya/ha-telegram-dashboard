@@ -98,6 +98,16 @@ def test_preview_refresh_preserves_scroll_position_unless_already_at_bottom():
     assert "min-height: min(680px, calc(100dvh - 110px)) !important" in styles
 
 
+def test_mobile_preview_drag_scrolls_page_from_phone_frame():
+    app = (UI_DIR / "app.js").read_text(encoding="utf-8")
+    styles = (UI_DIR / "style.css").read_text(encoding="utf-8")
+    assert "const previewPage = document.querySelector('.preview-pane')" in app
+    assert "window.scrollTo(0, Math.max(0, pageStartScrollY - delta))" in app
+    assert "{ passive: false }" in app
+    assert "touch-action: none" in styles
+    assert ".preview-pane.is-page-dragging" in styles
+
+
 def test_section_command_and_save_flow_are_explained_and_translated():
     html = (UI_DIR / "index.html").read_text(encoding="utf-8")
     i18n = (UI_DIR / "i18n.js").read_text(encoding="utf-8")
