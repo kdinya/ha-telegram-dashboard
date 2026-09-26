@@ -641,11 +641,24 @@ function renderIconGrid() {
 }
 
 // --- Entity Picker Modal ---
+function closeEntityPickerModal() {
+  entityPickerModal.classList.remove('open');
+  document.body.classList.remove('modal-open');
+  document.documentElement.classList.remove('modal-open');
+}
+
 function setupEntityPicker() {
-  btnCloseEntityPicker.addEventListener('click', () => entityPickerModal.classList.remove('open'));
+  btnCloseEntityPicker.addEventListener('click', closeEntityPickerModal);
   entityPickerModal.addEventListener('click', e => {
-    if (e.target === entityPickerModal) entityPickerModal.classList.remove('open');
+    if (e.target === entityPickerModal) closeEntityPickerModal();
   });
+  // Prevent touch events on overlay background from scrolling window
+  entityPickerModal.addEventListener('touchmove', (e) => {
+    if (!e.target.closest('#entity-picker-list')) {
+      e.preventDefault();
+    }
+  }, { passive: false });
+
   entitySearchInput.addEventListener('input', renderEntityPickerList);
   domainFiltersTabs.addEventListener('click', e => {
     const btn = e.target.closest('.domain-tab-btn');
@@ -662,6 +675,8 @@ function openEntityPicker(context, title) {
   entitySearchInput.value = '';
   domainFiltersTabs.querySelectorAll('.domain-tab-btn').forEach((b, i) => b.classList.toggle('active', i === 0));
   entityPickerModal.classList.add('open');
+  document.body.classList.add('modal-open');
+  document.documentElement.classList.add('modal-open');
   renderEntityPickerList();
 }
 
@@ -816,31 +831,27 @@ function renderEntityPickerList() {
     const displayParam = unit ? `${stateVal} ${unit}` : stateVal;
 
     const parts = splitEntityName(fullFriendlyName, domain, e.attributes);
-    const escapedDevice = escapeHtml(parts.device);
-    const escapedParam = escapeHtml(parts.param);
+    const escapedDevice = escapeHtml(parts.device || domain.toUpperCase());
+    const escapedParam = escapeHtml(parts.param || fullFriendlyName);
     const escapedFullName = escapeHtml(fullFriendlyName);
-
-    const titleHtml = parts.device
-      ? `<div class="entity-item-titles">
-           <span class="entity-item-device" title="${escapedDevice}">${escapedDevice}</span>
-           <span class="entity-item-sep">›</span>
-           <span class="entity-item-param-name">${escapedParam}</span>
-         </div>`
-      : `<div class="entity-item-titles">
-           <span class="entity-item-param-name is-standalone">${escapedParam}</span>
-         </div>`;
 
     return `
     <button type="button" class="entity-item" data-id="${entityId}" data-name="${escapedFullName}" data-domain="${domain}">
-      <div class="entity-item-main">
-        <div class="entity-item-header">
-          ${titleHtml}
-          <span class="entity-item-domain-badge">${domain}</span>
+      <div class="entity-item-3rows">
+        <!-- 1 - Назва пристрою -->
+        <div class="entity-row-device">
+          <span class="entity-row-device-tag">📱 ${escapedDevice}</span>
         </div>
-        <div class="entity-item-sub">
-          <span class="entity-item-id"><code>${entityId}</code></span>
+        <!-- 2 - Назва об'єкта (температура, вологість, статус...) -->
+        <div class="entity-row-object">
+          ${escapedParam}
+        </div>
+        <!-- 3 - Ідентифікатор об'єкта -->
+        <div class="entity-row-id">
+          <code>${entityId}</code>
         </div>
       </div>
+      <!-- Праворуч: значення цього об'єкта -->
       <div class="entity-item-state-wrap">
         <span class="entity-item-param ${stateVal === 'unavailable' || stateVal === 'unknown' ? 'is-muted' : ''}">${displayParam || '—'}</span>
       </div>
@@ -853,7 +864,7 @@ function renderEntityPickerList() {
       const eid = item.dataset.id;
       const name = item.dataset.name;
       const domain = item.dataset.domain;
-      entityPickerModal.classList.remove('open');
+      closeEntityPickerModal();
 
             if (entityPickerContext === 'inline_entity_item') {
         const row = document.getElementById('inline-entity-row');
@@ -877,7 +888,7 @@ function renderEntityPickerList() {
             if (iconDisplay) iconDisplay.textContent = defIcon;
           }
         }
-        entityPickerModal.classList.remove('open');
+        closeEntityPickerModal();
         return;
       } else if (entityPickerContext === 'entity_item') {
         const sec = config.menu[currentSectionKey];
