@@ -323,6 +323,7 @@ let previewRenderSequence = 0;
 let previewHeightAnimation = null;
 let previewHeightFrame = null;
 let previewScrollBehaviorToRestore = null;
+let previewContentAnimation = null;
 const haEntitiesDatalist = $('ha-entities-datalist');
 
 // Icon picker elements
@@ -2262,6 +2263,7 @@ async function updatePreview() {
       const data = await res.json();
       if (renderSequence !== previewRenderSequence) return;
       const botBubble = document.getElementById('preview-bot-bubble') || document.querySelector('.tg-bot-bubble') || document.querySelector('.tg-message-bubble:not(.tg-user-bubble)');
+      const bubbleContent = document.getElementById('preview-bubble-content') || botBubble;
       const msgArea = document.querySelector('.tg-messages-area');
       const previousScrollTop = msgArea?.scrollTop || 0;
       const wasAtBottom = msgArea
@@ -2283,6 +2285,8 @@ async function updatePreview() {
       }
 
       const prevHeight = (botBubble && botBubble.offsetHeight > 0) ? botBubble.offsetHeight : 0;
+      const hasPreviousContent = prevHeight > 0 && previewText && previewText.innerHTML.trim().length > 0;
+
       if (previewHeightAnimation && botBubble) {
         botBubble.style.height = `${prevHeight}px`;
         if (msgArea && previewScrollBehaviorToRestore !== null) {
@@ -2295,6 +2299,20 @@ async function updatePreview() {
       if (previewHeightFrame !== null) {
         cancelAnimationFrame(previewHeightFrame);
         previewHeightFrame = null;
+      }
+      if (previewContentAnimation) {
+        previewContentAnimation.cancel();
+        previewContentAnimation = null;
+      }
+      botBubble?.querySelectorAll('.tg-bubble-outgoing').forEach(el => el.remove());
+
+      let outgoingClone = null;
+      if (hasPreviousContent && bubbleContent && botBubble) {
+        outgoingClone = bubbleContent.cloneNode(true);
+        outgoingClone.removeAttribute('id');
+        outgoingClone.classList.add('tg-bubble-outgoing');
+        outgoingClone.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+        botBubble.appendChild(outgoingClone);
       }
 
       const previewTimestampEl = document.getElementById('preview-timestamp');
@@ -2318,15 +2336,47 @@ async function updatePreview() {
         botBubble.style.maxWidth = msgW + '%';
 
         if (prevHeight > 0) {
+          if (outgoingClone && bubbleContent) {
+            bubbleContent.style.opacity = '0';
+            bubbleContent.style.transform = 'translateY(2px)';
+          }
           botBubble.style.height = 'auto';
           const newHeight = botBubble.offsetHeight;
+
+          if (outgoingClone && bubbleContent) {
+            outgoingClone.animate(
+              [
+                { opacity: 1, transform: 'translateY(0)' },
+                { opacity: 0, transform: 'translateY(-2px)' }
+              ],
+              { duration: 180, easing: 'cubic-bezier(0.25, 1, 0.5, 1)', fill: 'forwards' }
+            );
+
+            const incomingAnim = bubbleContent.animate(
+              [
+                { opacity: 0, transform: 'translateY(2px)' },
+                { opacity: 1, transform: 'translateY(0)' }
+              ],
+              { duration: 220, delay: 20, easing: 'cubic-bezier(0.25, 1, 0.5, 1)', fill: 'forwards' }
+            );
+            previewContentAnimation = incomingAnim;
+
+            const finishContentTransition = () => {
+              outgoingClone?.remove();
+              bubbleContent.style.opacity = '';
+              bubbleContent.style.transform = '';
+              previewContentAnimation = null;
+            };
+            incomingAnim.onfinish = finishContentTransition;
+            incomingAnim.oncancel = finishContentTransition;
+          }
 
           if (Math.abs(newHeight - prevHeight) > 1) {
             botBubble.style.height = `${prevHeight}px`;
             void botBubble.offsetHeight;
             const animation = botBubble.animate(
               [{ height: `${prevHeight}px` }, { height: `${newHeight}px` }],
-              { duration: 280, easing: 'cubic-bezier(0.25, 1, 0.5, 1)', fill: 'forwards' }
+              { duration: 250, easing: 'cubic-bezier(0.25, 1, 0.5, 1)', fill: 'forwards' }
             );
             previewHeightAnimation = animation;
 
@@ -2424,7 +2474,10 @@ function renderTelegramKeyboard(keyboard) {
         button.textContent = text;
       }
       button.title = cbData;
-      button.addEventListener('click', () => handlePreviewButtonClick(cbData));
+      button.addEventListener('click', () => {
+        button.classList.add('is-active');
+        handlePreviewButtonClick(cbData);
+      });
       rowEl.appendChild(button);
     });
     previewButtons.appendChild(rowEl);
@@ -2438,6 +2491,49 @@ function handlePreviewButtonClick(callbackData) {
     actionData = actionData.slice(3);
   }
   if (actionData === '/close' || actionData === 'close') {
+    const bubbleContent = document.getElementById('preview-bubble-content');
+    const botBubble = document.getElementById('preview-bot-bubble');
+    if (botBubble && bubbleContent && botBubble.offsetHeight > 0) {
+      const prevH = botBubble.offsetHeight;
+      const outgoing = bubbleContent.cloneNode(true);
+      outgoing.removeAttribute('id');
+      outgoing.classList.add('tg-bubble-outgoing');
+      outgoing.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+      botBubble.appendChild(outgoing);
+
+      previewText.innerHTML = '<i>💬 Повідомлення закрито (видалено з чату)</i>';
+      previewButtons.innerHTML = '<div class="tg-btn-row"><button class="tg-button" id="btn-preview-reopen">🔄 Відкрити знову</button></div>';
+      const timestampEl = document.getElementById('preview-timestamp');
+      if (timestampEl) timestampEl.hidden = true;
+
+      const reopenBtn = document.getElementById('btn-preview-reopen');
+      if (reopenBtn) reopenBtn.addEventListener('click', () => updatePreview());
+
+      bubbleContent.style.opacity = '0';
+      bubbleContent.style.transform = 'translateY(2px)';
+      const newH = botBubble.offsetHeight;
+      botBubble.style.height = `${prevH}px`;
+
+      outgoing.animate(
+        [{ opacity: 1, transform: 'translateY(0)' }, { opacity: 0, transform: 'translateY(-2px)' }],
+        { duration: 180, easing: 'cubic-bezier(0.25, 1, 0.5, 1)', fill: 'forwards' }
+      ).onfinish = () => outgoing.remove();
+
+      bubbleContent.animate(
+        [{ opacity: 0, transform: 'translateY(2px)' }, { opacity: 1, transform: 'translateY(0)' }],
+        { duration: 220, delay: 20, easing: 'cubic-bezier(0.25, 1, 0.5, 1)', fill: 'forwards' }
+      ).onfinish = () => {
+        bubbleContent.style.opacity = '';
+        bubbleContent.style.transform = '';
+      };
+
+      const anim = botBubble.animate(
+        [{ height: `${prevH}px` }, { height: `${newH}px` }],
+        { duration: 240, easing: 'cubic-bezier(0.25, 1, 0.5, 1)', fill: 'forwards' }
+      );
+      anim.onfinish = () => { botBubble.style.height = ''; };
+      return;
+    }
     previewText.innerHTML = '<i>💬 Повідомлення закрито (видалено з чату)</i>';
     previewButtons.innerHTML = '<div class="tg-btn-row"><button class="tg-button" id="btn-preview-reopen">🔄 Відкрити знову</button></div>';
     const reopenBtn = document.getElementById('btn-preview-reopen');
