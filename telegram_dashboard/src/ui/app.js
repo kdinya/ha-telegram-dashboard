@@ -1680,12 +1680,12 @@ function renderSectionElements(items) {
         pointerDrag.active = true;
         el.classList.add('is-dragging', 'is-holding');
         if (navigator.vibrate) navigator.vibrate(30);
-      }, 280);
+      }, 400);
     });
     el.addEventListener('pointermove', (e) => {
       if (!pointerDrag || e.pointerId !== pointerDrag.pointerId) return;
       if (!pointerDrag.active) {
-        if (Math.hypot(e.clientX - pointerDrag.startX, e.clientY - pointerDrag.startY) > 8) {
+        if (Math.hypot(e.clientX - pointerDrag.startX, e.clientY - pointerDrag.startY) > 3) {
           clearTimeout(pointerDrag.timer);
           pointerDrag = null;
         }
@@ -1732,13 +1732,13 @@ function renderSectionElements(items) {
         touchDrag.active = true;
         el.classList.add('is-dragging', 'is-holding');
         if (navigator.vibrate) navigator.vibrate(30);
-      }, 280);
+      }, 400);
     }, { passive: true });
     el.addEventListener('touchmove', (e) => {
       if (!touchDrag || e.touches.length !== 1) return;
       const point = e.touches[0];
       if (!touchDrag.active) {
-        if (Math.hypot(point.clientX - touchDrag.startX, point.clientY - touchDrag.startY) > 8) {
+        if (Math.hypot(point.clientX - touchDrag.startX, point.clientY - touchDrag.startY) > 3) {
           clearTimeout(touchDrag.timer);
           touchDrag = null;
         }

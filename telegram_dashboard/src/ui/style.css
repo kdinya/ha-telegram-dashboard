@@ -895,10 +895,11 @@ select.form-control option {
 }
 
 @media (max-width: 992px) {
-  body {
+  html, body {
     min-height: 100vh;
     height: auto;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
   .app-layout {
     flex-direction: column;
@@ -1338,12 +1339,23 @@ body:has(.modal-overlay.open) {
   cursor: pointer;
 }
 
+.section-texts-list,
+.section-text-item,
+.section-text-item-main,
+.section-text-item-content,
+.section-divider-item-main,
+.section-divider-preview,
+.section-text-item-icon,
+.badge-text-type,
+.item-drag-handle {
+  touch-action: pan-y;
+}
+
 .section-texts-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
   margin-bottom: 12px;
-  touch-action: pan-y;
 }
 
 .section-text-item {
@@ -1352,7 +1364,6 @@ body:has(.modal-overlay.open) {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  touch-action: pan-y;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 6px;
@@ -1791,7 +1802,7 @@ body:has(.modal-overlay.open) {
   color: #64748b;
   cursor: grab;
   user-select: none;
-  touch-action: none;
+  touch-action: pan-y;
   font-size: 16px;
   line-height: 1;
   padding: 0 4px;
