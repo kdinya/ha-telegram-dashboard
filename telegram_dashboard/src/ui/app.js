@@ -97,6 +97,7 @@ function createSectionWithTitle(title) {
   else if (lower.includes('штор') || lower.includes('blind') || lower.includes('curtain')) guessedIcon = '🪟';
 
   // Ensure section is placed at the end of sections and is explicitly NOT main screen
+  recordHistory();
   delete config.menu[slug];
   config.menu[slug] = {
     title: cleanTitle,
@@ -486,6 +487,9 @@ async function fetchEntities() {
 async function loadConfig() {
   try {
     config = await api('api/config');
+    const currentLang = config.language || (window.I18N ? window.I18N.getLanguage() : 'uk');
+    if (window.I18N) window.I18N.setLanguage(currentLang, false);
+    updateHistoryButtons();
     renderSectionsPills();
     loadSectionIntoEditor(currentSectionKey);
     renderUsers();
@@ -1400,6 +1404,7 @@ function renderSectionElements(items) {
     if (editingItemIdx === idx) {
       if (item.type === 'entity') {
         const editRow = createInlineEntityRow(item, (updatedData) => {
+          recordHistory();
           sec.items[idx] = updatedData;
           syncSectionLegacyCollections(sec);
           editingItemIdx = null;
@@ -1413,6 +1418,7 @@ function renderSectionElements(items) {
         container.appendChild(editRow);
       } else {
         const editRow = createInlineEditRow(item, (updatedData) => {
+          recordHistory();
           sec.items[idx] = updatedData;
           syncSectionLegacyCollections(sec);
           editingItemIdx = null;
@@ -1462,12 +1468,12 @@ function renderSectionElements(items) {
         </div>
         <div class="section-text-item-actions">
           <div class="item-actions-dropdown">
-            <button type="button" class="btn-icon-action btn-item-more" title="${t('btn_more_options')}">⋮</button>
+            <button type="button" class="btn-icon-action btn-item-more" data-i18n-title="btn_more_options" title="${t('btn_more_options')}">⋮</button>
             <div class="item-dropdown-menu">
-              <button type="button" class="item-dropdown-item btn-edit-elem-item" title="${t('btn_edit_item_title')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>✏️ <span>${t('action_edit') || 'Редагувати'}</span></button>
-              <button type="button" class="item-dropdown-item btn-duplicate-elem-item" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>📋 <span>${t('action_duplicate') || 'Дублювати'}</span></button>
-              <button type="button" class="item-dropdown-item is-danger btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>🗑️ <span>${t('action_delete') || 'Видалити'}</span></button>
-              <button type="button" class="item-dropdown-item btn-lock-elem-item" title="${lockTitle}" data-idx="${idx}">${lockIcon} <span>${isLocked ? (t('action_unlock') || 'Розблокувати') : (t('action_lock') || 'Заблокувати')}</span></button>
+              <button type="button" class="item-dropdown-item btn-edit-elem-item" title="${t('btn_edit_item_title')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}><span class="dropdown-item-icon">✏️</span> <span class="dropdown-item-label" data-i18n="action_edit">${t('action_edit')}</span></button>
+              <button type="button" class="item-dropdown-item btn-duplicate-elem-item" data-idx="${idx}" ${isLocked ? 'disabled' : ''}><span class="dropdown-item-icon">📋</span> <span class="dropdown-item-label" data-i18n="action_duplicate">${t('action_duplicate')}</span></button>
+              <button type="button" class="item-dropdown-item is-danger btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}><span class="dropdown-item-icon">🗑️</span> <span class="dropdown-item-label" data-i18n="action_delete">${t('action_delete')}</span></button>
+              <button type="button" class="item-dropdown-item btn-lock-elem-item" title="${lockTitle}" data-idx="${idx}"><span class="dropdown-item-icon">${lockIcon}</span> <span class="dropdown-item-label" data-i18n="${isLocked ? 'action_unlock' : 'action_lock'}">${isLocked ? t('action_unlock') : t('action_lock')}</span></button>
             </div>
           </div>
         </div>
@@ -1575,11 +1581,11 @@ function renderSectionElements(items) {
         <div class="section-text-item-actions">
           <button type="button" class="btn-icon-action btn-cycle-divider-style" title="${t('btn_change_divider_style')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>🔄</button>
           <div class="item-actions-dropdown">
-            <button type="button" class="btn-icon-action btn-item-more" title="${t('btn_more_options')}">⋮</button>
+            <button type="button" class="btn-icon-action btn-item-more" data-i18n-title="btn_more_options" title="${t('btn_more_options')}">⋮</button>
             <div class="item-dropdown-menu">
-              <button type="button" class="item-dropdown-item btn-duplicate-elem-item" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>📋 <span>${t('action_duplicate') || 'Дублювати'}</span></button>
-              <button type="button" class="item-dropdown-item is-danger btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>🗑️ <span>${t('action_delete')}</span></button>
-              <button type="button" class="item-dropdown-item btn-lock-elem-item" title="${lockTitle}" data-idx="${idx}">${lockIcon} <span>${isLocked ? (t('action_unlock') || 'Розблокувати') : (t('action_lock') || 'Заблокувати')}</span></button>
+              <button type="button" class="item-dropdown-item btn-duplicate-elem-item" data-idx="${idx}" ${isLocked ? 'disabled' : ''}><span class="dropdown-item-icon">📋</span> <span class="dropdown-item-label" data-i18n="action_duplicate">${t('action_duplicate')}</span></button>
+              <button type="button" class="item-dropdown-item is-danger btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}><span class="dropdown-item-icon">🗑️</span> <span class="dropdown-item-label" data-i18n="action_delete">${t('action_delete')}</span></button>
+              <button type="button" class="item-dropdown-item btn-lock-elem-item" title="${lockTitle}" data-idx="${idx}"><span class="dropdown-item-icon">${lockIcon}</span> <span class="dropdown-item-label" data-i18n="${isLocked ? 'action_unlock' : 'action_lock'}">${isLocked ? t('action_unlock') : t('action_lock')}</span></button>
             </div>
           </div>
         </div>
@@ -1632,6 +1638,7 @@ function renderSectionElements(items) {
           showToast(t('toast_item_is_locked'), true);
           return;
         }
+        recordHistory();
         const currentStyle = item.style || 'line';
         const styles = ['line', 'space', 'dashed'];
         const nextStyle = styles[(styles.indexOf(currentStyle) + 1) % styles.length];
@@ -1696,12 +1703,12 @@ function renderSectionElements(items) {
         </div>
         <div class="section-text-item-actions">
           <div class="item-actions-dropdown">
-            <button type="button" class="btn-icon-action btn-item-more" title="${t('btn_more_options')}">⋮</button>
+            <button type="button" class="btn-icon-action btn-item-more" data-i18n-title="btn_more_options" title="${t('btn_more_options')}">⋮</button>
             <div class="item-dropdown-menu">
-              <button type="button" class="item-dropdown-item btn-edit-elem-item" title="${t('btn_edit_item_title')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>✏️ <span>${t('action_edit') || 'Редагувати'}</span></button>
-              <button type="button" class="item-dropdown-item btn-duplicate-elem-item" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>📋 <span>${t('action_duplicate') || 'Дублювати'}</span></button>
-              <button type="button" class="item-dropdown-item is-danger btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>🗑️ <span>${t('action_delete') || 'Видалити'}</span></button>
-              <button type="button" class="item-dropdown-item btn-lock-elem-item" title="${lockTitle}" data-idx="${idx}">${lockIcon} <span>${isLocked ? (t('action_unlock') || 'Розблокувати') : (t('action_lock') || 'Заблокувати')}</span></button>
+              <button type="button" class="item-dropdown-item btn-edit-elem-item" title="${t('btn_edit_item_title')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}><span class="dropdown-item-icon">✏️</span> <span class="dropdown-item-label" data-i18n="action_edit">${t('action_edit')}</span></button>
+              <button type="button" class="item-dropdown-item btn-duplicate-elem-item" data-idx="${idx}" ${isLocked ? 'disabled' : ''}><span class="dropdown-item-icon">📋</span> <span class="dropdown-item-label" data-i18n="action_duplicate">${t('action_duplicate')}</span></button>
+              <button type="button" class="item-dropdown-item is-danger btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}><span class="dropdown-item-icon">🗑️</span> <span class="dropdown-item-label" data-i18n="action_delete">${t('action_delete')}</span></button>
+              <button type="button" class="item-dropdown-item btn-lock-elem-item" title="${lockTitle}" data-idx="${idx}"><span class="dropdown-item-icon">${lockIcon}</span> <span class="dropdown-item-label" data-i18n="${isLocked ? 'action_unlock' : 'action_lock'}">${isLocked ? t('action_unlock') : t('action_lock')}</span></button>
             </div>
           </div>
         </div>
@@ -1982,6 +1989,7 @@ function renderSectionElements(items) {
   // If adding a new element at the bottom (under already added elements, above the 3 add buttons)
   if (addingItemType === 'text') {
     const newRow = createInlineEditRow({ icon: '', text: '', is_heading: false }, (newData) => {
+      recordHistory();
       sec.items.push(newData);
       syncSectionLegacyCollections(sec);
       addingItemType = null;
@@ -1995,6 +2003,7 @@ function renderSectionElements(items) {
     container.appendChild(newRow);
   } else if (addingItemType === 'entity') {
     const newRow = createInlineEntityRow({ icon: '', label: '', entity_id: '', show_indent: true }, (newData) => {
+      recordHistory();
       sec.items.push(newData);
       syncSectionLegacyCollections(sec);
       addingItemType = null;
@@ -2303,6 +2312,7 @@ $('btn-delete-section').addEventListener('click', async () => {
     true
   );
   if (!confirmed) return;
+  recordHistory();
   delete config.menu[currentSectionKey];
   currentSectionKey = 'main';
   renderSectionsPills();
@@ -3026,6 +3036,7 @@ function setupEventListeners() {
   const saveEditSectionMeta = () => {
     const sec = config && config.menu ? config.menu[currentSectionKey] : null;
     if (!sec) return;
+    recordHistory();
     if (editSecTitle) {
       sec.title = stripLeadingEmoji(editSecTitle.value.trim()) || 'Розділ';
     if (editSecCommand) {
@@ -3095,6 +3106,7 @@ function setupEventListeners() {
       const sec = config && config.menu ? config.menu[currentSectionKey] : null;
       if (!sec) return;
       ensureSectionItems(sec);
+      recordHistory();
       sec.items.push({
         type: 'divider',
         style: 'line'

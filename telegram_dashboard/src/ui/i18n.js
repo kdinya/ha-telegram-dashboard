@@ -557,9 +557,11 @@ btn_action_add_divider: "Додати відступ",
     }
 
     // Update settings dropdown if exists
-    const sel = document.getElementById('setting-language');
-    if (sel && sel.value !== valid) {
-      sel.value = valid;
+    if (typeof document !== 'undefined' && typeof document.getElementById === 'function') {
+      const sel = document.getElementById('setting-language');
+      if (sel && sel.value !== valid) {
+        sel.value = valid;
+      }
     }
 
     // Apply translations to all DOM elements with data-i18n attributes
@@ -572,6 +574,7 @@ btn_action_add_divider: "Додати відступ",
   }
 
   function applyDomTranslations() {
+    if (typeof document === 'undefined' || typeof document.querySelectorAll !== 'function') return;
     document.querySelectorAll('[data-i18n]').forEach(el => {
       const key = el.getAttribute('data-i18n');
       if (key) {
@@ -626,4 +629,7 @@ btn_action_add_divider: "Додати відступ",
     applyDomTranslations
   };
   window.t = t;
+
+  // Initialize language immediately on script load
+  initLanguage();
 })();
