@@ -1611,7 +1611,8 @@ function renderSectionElements(items) {
     // Use the whole item row for touch/pen while keeping native desktop DnD intact.
     let pointerDrag = null;
     const isInteractiveTarget = (target) => Boolean(
-      target.closest('button, input, select, textarea, a, .entity-select-display')
+      target instanceof Element
+      && target.closest('button, input, select, textarea, a, .entity-select-display')
     );
     const clearPointerDropMarkers = () => {
       container.querySelectorAll('.section-text-item').forEach(node => {
@@ -1659,7 +1660,7 @@ function renderSectionElements(items) {
 
     // Older mobile WebViews may expose touch events but not usable Pointer Events.
     let touchDrag = null;
-    const touchPoint = (e) => e.changedTouches[0];
+    const touchPoint = (e) => e.changedTouches?.[0] || e.touches?.[0] || null;
     const stopTouchReorder = (e) => {
       if (!touchDrag) return;
       const point = touchPoint(e);
