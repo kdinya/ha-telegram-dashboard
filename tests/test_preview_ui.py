@@ -116,6 +116,9 @@ def test_section_items_support_touch_reorder_and_localized_drag_labels():
     assert "e.target.closest('.item-drag-handle')" in app
     assert "addEventListener('pointermove'" in app
     assert "pointercancel', stopPointerReorder" in app
+    assert "addEventListener('touchstart'" in app
+    assert "addEventListener('touchmove'" in app
+    assert "addEventListener('touchend', stopTouchReorder" in app
     assert "touch-action: none" in styles
     for key in ("btn_edit_item_title", "drag_handle_title", "drag_handle_aria", "toast_order_updated"):
         assert i18n.count(f"{key}:") == 2

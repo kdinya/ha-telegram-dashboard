@@ -1636,7 +1636,7 @@ function renderSectionElements(items) {
       pointerDrag = null;
     };
     el.addEventListener('pointerdown', (e) => {
-      if (e.pointerType === 'mouse' || item.locked || !e.target.closest('.item-drag-handle')) return;
+      if (e.pointerType === 'mouse' || e.pointerType === 'touch' || item.locked || !e.target.closest('.item-drag-handle')) return;
       pointerDrag = { pointerId: e.pointerId, startY: e.clientY, moved: false };
       el.setPointerCapture?.(e.pointerId);
     });
@@ -1653,6 +1653,41 @@ function renderSectionElements(items) {
     }, { passive: false });
     el.addEventListener('pointerup', stopPointerReorder);
     el.addEventListener('pointercancel', stopPointerReorder);
+
+    // Older mobile WebViews may expose touch events but not usable Pointer Events.
+    let touchDrag = null;
+    const touchPoint = (e) => e.changedTouches[0];
+    const stopTouchReorder = (e) => {
+      if (!touchDrag) return;
+      const point = touchPoint(e);
+      if (touchDrag.moved && point) {
+        const { toIdx } = pointerTargetAt(point.clientY);
+        reorderSectionItems(Number(el.dataset.idx), toIdx);
+      }
+      el.classList.remove('is-dragging');
+      clearPointerDropMarkers();
+      touchDrag = null;
+    };
+    el.addEventListener('touchstart', (e) => {
+      if (item.locked || !e.target.closest('.item-drag-handle') || e.touches.length !== 1) return;
+      const point = e.touches[0];
+      touchDrag = { startY: point.clientY, moved: false };
+      e.preventDefault();
+    }, { passive: false });
+    el.addEventListener('touchmove', (e) => {
+      if (!touchDrag || e.touches.length !== 1) return;
+      const point = e.touches[0];
+      if (!touchDrag.moved && Math.abs(point.clientY - touchDrag.startY) < 6) return;
+      touchDrag.moved = true;
+      e.preventDefault();
+      el.classList.add('is-dragging');
+      clearPointerDropMarkers();
+      const { node, toIdx } = pointerTargetAt(point.clientY);
+      if (node && toIdx <= Number(el.dataset.idx)) node.classList.add('drag-over-top');
+      else if (node) node.classList.add('drag-over-bottom');
+    }, { passive: false });
+    el.addEventListener('touchend', stopTouchReorder, { passive: false });
+    el.addEventListener('touchcancel', stopTouchReorder, { passive: false });
 
     container.appendChild(el);
     } catch (err) {
