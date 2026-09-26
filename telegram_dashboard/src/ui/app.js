@@ -1428,14 +1428,16 @@ function renderSectionElements(items) {
               <button type="button" class="item-dropdown-item btn-edit-elem-item" title="${t('btn_edit_item_title')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>✏️ <span>${t('btn_edit') || 'Редагувати'}</span></button>
               <button type="button" class="item-dropdown-item btn-duplicate-elem-item" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>📋 <span>${t('action_duplicate')}</span></button>
               <button type="button" class="item-dropdown-item is-danger btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>🗑️ <span>${t('btn_delete')}</span></button>
+              <button type="button" class="item-dropdown-item btn-lock-elem-item" title="${lockTitle}" data-idx="${idx}">${lockIcon} <span>${lockTitle}</span></button>
             </div>
           </div>
-          <button type="button" class="btn-icon-action ${lockClass}" title="${lockTitle}" data-idx="${idx}">${lockIcon}</button>
         </div>
       `;
 
-      el.querySelector('.btn-lock-elem-item').addEventListener('click', (e) => {
+      el.querySelector('.btn-lock-elem-item')?.addEventListener('click', (e) => {
         e.stopPropagation();
+        el.querySelector('.item-actions-dropdown')?.classList.remove('is-open');
+        recordHistory();
         item.locked = !item.locked;
         syncSectionLegacyCollections(sec);
         renderSectionElements(sec.items);
@@ -1525,20 +1527,22 @@ function renderSectionElements(items) {
           <span class="badge-text-type">${escapeHtml(styleLabel)}</span>
         </div>
         <div class="section-text-item-actions">
-          <button type="button" class="btn-icon-action btn-cycle-divider-style" title="${t('btn_change_divider_style')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>🔄</button>
           <div class="item-actions-dropdown">
             <button type="button" class="btn-icon-action btn-item-more" title="${t('btn_more_options')}">⋮</button>
             <div class="item-dropdown-menu">
+              <button type="button" class="item-dropdown-item btn-cycle-divider-style" title="${t('btn_change_divider_style')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>🔄 <span>${t('btn_change_divider_style') || 'Змінити стиль'}</span></button>
               <button type="button" class="item-dropdown-item btn-duplicate-elem-item" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>📋 <span>${t('action_duplicate')}</span></button>
               <button type="button" class="item-dropdown-item is-danger btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>🗑️ <span>${t('btn_delete')}</span></button>
+              <button type="button" class="item-dropdown-item btn-lock-elem-item" title="${lockTitle}" data-idx="${idx}">${lockIcon} <span>${lockTitle}</span></button>
             </div>
           </div>
-          <button type="button" class="btn-icon-action ${lockClass}" title="${lockTitle}" data-idx="${idx}">${lockIcon}</button>
         </div>
       `;
 
-      el.querySelector('.btn-lock-elem-item').addEventListener('click', (e) => {
+      el.querySelector('.btn-lock-elem-item')?.addEventListener('click', (e) => {
         e.stopPropagation();
+        el.querySelector('.item-actions-dropdown')?.classList.remove('is-open');
+        recordHistory();
         item.locked = !item.locked;
         syncSectionLegacyCollections(sec);
         renderSectionElements(sec.items);
@@ -1644,14 +1648,16 @@ function renderSectionElements(items) {
               <button type="button" class="item-dropdown-item btn-edit-elem-item" title="${t('btn_edit_item_title')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>✏️ <span>${t('btn_edit') || 'Редагувати'}</span></button>
               <button type="button" class="item-dropdown-item btn-duplicate-elem-item" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>📋 <span>${t('action_duplicate')}</span></button>
               <button type="button" class="item-dropdown-item is-danger btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>🗑️ <span>${t('btn_delete')}</span></button>
+              <button type="button" class="item-dropdown-item btn-lock-elem-item" title="${lockTitle}" data-idx="${idx}">${lockIcon} <span>${lockTitle}</span></button>
             </div>
           </div>
-          <button type="button" class="btn-icon-action ${lockClass}" title="${lockTitle}" data-idx="${idx}">${lockIcon}</button>
         </div>
       `;
 
-      el.querySelector('.btn-lock-elem-item').addEventListener('click', (e) => {
+      el.querySelector('.btn-lock-elem-item')?.addEventListener('click', (e) => {
         e.stopPropagation();
+        el.querySelector('.item-actions-dropdown')?.classList.remove('is-open');
+        recordHistory();
         item.locked = !item.locked;
         syncSectionLegacyCollections(sec);
         renderSectionElements(sec.items);

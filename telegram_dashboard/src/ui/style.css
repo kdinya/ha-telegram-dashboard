@@ -2375,3 +2375,23 @@ body:has(.modal-overlay.open) {
 .item-dropdown-item.is-danger:hover {
   background: rgba(239, 68, 68, 0.15);
 }
+
+/* White 3-dots action button */
+.btn-item-more {
+  color: #ffffff !important;
+  font-size: 20px !important;
+  font-weight: bold !important;
+  line-height: 1 !important;
+  opacity: 1 !important;
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn-item-more:hover {
+  background-color: rgba(255, 255, 255, 0.18) !important;
+}
