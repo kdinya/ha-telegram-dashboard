@@ -1242,6 +1242,7 @@ function createInlineEntityRow(initialData = {}, onSave, onCancel) {
 
 function loadSectionIntoEditor(key) {
   if (!config || !config.menu || !config.menu[key]) return;
+  currentSectionKey = key;
   const sec = config.menu[key];
   if (editorSectionKey) editorSectionKey.textContent = key;
   if (editorSectionIcon) editorSectionIcon.textContent = sec.icon || '📁';
@@ -1589,7 +1590,8 @@ function renderSectionElements(items) {
       }
     });
 
-    el.addEventListener('dragleave', () => {
+    el.addEventListener('dragleave', (e) => {
+      if (e.relatedTarget && el.contains(e.relatedTarget)) return;
       el.classList.remove('drag-over-top', 'drag-over-bottom');
     });
 
@@ -1599,10 +1601,13 @@ function renderSectionElements(items) {
       const fromIdxStr = e.dataTransfer.getData('text/plain');
       if (fromIdxStr === '') return;
       const fromIdx = parseInt(fromIdxStr, 10);
-      let toIdx = idx;
       const rect = el.getBoundingClientRect();
-      if (e.clientY >= rect.top + rect.height / 2) {
-        toIdx = idx + 1;
+      const mid = rect.top + rect.height / 2;
+      let toIdx = idx;
+      if (fromIdx < idx) {
+        toIdx = (e.clientY >= mid || fromIdx === idx - 1) ? idx + 1 : idx;
+      } else if (fromIdx > idx) {
+        toIdx = (e.clientY < mid || fromIdx === idx + 1) ? idx : idx + 1;
       }
       reorderSectionItems(fromIdx, toIdx);
     });
@@ -1620,11 +1625,19 @@ function renderSectionElements(items) {
       });
     };
     const pointerTargetAt = (clientY) => {
+      const fromIdx = Number(el.dataset.idx);
       const nodes = [...container.querySelectorAll('.section-text-item')].filter(node => node !== el);
       for (const node of nodes) {
+        const nodeIdx = Number(node.dataset.idx);
         const rect = node.getBoundingClientRect();
-        if (clientY < rect.top + rect.height / 2) return { node, toIdx: Number(node.dataset.idx) };
-        if (clientY < rect.bottom) return { node, toIdx: Number(node.dataset.idx) + 1 };
+        const mid = rect.top + rect.height / 2;
+        if (fromIdx < nodeIdx && fromIdx === nodeIdx - 1) {
+          if (clientY >= rect.top && clientY <= rect.bottom) return { node, toIdx: nodeIdx + 1 };
+        } else if (fromIdx > nodeIdx && fromIdx === nodeIdx + 1) {
+          if (clientY >= rect.top && clientY <= rect.bottom) return { node, toIdx: nodeIdx };
+        }
+        if (clientY < mid) return { node, toIdx: nodeIdx };
+        if (clientY < rect.bottom) return { node, toIdx: nodeIdx + 1 };
       }
       return { node: null, toIdx: sec.items.length };
     };
@@ -1676,8 +1689,7 @@ function renderSectionElements(items) {
       if (item.locked || isInteractiveTarget(e.target) || e.touches.length !== 1) return;
       const point = e.touches[0];
       touchDrag = { startY: point.clientY, moved: false };
-      e.preventDefault();
-    }, { passive: false });
+    }, { passive: true });
     el.addEventListener('touchmove', (e) => {
       if (!touchDrag || e.touches.length !== 1) return;
       const point = e.touches[0];
