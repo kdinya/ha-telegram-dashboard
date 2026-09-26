@@ -179,3 +179,37 @@ async def test_command_message_is_auto_deleted_after_configured_timeout():
         await asyncio.wait_for(deleted.wait(), timeout=0.5)
     await asyncio.wait_for(deleted.wait(), timeout=2)
     await runner.stop()
+
+
+@pytest.mark.asyncio
+async def test_bridge_callback_debounce():
+    config = {
+        "menu": {
+            "main": {"title": "Main", "type": "menu", "sections": [], "roles": ["admin"]}
+        }
+    }
+    ac = AccessController([{"telegram_id": 100, "role": "admin"}])
+    engine = BotEngine(config, ac, MessageRenderer())
+    ha_client = MagicMock()
+    ha_client.call_service = AsyncMock(return_value={"ok": True})
+    runner = TelegramBotRunner(ha_client, engine)
+
+    # First callback: triggers edit_message and answer_callback_query (call_count = 2)
+    await runner.handle_ha_callback({
+        "data": f"{TD_CALLBACK_PREFIX}/sec_main",
+        "id": "1",
+        "chat_id": 100,
+        "message": {"message_id": 50},
+        "user_id": 100,
+    })
+    assert ha_client.call_service.call_count == 2
+
+    # Immediate second duplicate callback (debounced / anti-flood): only answers callback query without editing
+    await runner.handle_ha_callback({
+        "data": f"{TD_CALLBACK_PREFIX}/sec_main",
+        "id": "2",
+        "chat_id": 100,
+        "message": {"message_id": 50},
+        "user_id": 100,
+    })
+    assert ha_client.call_service.call_count == 3

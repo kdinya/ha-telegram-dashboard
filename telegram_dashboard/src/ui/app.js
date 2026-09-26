@@ -155,6 +155,61 @@ function showCustomConfirm(title, message, confirmText = (window.t ? window.t('b
  */
 
 let config = null;
+
+let undoStack = [];
+let redoStack = [];
+let itemsFilterQuery = "";
+
+function recordHistory() {
+  if (!config) return;
+  try {
+    undoStack.push(JSON.stringify(config));
+    if (undoStack.length > 50) undoStack.shift();
+    redoStack = [];
+    updateHistoryButtons();
+  } catch (err) {
+    console.error("Failed to record history:", err);
+  }
+}
+
+function updateHistoryButtons() {
+  const btnUndo = $("btn-undo");
+  const btnRedo = $("btn-redo");
+  if (btnUndo) btnUndo.disabled = undoStack.length === 0;
+  if (btnRedo) btnRedo.disabled = redoStack.length === 0;
+}
+
+function undo() {
+  if (undoStack.length === 0 || !config) return;
+  try {
+    redoStack.push(JSON.stringify(config));
+    const prevState = undoStack.pop();
+    config = JSON.parse(prevState);
+    updateHistoryButtons();
+    renderSections();
+    loadSectionIntoEditor(currentSectionKey);
+    updatePreview();
+    showToast(t("toast_undo"));
+  } catch (err) {
+    console.error("Failed to undo:", err);
+  }
+}
+
+function redo() {
+  if (redoStack.length === 0 || !config) return;
+  try {
+    undoStack.push(JSON.stringify(config));
+    const nextState = redoStack.pop();
+    config = JSON.parse(nextState);
+    updateHistoryButtons();
+    renderSections();
+    loadSectionIntoEditor(currentSectionKey);
+    updatePreview();
+    showToast(t("toast_redo"));
+  } catch (err) {
+    console.error("Failed to redo:", err);
+  }
+}
 let currentSectionKey = 'main';
 let currentSimulatedRole = 'admin';
 let availableEntities = [];
@@ -1286,9 +1341,22 @@ function renderSectionElements(items) {
   if (!sec) return;
   ensureSectionItems(sec);
 
+  const searchInput = $('items-search-input');
+  if (searchInput && !searchInput.dataset.bound) {
+    searchInput.dataset.bound = 'true';
+    searchInput.addEventListener('input', (e) => {
+      itemsFilterQuery = e.target.value.trim().toLowerCase();
+      renderSectionElements(sec.items);
+    });
+  }
+
+  const query = (itemsFilterQuery || '').toLowerCase();
+  let visibleCount = 0;
+
   const reorderSectionItems = (fromIdx, toIdx) => {
     if (!Number.isInteger(fromIdx) || !Number.isInteger(toIdx)) return false;
     if (fromIdx === toIdx || fromIdx === toIdx - 1) return false;
+    recordHistory();
     const [movedItem] = sec.items.splice(fromIdx, 1);
     const targetIdx = fromIdx < toIdx ? toIdx - 1 : toIdx;
     sec.items.splice(targetIdx, 0, movedItem);
@@ -1300,6 +1368,20 @@ function renderSectionElements(items) {
   };
 
   sec.items.forEach((item, idx) => {
+    if (query) {
+      let matches = false;
+      if (item.type === 'entity') {
+        matches = (item.label || '').toLowerCase().includes(query) || (item.entity_id || '').toLowerCase().includes(query);
+      } else if (item.type === 'text') {
+        matches = (item.text || '').toLowerCase().includes(query);
+      } else if (item.type === 'divider' || item.type === 'spacer') {
+        matches = 'divider лінія відступ розділювач'.includes(query);
+      } else {
+        matches = (item.label || item.text || '').toLowerCase().includes(query);
+      }
+      if (!matches) return;
+    }
+    visibleCount++;
     try {
     if (editingItemIdx === idx) {
       if (item.type === 'entity') {
@@ -1365,8 +1447,14 @@ function renderSectionElements(items) {
           ${indentBadge}
         </div>
         <div class="section-text-item-actions">
-          <button type="button" class="btn-icon-action btn-edit-elem-item" title="${t('btn_edit_item_title')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>✏️</button>
-          <button type="button" class="btn-icon-action btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>🗑️</button>
+          <div class="item-actions-dropdown">
+            <button type="button" class="btn-icon-action btn-item-more" title="${t('btn_more_options')}">⋮</button>
+            <div class="item-dropdown-menu">
+              <button type="button" class="item-dropdown-item btn-edit-elem-item" title="${t('btn_edit_item_title')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>✏️ <span>${t('btn_edit') || 'Редагувати'}</span></button>
+              <button type="button" class="item-dropdown-item btn-duplicate-elem-item" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>📋 <span>${t('action_duplicate')}</span></button>
+              <button type="button" class="item-dropdown-item is-danger btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>🗑️ <span>${t('btn_delete')}</span></button>
+            </div>
+          </div>
           <button type="button" class="btn-icon-action ${lockClass}" title="${lockTitle}" data-idx="${idx}">${lockIcon}</button>
         </div>
       `;
@@ -1377,6 +1465,31 @@ function renderSectionElements(items) {
         syncSectionLegacyCollections(sec);
         renderSectionElements(sec.items);
         showToast(item.locked ? t('toast_item_locked') : t('toast_item_unlocked'));
+      });
+
+      el.querySelector('.btn-item-more')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const dropdown = el.querySelector('.item-actions-dropdown');
+        document.querySelectorAll('.item-actions-dropdown.is-open').forEach(d => {
+          if (d !== dropdown) d.classList.remove('is-open');
+        });
+        dropdown?.classList.toggle('is-open');
+      });
+
+      el.querySelector('.btn-duplicate-elem-item')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        el.querySelector('.item-actions-dropdown')?.classList.remove('is-open');
+        if (item.locked) {
+          showToast(t('toast_item_is_locked'), true);
+          return;
+        }
+        recordHistory();
+        const cloned = JSON.parse(JSON.stringify(item));
+        sec.items.splice(idx + 1, 0, cloned);
+        syncSectionLegacyCollections(sec);
+        renderSectionElements(sec.items);
+        updatePreview();
+        showToast(t('toast_item_duplicated'));
       });
 
       el.querySelector('.btn-edit-elem-item').addEventListener('click', () => {
@@ -1401,6 +1514,7 @@ function renderSectionElements(items) {
           true
         );
         if (!confirmed) return;
+        recordHistory();
         sec.items.splice(idx, 1);
         syncSectionLegacyCollections(sec);
         if (editingItemIdx === idx) editingItemIdx = null;
@@ -1437,7 +1551,13 @@ function renderSectionElements(items) {
         </div>
         <div class="section-text-item-actions">
           <button type="button" class="btn-icon-action btn-cycle-divider-style" title="${t('btn_change_divider_style')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>🔄</button>
-          <button type="button" class="btn-icon-action btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>🗑️</button>
+          <div class="item-actions-dropdown">
+            <button type="button" class="btn-icon-action btn-item-more" title="${t('btn_more_options')}">⋮</button>
+            <div class="item-dropdown-menu">
+              <button type="button" class="item-dropdown-item btn-duplicate-elem-item" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>📋 <span>${t('action_duplicate')}</span></button>
+              <button type="button" class="item-dropdown-item is-danger btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>🗑️ <span>${t('btn_delete')}</span></button>
+            </div>
+          </div>
           <button type="button" class="btn-icon-action ${lockClass}" title="${lockTitle}" data-idx="${idx}">${lockIcon}</button>
         </div>
       `;
@@ -1448,6 +1568,31 @@ function renderSectionElements(items) {
         syncSectionLegacyCollections(sec);
         renderSectionElements(sec.items);
         showToast(item.locked ? t('toast_item_locked') : t('toast_item_unlocked'));
+      });
+
+      el.querySelector('.btn-item-more')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const dropdown = el.querySelector('.item-actions-dropdown');
+        document.querySelectorAll('.item-actions-dropdown.is-open').forEach(d => {
+          if (d !== dropdown) d.classList.remove('is-open');
+        });
+        dropdown?.classList.toggle('is-open');
+      });
+
+      el.querySelector('.btn-duplicate-elem-item')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        el.querySelector('.item-actions-dropdown')?.classList.remove('is-open');
+        if (item.locked) {
+          showToast(t('toast_item_is_locked'), true);
+          return;
+        }
+        recordHistory();
+        const cloned = JSON.parse(JSON.stringify(item));
+        sec.items.splice(idx + 1, 0, cloned);
+        syncSectionLegacyCollections(sec);
+        renderSectionElements(sec.items);
+        updatePreview();
+        showToast(t('toast_item_duplicated'));
       });
 
       el.querySelector('.btn-cycle-divider-style').addEventListener('click', () => {
@@ -1476,6 +1621,7 @@ function renderSectionElements(items) {
           true
         );
         if (!confirmed) return;
+        recordHistory();
         sec.items.splice(idx, 1);
         syncSectionLegacyCollections(sec);
         if (editingItemIdx === idx) editingItemIdx = null;
@@ -1517,8 +1663,14 @@ function renderSectionElements(items) {
           ${indentBadge}
         </div>
         <div class="section-text-item-actions">
-          <button type="button" class="btn-icon-action btn-edit-elem-item" title="${t('btn_edit_item_title')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>✏️</button>
-          <button type="button" class="btn-icon-action btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>🗑️</button>
+          <div class="item-actions-dropdown">
+            <button type="button" class="btn-icon-action btn-item-more" title="${t('btn_more_options')}">⋮</button>
+            <div class="item-dropdown-menu">
+              <button type="button" class="item-dropdown-item btn-edit-elem-item" title="${t('btn_edit_item_title')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>✏️ <span>${t('btn_edit') || 'Редагувати'}</span></button>
+              <button type="button" class="item-dropdown-item btn-duplicate-elem-item" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>📋 <span>${t('action_duplicate')}</span></button>
+              <button type="button" class="item-dropdown-item is-danger btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>🗑️ <span>${t('btn_delete')}</span></button>
+            </div>
+          </div>
           <button type="button" class="btn-icon-action ${lockClass}" title="${lockTitle}" data-idx="${idx}">${lockIcon}</button>
         </div>
       `;
@@ -1529,6 +1681,31 @@ function renderSectionElements(items) {
         syncSectionLegacyCollections(sec);
         renderSectionElements(sec.items);
         showToast(item.locked ? t('toast_item_locked') : t('toast_item_unlocked'));
+      });
+
+      el.querySelector('.btn-item-more')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const dropdown = el.querySelector('.item-actions-dropdown');
+        document.querySelectorAll('.item-actions-dropdown.is-open').forEach(d => {
+          if (d !== dropdown) d.classList.remove('is-open');
+        });
+        dropdown?.classList.toggle('is-open');
+      });
+
+      el.querySelector('.btn-duplicate-elem-item')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        el.querySelector('.item-actions-dropdown')?.classList.remove('is-open');
+        if (item.locked) {
+          showToast(t('toast_item_is_locked'), true);
+          return;
+        }
+        recordHistory();
+        const cloned = JSON.parse(JSON.stringify(item));
+        sec.items.splice(idx + 1, 0, cloned);
+        syncSectionLegacyCollections(sec);
+        renderSectionElements(sec.items);
+        updatePreview();
+        showToast(t('toast_item_duplicated'));
       });
 
       el.querySelector('.btn-edit-elem-item').addEventListener('click', () => {
@@ -1553,6 +1730,7 @@ function renderSectionElements(items) {
           true
         );
         if (!confirmed) return;
+        recordHistory();
         sec.items.splice(idx, 1);
         syncSectionLegacyCollections(sec);
         if (editingItemIdx === idx) editingItemIdx = null;

@@ -44,6 +44,8 @@
     <main class="content-area">
       <!-- Floating Actions (Bottom Right) -->
       <div class="floating-actions-bar">
+        <button type="button" id="btn-undo" class="btn btn-secondary btn-floating-action" data-i18n-title="btn_undo" title="Undo (Ctrl+Z)" disabled>↶</button>
+        <button type="button" id="btn-redo" class="btn btn-secondary btn-floating-action" data-i18n-title="btn_redo" title="Redo (Ctrl+Y)" disabled>↷</button>
         <button id="btn-toggle-preview" class="btn btn-secondary desktop-toggle-preview btn-floating" data-i18n-title="btn_preview_title" title="Show or hide preview">
           <span class="preview-toggle-icon">📱</span> <span class="preview-toggle-label" data-i18n="btn_preview">Preview</span>
         </button>
@@ -77,7 +79,10 @@
                   </div>
                   <span id="main-badge-wrap" class="badge-ok main-screen-badge" style="display: none;" data-i18n="badge_main_screen">⭐ Main screen</span>
                 </div>
-                <button id="btn-delete-section" class="btn btn-danger btn-sm" data-i18n="btn_delete">🗑️ Delete</button>
+                <div class="section-top-actions">
+                  <button type="button" id="btn-duplicate-section" class="btn btn-secondary btn-sm" data-i18n-title="btn_duplicate_section" title="Duplicate section">📋 <span data-i18n="action_duplicate">Копіювати</span></button>
+                  <button id="btn-delete-section" class="btn btn-danger btn-sm" data-i18n="btn_delete">🗑️ Delete</button>
+                </div>
               </div>
 
 
@@ -103,7 +108,12 @@
 
               <!-- Section Items / Content Builder -->
               <div id="block-section-content" class="sub-block">
-                <h4 data-i18n="block_section_content_title">Section elements</h4>
+                <div class="section-content-header-row">
+                  <h4 data-i18n="block_section_content_title">Section elements</h4>
+                  <div class="section-items-search-wrap">
+                    <input type="search" id="items-search-input" class="form-input items-search-input" data-i18n-placeholder="items_search_placeholder" placeholder="🔍 Search elements...">
+                  </div>
+                </div>
                 <div id="section-texts-list" class="section-texts-list"></div>
 
                 <!-- Three buttons in one row -->

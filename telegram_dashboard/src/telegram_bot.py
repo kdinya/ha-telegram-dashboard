@@ -1,5 +1,6 @@
 """Telegram Bot integration bridge connecting through Home Assistant telegram_bot actions and events."""
 from __future__ import annotations
+import time
 
 import asyncio
 import logging
@@ -52,6 +53,7 @@ class TelegramBotRunner:
         self.get_ha_state = get_ha_state
         self._running = False
         self._auto_delete_tasks: dict[tuple[int, int], asyncio.Task] = {}
+        self._callback_debounce: dict[tuple[int, str], float] = {}
 
     @staticmethod
     def _safe_int(value: Any) -> int | None:
@@ -102,6 +104,7 @@ class TelegramBotRunner:
         text: str,
         reply_markup: dict | None = None,
         parse_mode: str = "html",
+        disable_notification: bool = True,
     ) -> dict[str, Any] | None:
         """Edit message text via Home Assistant telegram_bot.edit_message action."""
         if not self.ha_client:
@@ -118,6 +121,7 @@ class TelegramBotRunner:
             "message_id": safe_message_id,
             "message": text,
             "parse_mode": parse_mode.lower(),
+            "disable_notification": disable_notification,
         }
         if reply_markup and "inline_keyboard" in reply_markup:
             service_data["inline_keyboard"] = format_inline_keyboard_for_ha(reply_markup["inline_keyboard"])
@@ -322,6 +326,16 @@ class TelegramBotRunner:
 
         state = await self._current_state()
         toast = None
+
+        # Anti-flood / debounce check: ignore duplicate callback clicks within 0.6s
+        now = time.monotonic()
+        self._callback_debounce = {k: v for k, v in self._callback_debounce.items() if now - v < 5.0}
+        debounce_key = (user_id, action_data)
+        if debounce_key in self._callback_debounce and (now - self._callback_debounce[debounce_key] < 0.6):
+            if cb_id:
+                await self.answer_callback_query(cb_id)
+            return
+        self._callback_debounce[debounce_key] = now
 
         # Reset inactivity timer on any interaction
         self.schedule_auto_delete(chat_id, int(msg_id))

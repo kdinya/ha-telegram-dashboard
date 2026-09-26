@@ -2297,3 +2297,115 @@ body:has(.modal-overlay.open) {
 .editor-pane {
   padding-bottom: 90px !important;
 }
+
+/* Floating undo/redo actions */
+.btn-floating-action {
+  width: 42px;
+  height: 42px;
+  border-radius: 50% !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: bold;
+  padding: 0 !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  background: var(--card-bg, #1f2937);
+  color: var(--text-color, #f3f4f6);
+  border: 1px solid var(--border-color, #374151);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-floating-action:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+.btn-floating-action:not(:disabled):hover {
+  background: var(--hover-bg, #374151);
+  transform: translateY(-2px);
+}
+
+/* Section items search header */
+.section-content-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+.section-content-header-row h4 {
+  margin: 0;
+}
+.section-items-search-wrap {
+  flex: 1;
+  max-width: 240px;
+  min-width: 140px;
+}
+.items-search-input {
+  width: 100%;
+  padding: 6px 10px;
+  font-size: 13px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #374151);
+  background: var(--input-bg, #111827);
+  color: var(--text-color, #f3f4f6);
+  box-sizing: border-box;
+}
+
+/* Section top actions */
+.section-top-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 3-dots item dropdown */
+.item-actions-dropdown {
+  position: relative;
+  display: inline-block;
+}
+.item-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 100;
+  min-width: 130px;
+  background: var(--card-bg, #1f2937);
+  border: 1px solid var(--border-color, #374151);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  padding: 4px;
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+}
+.item-actions-dropdown.is-open .item-dropdown-menu {
+  display: flex;
+}
+.item-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  font-size: 13px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-color, #f3f4f6);
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  box-sizing: border-box;
+  transition: background 0.15s ease;
+}
+.item-dropdown-item:hover {
+  background: var(--hover-bg, #374151);
+}
+.item-dropdown-item.is-danger {
+  color: #ef4444;
+}
+.item-dropdown-item.is-danger:hover {
+  background: rgba(239, 68, 68, 0.15);
+}
