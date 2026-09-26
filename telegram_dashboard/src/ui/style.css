@@ -1351,7 +1351,7 @@ body:has(.modal-overlay.open) {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  touch-action: none;
+  touch-action: pan-y;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 6px;
@@ -1808,7 +1808,15 @@ body:has(.modal-overlay.open) {
   cursor: grabbing;
 }
 
+.section-text-item.is-holding {
+  touch-action: none;
+  border-color: #38bdf8;
+  box-shadow: 0 4px 14px rgba(56, 189, 248, 0.2);
+  transform: scale(1.01);
+}
+
 .section-text-item.is-dragging {
+  touch-action: none;
   opacity: 0.35;
   background: rgba(56, 189, 248, 0.08);
   border-style: dashed;

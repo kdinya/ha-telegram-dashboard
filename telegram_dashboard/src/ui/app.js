@@ -1615,6 +1615,7 @@ function renderSectionElements(items) {
 
     // Native HTML5 drag-and-drop is unavailable on many touch browsers.
     // Use the whole item row for touch/pen while keeping native desktop DnD intact.
+    // Require a short press-and-hold delay (280ms) so regular scrolling is uninterrupted.
     let pointerDrag = null;
     const isInteractiveTarget = (target) => Boolean(
       target instanceof Element
@@ -1644,26 +1645,44 @@ function renderSectionElements(items) {
     };
     const stopPointerReorder = (e) => {
       if (!pointerDrag || e.pointerId !== pointerDrag.pointerId) return;
-      if (pointerDrag.moved) {
+      if (pointerDrag.timer) clearTimeout(pointerDrag.timer);
+      if (pointerDrag.active && pointerDrag.moved) {
         const { toIdx } = pointerTargetAt(e.clientY);
         reorderSectionItems(Number(el.dataset.idx), toIdx);
       }
-      el.classList.remove('is-dragging');
+      el.classList.remove('is-dragging', 'is-holding');
       clearPointerDropMarkers();
       el.releasePointerCapture?.(e.pointerId);
       pointerDrag = null;
     };
     el.addEventListener('pointerdown', (e) => {
       if (e.pointerType === 'mouse' || e.pointerType === 'touch' || item.locked || isInteractiveTarget(e.target)) return;
-      pointerDrag = { pointerId: e.pointerId, startY: e.clientY, moved: false };
-      el.setPointerCapture?.(e.pointerId);
+      pointerDrag = {
+        pointerId: e.pointerId,
+        startX: e.clientX,
+        startY: e.clientY,
+        active: false,
+        moved: false,
+        timer: null
+      };
+      pointerDrag.timer = setTimeout(() => {
+        if (!pointerDrag) return;
+        pointerDrag.active = true;
+        el.classList.add('is-dragging', 'is-holding');
+        if (navigator.vibrate) navigator.vibrate(30);
+      }, 280);
     });
     el.addEventListener('pointermove', (e) => {
       if (!pointerDrag || e.pointerId !== pointerDrag.pointerId) return;
-      if (!pointerDrag.moved && Math.abs(e.clientY - pointerDrag.startY) < 6) return;
+      if (!pointerDrag.active) {
+        if (Math.hypot(e.clientX - pointerDrag.startX, e.clientY - pointerDrag.startY) > 8) {
+          clearTimeout(pointerDrag.timer);
+          pointerDrag = null;
+        }
+        return;
+      }
       pointerDrag.moved = true;
       e.preventDefault();
-      el.classList.add('is-dragging');
       clearPointerDropMarkers();
       const { node, toIdx } = pointerTargetAt(e.clientY);
       if (node && toIdx <= Number(el.dataset.idx)) node.classList.add('drag-over-top');
@@ -1677,27 +1696,45 @@ function renderSectionElements(items) {
     const touchPoint = (e) => e.changedTouches?.[0] || e.touches?.[0] || null;
     const stopTouchReorder = (e) => {
       if (!touchDrag) return;
+      if (touchDrag.timer) clearTimeout(touchDrag.timer);
       const point = touchPoint(e);
-      if (touchDrag.moved && point) {
+      if (touchDrag.active && touchDrag.moved && point) {
         const { toIdx } = pointerTargetAt(point.clientY);
         reorderSectionItems(Number(el.dataset.idx), toIdx);
       }
-      el.classList.remove('is-dragging');
+      el.classList.remove('is-dragging', 'is-holding');
       clearPointerDropMarkers();
       touchDrag = null;
     };
     el.addEventListener('touchstart', (e) => {
       if (item.locked || isInteractiveTarget(e.target) || e.touches.length !== 1) return;
       const point = e.touches[0];
-      touchDrag = { startY: point.clientY, moved: false };
+      touchDrag = {
+        startX: point.clientX,
+        startY: point.clientY,
+        active: false,
+        moved: false,
+        timer: null
+      };
+      touchDrag.timer = setTimeout(() => {
+        if (!touchDrag) return;
+        touchDrag.active = true;
+        el.classList.add('is-dragging', 'is-holding');
+        if (navigator.vibrate) navigator.vibrate(30);
+      }, 280);
     }, { passive: true });
     el.addEventListener('touchmove', (e) => {
       if (!touchDrag || e.touches.length !== 1) return;
       const point = e.touches[0];
-      if (!touchDrag.moved && Math.abs(point.clientY - touchDrag.startY) < 6) return;
+      if (!touchDrag.active) {
+        if (Math.hypot(point.clientX - touchDrag.startX, point.clientY - touchDrag.startY) > 8) {
+          clearTimeout(touchDrag.timer);
+          touchDrag = null;
+        }
+        return;
+      }
       touchDrag.moved = true;
       e.preventDefault();
-      el.classList.add('is-dragging');
       clearPointerDropMarkers();
       const { node, toIdx } = pointerTargetAt(point.clientY);
       if (node && toIdx <= Number(el.dataset.idx)) node.classList.add('drag-over-top');

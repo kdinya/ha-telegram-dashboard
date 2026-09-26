@@ -125,6 +125,9 @@ def test_section_items_support_touch_reorder_and_localized_drag_labels():
     assert "e.changedTouches?.[0] || e.touches?.[0] || null" in app
     assert styles.count(".section-text-item {") == 1
     assert "touch-action: none" in styles
+    assert "touch-action: pan-y" in styles
+    assert "touchDrag.timer = setTimeout" in app
+    assert "clearTimeout(touchDrag.timer)" in app
     for key in ("btn_edit_item_title", "drag_handle_title", "drag_handle_aria", "toast_order_updated"):
         assert i18n.count(f"{key}:") == 2
         assert f"t('{key}')" in app
