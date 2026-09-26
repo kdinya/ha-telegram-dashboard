@@ -2304,6 +2304,10 @@ async function updatePreview() {
         previewContentAnimation.cancel();
         previewContentAnimation = null;
       }
+      if (botBubble && typeof botBubble.getAnimations === 'function') {
+        botBubble.getAnimations().forEach(a => a.cancel());
+      }
+      botBubble?.classList.remove('is-animating-height');
       botBubble?.querySelectorAll('.tg-bubble-outgoing').forEach(el => el.remove());
 
       let outgoingClone = null;
@@ -2372,13 +2376,32 @@ async function updatePreview() {
           }
 
           if (Math.abs(newHeight - prevHeight) > 1) {
+            botBubble.classList.add('is-animating-height');
             botBubble.style.height = `${prevHeight}px`;
             void botBubble.offsetHeight;
             const animation = botBubble.animate(
               [{ height: `${prevHeight}px` }, { height: `${newHeight}px` }],
-              { duration: 250, easing: 'cubic-bezier(0.25, 1, 0.5, 1)', fill: 'forwards' }
+              { duration: 250, easing: 'cubic-bezier(0.25, 1, 0.5, 1)' }
             );
             previewHeightAnimation = animation;
+
+            const cleanupHeightAnim = () => {
+              if (previewHeightAnimation !== animation && previewHeightAnimation !== null) return;
+              previewHeightAnimation = null;
+              botBubble.classList.remove('is-animating-height');
+              botBubble.style.height = '';
+              animation.cancel();
+              if (previewHeightFrame !== null) {
+                cancelAnimationFrame(previewHeightFrame);
+                previewHeightFrame = null;
+              }
+              updateMessageOverflowState();
+              restoreScrollPosition();
+              if (msgArea && previewScrollBehaviorToRestore !== null) {
+                msgArea.style.scrollBehavior = previewScrollBehaviorToRestore;
+                previewScrollBehaviorToRestore = null;
+              }
+            };
 
             if (msgArea) {
               const previousScrollBehavior = msgArea.style.scrollBehavior;
@@ -2392,35 +2415,14 @@ async function updatePreview() {
                 previewHeightFrame = requestAnimationFrame(keepChatBottomAnchored);
               };
               previewHeightFrame = requestAnimationFrame(keepChatBottomAnchored);
-              animation.onfinish = () => {
-                if (previewHeightAnimation !== animation) return;
-                botBubble.style.height = '';
-                previewHeightAnimation = null;
-                animation.cancel();
-                if (previewHeightFrame !== null) cancelAnimationFrame(previewHeightFrame);
-                previewHeightFrame = null;
-                updateMessageOverflowState();
-                restoreScrollPosition();
-                msgArea.style.scrollBehavior = previousScrollBehavior;
-                previewScrollBehaviorToRestore = null;
-              };
-              animation.oncancel = () => {
-                if (previewHeightAnimation !== animation) return;
-                previewHeightAnimation = null;
-                if (previewHeightFrame !== null) cancelAnimationFrame(previewHeightFrame);
-                previewHeightFrame = null;
-                msgArea.style.scrollBehavior = previousScrollBehavior;
-                previewScrollBehaviorToRestore = null;
-              };
+              animation.onfinish = cleanupHeightAnim;
+              animation.oncancel = cleanupHeightAnim;
             } else {
-              animation.onfinish = () => {
-                if (previewHeightAnimation !== animation) return;
-                botBubble.style.height = '';
-                animation.cancel();
-                previewHeightAnimation = null;
-              };
+              animation.onfinish = cleanupHeightAnim;
+              animation.oncancel = cleanupHeightAnim;
             }
           } else {
+            botBubble.classList.remove('is-animating-height');
             botBubble.style.height = '';
           }
         }
@@ -2494,6 +2496,23 @@ function handlePreviewButtonClick(callbackData) {
     const bubbleContent = document.getElementById('preview-bubble-content');
     const botBubble = document.getElementById('preview-bot-bubble');
     if (botBubble && bubbleContent && botBubble.offsetHeight > 0) {
+      if (previewHeightAnimation) {
+        previewHeightAnimation.cancel();
+        previewHeightAnimation = null;
+      }
+      if (previewHeightFrame !== null) {
+        cancelAnimationFrame(previewHeightFrame);
+        previewHeightFrame = null;
+      }
+      if (previewContentAnimation) {
+        previewContentAnimation.cancel();
+        previewContentAnimation = null;
+      }
+      if (typeof botBubble.getAnimations === 'function') {
+        botBubble.getAnimations().forEach(a => a.cancel());
+      }
+      botBubble.querySelectorAll('.tg-bubble-outgoing').forEach(el => el.remove());
+
       const prevH = botBubble.offsetHeight;
       const outgoing = bubbleContent.cloneNode(true);
       outgoing.removeAttribute('id');
@@ -2502,42 +2521,68 @@ function handlePreviewButtonClick(callbackData) {
       botBubble.appendChild(outgoing);
 
       previewText.innerHTML = '<i>💬 Повідомлення закрито (видалено з чату)</i>';
-      previewButtons.innerHTML = '<div class="tg-btn-row"><button class="tg-button" id="btn-preview-reopen">🔄 Відкрити знову</button></div>';
+      previewButtons.innerHTML = '<div class=tg-btn-row><button class=tg-button id=btn-preview-reopen>🔄 Відкрити знову</button></div>';
       const timestampEl = document.getElementById('preview-timestamp');
       if (timestampEl) timestampEl.hidden = true;
 
       const reopenBtn = document.getElementById('btn-preview-reopen');
-      if (reopenBtn) reopenBtn.addEventListener('click', () => updatePreview());
+      if (reopenBtn) {
+        reopenBtn.addEventListener('click', () => {
+          reopenBtn.classList.add('is-active');
+          updatePreview();
+        });
+      }
 
       bubbleContent.style.opacity = '0';
       bubbleContent.style.transform = 'translateY(2px)';
+      botBubble.style.height = 'auto';
       const newH = botBubble.offsetHeight;
       botBubble.style.height = `${prevH}px`;
+      botBubble.classList.add('is-animating-height');
 
       outgoing.animate(
         [{ opacity: 1, transform: 'translateY(0)' }, { opacity: 0, transform: 'translateY(-2px)' }],
         { duration: 180, easing: 'cubic-bezier(0.25, 1, 0.5, 1)', fill: 'forwards' }
       ).onfinish = () => outgoing.remove();
 
-      bubbleContent.animate(
+      const incomingAnim = bubbleContent.animate(
         [{ opacity: 0, transform: 'translateY(2px)' }, { opacity: 1, transform: 'translateY(0)' }],
         { duration: 220, delay: 20, easing: 'cubic-bezier(0.25, 1, 0.5, 1)', fill: 'forwards' }
-      ).onfinish = () => {
+      );
+      incomingAnim.onfinish = () => {
         bubbleContent.style.opacity = '';
         bubbleContent.style.transform = '';
       };
+      previewContentAnimation = incomingAnim;
 
       const anim = botBubble.animate(
         [{ height: `${prevH}px` }, { height: `${newH}px` }],
-        { duration: 240, easing: 'cubic-bezier(0.25, 1, 0.5, 1)', fill: 'forwards' }
+        { duration: 240, easing: 'cubic-bezier(0.25, 1, 0.5, 1)' }
       );
-      anim.onfinish = () => { botBubble.style.height = ''; };
+      previewHeightAnimation = anim;
+      const finishCloseAnim = () => {
+        if (previewHeightAnimation === anim) previewHeightAnimation = null;
+        botBubble.classList.remove('is-animating-height');
+        botBubble.style.height = '';
+        anim.cancel();
+        const msgArea = document.querySelector('.tg-messages-area');
+        if (msgArea) {
+          msgArea.classList.toggle('is-overflowing', msgArea.scrollHeight > msgArea.clientHeight + 1);
+        }
+      };
+      anim.onfinish = finishCloseAnim;
+      anim.oncancel = finishCloseAnim;
       return;
     }
     previewText.innerHTML = '<i>💬 Повідомлення закрито (видалено з чату)</i>';
-    previewButtons.innerHTML = '<div class="tg-btn-row"><button class="tg-button" id="btn-preview-reopen">🔄 Відкрити знову</button></div>';
+    previewButtons.innerHTML = '<div class=tg-btn-row><button class=tg-button id=btn-preview-reopen>🔄 Відкрити знову</button></div>';
     const reopenBtn = document.getElementById('btn-preview-reopen');
-    if (reopenBtn) reopenBtn.addEventListener('click', () => updatePreview());
+    if (reopenBtn) {
+      reopenBtn.addEventListener('click', () => {
+        reopenBtn.classList.add('is-active');
+        updatePreview();
+      });
+    }
     return;
   }
   if (actionData.startsWith('/sec_')) {

@@ -598,10 +598,14 @@ select.form-control option {
   justify-content: flex-start;
 }
 
+.tg-bot-bubble.is-animating-height {
+  overflow: hidden !important;
+}
+
 .tg-bot-bubble {
   position: relative;
   margin-bottom: 0 !important;
-  overflow: hidden !important;
+  overflow: visible;
   flex: 0 0 auto;
   will-change: height;
   transition: width 0.15s ease, max-width 0.15s ease;
