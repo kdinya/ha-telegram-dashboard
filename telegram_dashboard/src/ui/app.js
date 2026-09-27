@@ -1646,13 +1646,13 @@ function renderSectionElements(items) {
       // Divider / Horizontal spacer item
       const style = item.style || 'line';
       let styleLabel = t('divider_style_line') || 'Суцільна лінія';
-      let stylePreview = '────────────────────────';
+      let stylePreview = '──────────────────';
       if (style === 'space') {
         styleLabel = t('divider_style_space') || 'Порожній відступ';
         stylePreview = '␣ (порожній відступ)';
       } else if (style === 'dashed') {
         styleLabel = t('divider_style_dashed') || 'Пунктирна лінія';
-        stylePreview = '┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄';
+        stylePreview = '┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄';
       }
 
       const isLocked = Boolean(item.locked);

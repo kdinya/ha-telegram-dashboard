@@ -194,12 +194,15 @@ class BotEngine:
             total_pages = max(1, (len(visible) + ENTITIES_PAGE_SIZE - 1) // ENTITIES_PAGE_SIZE)
             page = max(0, min(page, total_pages - 1))
             chunk = visible[page * ENTITIES_PAGE_SIZE:(page + 1) * ENTITIES_PAGE_SIZE]
+            ent_buttons: list[dict[str, str]] = []
             for idx, ent in enumerate(chunk):
                 global_idx = page * ENTITIES_PAGE_SIZE + idx
-                keyboard.append([{
+                ent_buttons.append({
                     "text": f"🔘 {friendly_name(ent)}",
                     "callback_data": f"td:/tog_{section_key}_{global_idx}",
-                }])
+                })
+            for i in range(0, len(ent_buttons), 2):
+                keyboard.append(ent_buttons[i:i + 2])
             nav_row: list[dict[str, str]] = []
             if page > 0:
                 nav_row.append({"text": "⬅️", "callback_data": f"td:/ent_{section_key}_{page - 1}"})
@@ -208,7 +211,8 @@ class BotEngine:
                 nav_row.append({"text": "➡️", "callback_data": f"td:/ent_{section_key}_{page + 1}"})
             keyboard.append(nav_row)
 
-        # 3. Action / Control buttons
+        # 3. Action / Control buttons (paired by 2, remainder as 1)
+        action_buttons: list[dict[str, str]] = []
         buttons = section.get("buttons")
         if buttons is not None:
             for idx, btn in enumerate(buttons):
@@ -230,14 +234,17 @@ class BotEngine:
                         btn_text = f"🟢 {raw_label}"
                     elif ent_st_lower in ("off", "closed", "false"):
                         btn_text = f"🔴 {raw_label}"
-                keyboard.append([{"text": btn_text, "callback_data": f"td:/btn_{section_key}_{idx}"}])
+                action_buttons.append({"text": btn_text, "callback_data": f"td:/btn_{section_key}_{idx}"})
         else:
             actions = section.get("actions", [])
             allowed_actions = self.access.filter_actions(user_id, actions)
             for idx, act in enumerate(allowed_actions):
                 act_id = act.get("id") or f"act_{idx}"
                 raw_label = act.get("label", "Дія")
-                keyboard.append([{"text": raw_label, "callback_data": f"td:/act_{act_id}"}])
+                action_buttons.append({"text": raw_label, "callback_data": f"td:/act_{act_id}"})
+
+        for i in range(0, len(action_buttons), 2):
+            keyboard.append(action_buttons[i:i + 2])
 
         # 4. Standard footer buttons
         from datetime import datetime

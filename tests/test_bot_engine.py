@@ -101,3 +101,31 @@ async def test_callbacks_cannot_bypass_section_rbac():
     assert toggle["ok"] is False
     assert action["ok"] is False
     assert called == []
+
+
+@pytest.mark.asyncio
+async def test_keyboard_layout_pairs_and_bottom_close():
+    cfg = {
+        "menu": {
+            "main": {
+                "title": "Main",
+                "buttons": [
+                    {"label": "Btn 1", "entity_id": "switch.s1"},
+                    {"label": "Btn 2", "entity_id": "switch.s2"},
+                    {"label": "Btn 3", "entity_id": "switch.s3"},
+                ],
+            }
+        }
+    }
+    ac = AccessController([], default_role="admin")
+    renderer = MessageRenderer()
+    engine = BotEngine(cfg, ac, renderer)
+    kb = engine.build_keyboard("main", 123)
+    # Action buttons: 3 buttons -> first row has 2, second row has 1
+    assert len(kb[0]) == 2
+    assert kb[0][0]["text"] == "Btn 1"
+    assert kb[0][1]["text"] == "Btn 2"
+    assert len(kb[1]) == 1
+    assert kb[1][0]["text"] == "Btn 3"
+    # Bottom row is exclusively Close button
+    assert kb[-1] == [{"text": "❌ Закрити", "callback_data": "td:/close"}]

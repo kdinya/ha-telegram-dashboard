@@ -1498,15 +1498,18 @@ body:has(.modal-overlay.open) {
     max-width: 100%;
   }
   .section-divider-item-main {
-    flex-wrap: wrap;
-    gap: 4px 6px;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 6px;
     min-width: 0;
     max-width: 100%;
   }
   .section-divider-preview {
-    flex: 1 1 100%;
-    min-width: 0;
-    max-width: 100%;
+    flex: 0 1 auto;
+    max-width: 120px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .builder-actions-row {
     flex-direction: column;
