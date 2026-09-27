@@ -542,12 +542,52 @@ select.form-control option {
 }
 
 .tg-chat-header {
-  padding: 12px 16px;
+  padding: 10px 14px;
   background-color: rgba(0, 0, 0, 0.2);
   display: flex;
   align-items: center;
   gap: 10px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tg-header-role-btn {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: var(--tg-text, #ffffff);
+  border-radius: 14px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1.2;
+}
+
+.tg-header-role-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.tg-header-role-btn.active {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: #3b82f6;
+  color: #93c5fd;
+}
+
+.tg-header-role-btn .role-arrow {
+  font-size: 9px;
+  opacity: 0.8;
+  transition: transform 0.25s ease;
+}
+
+.tg-header-role-btn.active .role-arrow {
+  transform: rotate(180deg);
 }
 
 .tg-avatar {
@@ -579,7 +619,7 @@ select.form-control option {
 .tg-messages-area {
   flex: 1;
   min-height: 0;
-  padding: 14px 14px 10px;
+  padding: 14px 14px 8px;
   overflow-y: auto;
   overflow-x: hidden;
   display: flex;
@@ -754,13 +794,73 @@ select.form-control option {
 }
 
 .preview-role-picker {
-  padding: 10px 14px;
-  background-color: rgba(0, 0, 0, 0.3);
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  padding: 0 14px;
+  background-color: rgba(0, 0, 0, 0.35);
+  border-top: 1px solid transparent;
+  transition: max-height 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.22s ease,
+              padding 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.2s ease;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.preview-role-picker.open {
+  max-height: 64px;
+  opacity: 1;
+  padding: 8px 14px;
+  border-top-color: rgba(255, 255, 255, 0.08);
+  pointer-events: auto;
+}
+
+.preview-role-picker-inner {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
+  gap: 8px;
+}
+
+.preview-role-picker-label {
+  font-size: 11px;
+  white-space: nowrap;
+  color: var(--tg-hint, #8e8e93);
+  flex-shrink: 0;
+}
+
+.preview-role-picker #preview-role-select {
+  flex: 1;
+  min-width: 0;
   font-size: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 3px 8px;
+  height: 30px;
+}
+
+.btn-close-role-picker {
+  background: transparent;
+  border: none;
+  color: var(--tg-hint, #8e8e93);
+  font-size: 13px;
+  padding: 4px;
+  margin-left: 2px;
+  cursor: pointer;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.btn-close-role-picker:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
 }
 
 .preview-header-mobile {
@@ -2303,7 +2403,7 @@ body:has(.modal-overlay.open) {
   overflow-y: auto !important;
   -webkit-overflow-scrolling: touch;
   max-height: 100%;
-  padding-bottom: 18px;
+  padding-bottom: 8px;
 }
 
 .preview-pane.is-page-dragging,

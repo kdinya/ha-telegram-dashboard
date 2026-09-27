@@ -169,3 +169,21 @@ def test_entity_picker_handles_hyphenated_device_names_and_multilingual_params()
     assert "'влажность'" in app
     assert "e.entity_id" in app
     assert "splitEntityName(fullFriendlyName" in app
+
+
+def test_preview_role_simulation_is_collapsible_and_anchors_messages_to_bottom():
+    html = (UI_DIR / "index.html").read_text(encoding="utf-8")
+    styles = (UI_DIR / "style.css").read_text(encoding="utf-8")
+    app = (UI_DIR / "app.js").read_text(encoding="utf-8")
+    i18n = (UI_DIR / "i18n.js").read_text(encoding="utf-8")
+
+    assert 'id="btn-toggle-role-sim"' in html
+    assert 'id="btn-close-role-picker"' in html
+    assert 'class="preview-role-picker" id="preview-role-picker"' in html
+    assert 'max-height: 0' in styles
+    assert '.preview-role-picker.open' in styles
+    assert 'padding-bottom: 8px' in styles
+    assert "btnToggleRoleSim?.addEventListener('click'" in app
+    assert "btnCloseRolePicker?.addEventListener('click'" in app
+    assert 'preview_sim_role_btn:' in i18n
+    assert 'preview_sim_role_close:' in i18n

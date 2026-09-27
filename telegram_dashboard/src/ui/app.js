@@ -3011,6 +3011,35 @@ function handlePreviewButtonClick(callbackData) {
   }
 }
 
+const rolePickerEl = $('preview-role-picker');
+const btnToggleRoleSim = $('btn-toggle-role-sim');
+const btnCloseRolePicker = $('btn-close-role-picker');
+
+function setRoleSimulationDrawerOpen(isOpen) {
+  if (!rolePickerEl) return;
+  rolePickerEl.classList.toggle('open', isOpen);
+  btnToggleRoleSim?.classList.toggle('active', isOpen);
+  btnToggleRoleSim?.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  const msgArea = document.querySelector('.tg-messages-area');
+  if (msgArea) {
+    requestAnimationFrame(() => {
+      msgArea.scrollTop = msgArea.scrollHeight;
+    });
+    setTimeout(() => {
+      msgArea.scrollTop = msgArea.scrollHeight;
+    }, 280);
+  }
+}
+
+btnToggleRoleSim?.addEventListener('click', () => {
+  const isOpen = rolePickerEl?.classList.contains('open');
+  setRoleSimulationDrawerOpen(!isOpen);
+});
+
+btnCloseRolePicker?.addEventListener('click', () => {
+  setRoleSimulationDrawerOpen(false);
+});
+
 $('preview-role-select').addEventListener('change', e => {
   currentSimulatedRole = e.target.value;
   updatePreview();

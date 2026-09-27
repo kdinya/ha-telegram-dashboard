@@ -198,6 +198,11 @@
                 <span class="tg-name" id="preview-bot-name" data-i18n="preview_bot_fallback">Telegram bot</span>
                 <span class="tg-status">bot</span>
               </div>
+              <button type="button" class="tg-header-role-btn" id="btn-toggle-role-sim" title="Симуляція ролі" aria-expanded="false" data-i18n-title="preview_sim_role">
+                <span class="role-icon">🎭</span>
+                <span class="role-label" id="preview-role-btn-label" data-i18n="preview_sim_role_btn">Роль</span>
+                <span class="role-arrow">▾</span>
+              </button>
             </div>
             <div class="tg-messages-area">
               <div class="tg-message-bubble tg-user-bubble">
@@ -212,13 +217,16 @@
                 </div>
               </div>
             </div>
-            <div class="preview-role-picker">
-              <span data-i18n="preview_sim_role">Role simulation:</span>
-              <select id="preview-role-select" class="form-control form-control-sm">
-                <option value="admin" data-i18n="role_admin">Administrator</option>
-                <option value="member" data-i18n="role_member">Family member</option>
-                <option value="guest" data-i18n="role_guest">Guest</option>
-              </select>
+            <div class="preview-role-picker" id="preview-role-picker">
+              <div class="preview-role-picker-inner">
+                <span class="preview-role-picker-label" data-i18n="preview_sim_role">Role simulation:</span>
+                <select id="preview-role-select" class="form-control form-control-sm">
+                  <option value="admin" data-i18n="role_admin">Administrator</option>
+                  <option value="member" data-i18n="role_member">Family member</option>
+                  <option value="guest" data-i18n="role_guest">Guest</option>
+                </select>
+                <button type="button" class="btn-close-role-picker" id="btn-close-role-picker" title="Закрити" aria-label="Закрити" data-i18n-title="preview_sim_role_close">✕</button>
+              </div>
             </div>
           </div>
         </div>

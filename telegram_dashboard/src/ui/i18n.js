@@ -131,6 +131,8 @@ btn_action_add_divider: "Add spacer",
 
       preview_back_btn: "⬅️ Back to editor",
       preview_sim_role: "Role simulation:",
+      preview_sim_role_btn: "Role",
+      preview_sim_role_close: "Close",
       preview_bot_fallback: "Telegram bot",
 
       // Modals: Add Section
@@ -391,6 +393,8 @@ btn_action_add_divider: "Додати відступ",
 
       preview_back_btn: "⬅️ До налаштувань",
       preview_sim_role: "Симуляція ролі:",
+      preview_sim_role_btn: "Роль",
+      preview_sim_role_close: "Закрити",
       preview_bot_fallback: "Telegram-бот",
 
       // Modals: Add Section
