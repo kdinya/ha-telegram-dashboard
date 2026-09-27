@@ -150,3 +150,11 @@ def test_preview_sanitizes_html_and_save_preserves_message_width():
     assert "renderedHtml.innerHTML = sanitizePreviewHtml" in app
     assert "config.telegram_msg_width = 60;" in app
     assert "Number.isFinite(Number(config.telegram_msg_width))" in app
+
+
+def test_entity_picker_resolves_device_and_parameter_accurately():
+    app = (UI_DIR / "app.js").read_text(encoding="utf-8")
+    assert "function splitEntityName(friendlyName, domain, attributes, deviceName, areaName)" in app
+    assert "cleanDevicePrefix" in app
+    assert "e.device_name" in app
+    assert "splitEntityName(fullFriendlyName, domain, e.attributes, e.device_name, e.area || e.area_name)" in app

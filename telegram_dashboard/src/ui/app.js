@@ -684,27 +684,57 @@ function openEntityPicker(context, title) {
   renderEntityPickerList();
 }
 
-function splitEntityName(friendlyName, domain, attributes) {
-  if (!friendlyName) return { device: '', param: '' };
+function capitalizeFirst(str) {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
 
-  // 1. Check explicit separators: " - ", " — ", " : ", ": ", " | ", " / "
-  const sepMatch = friendlyName.match(/^(.+?)\s*(?:—|-|:|\||\/)\s*(.+)$/);
-  if (sepMatch && sepMatch[1].trim() && sepMatch[2].trim()) {
-    return { device: sepMatch[1].trim(), param: sepMatch[2].trim() };
+function cleanDevicePrefix(name) {
+  if (!name) return '';
+  return name.replace(/^(?:(?:у|в|на|біля|для|по)\s+)/i, '').trim();
+}
+
+function splitEntityName(friendlyName, domain, attributes, deviceName, areaName) {
+  const fn = String(friendlyName || '').trim();
+  const dom = String(domain || '').toLowerCase();
+  const dev = String(deviceName || '').trim();
+  const area = String(areaName || '').trim();
+
+  if (!fn) return { device: dev || area || dom.toUpperCase(), param: '' };
+
+  // 1. If explicit device name is provided (e.g. from Home Assistant device registry)
+  if (dev) {
+    let p = fn;
+    if (p.toLowerCase().startsWith(dev.toLowerCase())) {
+      p = p.slice(dev.length).replace(/^[\s—\-:|/]+/, '').trim();
+    } else if (p.toLowerCase().endsWith(dev.toLowerCase())) {
+      p = p.slice(0, p.length - dev.length).replace(/[\s—\-:|/]+$/, '').trim();
+    }
+    return { device: dev, param: p ? capitalizeFirst(p) : fn };
   }
 
-  // 2. Comprehensive list of known parameters/attributes (Ukrainian, English, common abbreviations)
+  // 2. Check explicit separators: " - ", " — ", " : ", ": ", " | ", " / "
+  const sepMatch = fn.match(/^(.+?)\s*(?:—|-|:|\||\/)\s*(.+)$/);
+  if (sepMatch && sepMatch[1].trim() && sepMatch[2].trim()) {
+    return {
+      device: capitalizeFirst(sepMatch[1].trim()),
+      param: capitalizeFirst(sepMatch[2].trim())
+    };
+  }
+
+  // 3. Known parameters (Ukrainian and English)
   const paramKeywords = [
-    // Multi-word parameters first
     'рівень заряду', 'battery level', 'якість повітря', 'air quality',
     'потужність сигналу', 'water leak', 'витік води', 'захист від протікання',
-    'нічний режим', 'night mode',
-    // Single word parameters
+    'нічний режим', 'night mode', 'датчик затоплення', 'датчик протікання',
+    'датчик руху', 'датчик відкриття', 'датчик присутності', 'датчик температури',
+    'датчик вологості', 'датчик тиску', 'датчик диму', 'датчик газу',
+    'тепла підлога', 'підігрів підлоги',
     'температура', 'temperature', 'temp',
     'вологість', 'humidity', 'hum',
     'тиск', 'pressure',
     'батарея', 'battery', 'batt',
-    'освітленість', 'яскравість', 'освітлення', 'illuminance', 'brightness', 'light',
+    'освітленість', 'яскравість', 'освітлення', 'illuminance', 'brightness', 'light', 'світло',
     'рух', 'motion', 'occupancy', 'присутність',
     'стан', 'статус', 'state', 'status',
     'потужність', 'power',
@@ -722,34 +752,46 @@ function splitEntityName(friendlyName, domain, attributes) {
     'доступність', 'availability', 'linkquality', 'rssi', 'ping'
   ];
 
+  // 4. Keyword at the END: e.g. "Клімат в кімнаті Температура"
   for (const kw of paramKeywords) {
-    const regex = new RegExp(`^(.+?)\\s+(${kw.replace('.', '\\.')})$`, 'i');
-    const m = friendlyName.match(regex);
+    const regexEnd = new RegExp(`^(.+?)\\s+(${kw.replace('.', '\\.')})$`, 'i');
+    const m = fn.match(regexEnd);
     if (m && m[1].trim() && m[2].trim()) {
-      return { device: m[1].trim(), param: m[2].trim() };
+      return { device: capitalizeFirst(m[1].trim()), param: capitalizeFirst(m[2].trim()) };
     }
   }
 
-  // 3. Check attributes.device_class if present
+  // 5. Keyword at the START: e.g. "Температура у вітальні", "Датчик протікання кухня"
+  for (const kw of paramKeywords) {
+    const regexStart = new RegExp(`^(${kw.replace('.', '\\.')})\\s+(?:(?:у|в|на|біля|для|по)\\s+)?(.+)$`, 'i');
+    const m = fn.match(regexStart);
+    if (m && m[1].trim() && m[2].trim()) {
+      const devName = cleanDevicePrefix(m[2].trim());
+      return { device: capitalizeFirst(devName), param: capitalizeFirst(m[1].trim()) };
+    }
+  }
+
+  // 6. Check attributes.device_class
   if (attributes && attributes.device_class) {
     const dc = String(attributes.device_class).toLowerCase();
-    const dcRegex = new RegExp(`^(.+?)\\s+(${dc})$`, 'i');
-    const m = friendlyName.match(dcRegex);
-    if (m && m[1].trim() && m[2].trim()) {
-      return { device: m[1].trim(), param: m[2].trim() };
+    const regexEnd = new RegExp(`^(.+?)\\s+(${dc})$`, 'i');
+    const mEnd = fn.match(regexEnd);
+    if (mEnd && mEnd[1].trim() && mEnd[2].trim()) {
+      return { device: capitalizeFirst(mEnd[1].trim()), param: capitalizeFirst(mEnd[2].trim()) };
+    }
+    const regexStart = new RegExp(`^(${dc})\\s+(?:(?:у|в|на|біля|для|по)\\s+)?(.+)$`, 'i');
+    const mStart = fn.match(regexStart);
+    if (mStart && mStart[1].trim() && mStart[2].trim()) {
+      return { device: capitalizeFirst(cleanDevicePrefix(mStart[2].trim())), param: capitalizeFirst(mStart[1].trim()) };
     }
   }
 
-  // 4. If name has 3 or more words, treat the last word as parameter if likely
-  const words = friendlyName.trim().split(/\s+/);
-  if (words.length >= 3) {
-    return {
-      device: words.slice(0, words.length - 1).join(' '),
-      param: words[words.length - 1]
-    };
+  // 7. Fallback to area if known
+  if (area) {
+    return { device: area, param: fn };
   }
 
-  return { device: '', param: friendlyName };
+  return { device: '', param: fn };
 }
 
 function isEntityInGroup(entity, group) {
@@ -808,7 +850,8 @@ function renderEntityPickerList() {
       const state = e.state || '';
       const deviceClass = e.attributes?.device_class || '';
       const domain = e.domain || eid.split('.')[0] || '';
-      const combined = normalizeSearchValue(`${fn} ${eid} ${area} ${state} ${deviceClass} ${domain}`);
+      const devName = e.device_name || '';
+      const combined = normalizeSearchValue(`${fn} ${eid} ${area} ${devName} ${state} ${deviceClass} ${domain}`);
       return tokens.every(tok => combined.includes(tok));
     });
   }
@@ -834,8 +877,8 @@ function renderEntityPickerList() {
     const unit = escapeHtml(e.attributes && e.attributes.unit_of_measurement ? e.attributes.unit_of_measurement : '');
     const displayParam = unit ? `${stateVal} ${unit}` : stateVal;
 
-    const parts = splitEntityName(fullFriendlyName, domain, e.attributes);
-    const escapedDevice = escapeHtml(parts.device || domain.toUpperCase());
+    const parts = splitEntityName(fullFriendlyName, domain, e.attributes, e.device_name, e.area || e.area_name);
+    const escapedDevice = escapeHtml(parts.device || e.area || e.area_name || domain.toUpperCase());
     const escapedParam = escapeHtml(parts.param || fullFriendlyName);
     const escapedFullName = escapeHtml(fullFriendlyName);
 

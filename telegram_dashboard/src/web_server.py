@@ -1,5 +1,6 @@
 """Ingress Web UI and REST API server using aiohttp."""
 from __future__ import annotations
+import json
 from datetime import datetime
 
 import logging
@@ -328,18 +329,42 @@ class WebApp:
             })
         try:
             states = await self.ha_client.get_states()
+            device_mapping: dict[str, dict[str, str]] = {}
+            try:
+                tmpl = (
+                    "{% set res = {} %}"
+                    "{% for s in states %}"
+                    "{% set d = device_attr(s.entity_id, 'name') %}"
+                    "{% set a = area_name(s.entity_id) %}"
+                    "{% if d or a %}"
+                    "{% set _ = res.update({s.entity_id: {'device': d or '', 'area': a or ''}}) %}"
+                    "{% endif %}"
+                    "{% endfor %}"
+                    "{{ res | to_json }}"
+                )
+                raw = await self.ha_client.render_template(tmpl)
+                if isinstance(raw, str):
+                    raw = json.loads(raw)
+                if isinstance(raw, dict):
+                    device_mapping = raw
+            except Exception as exc:
+                logger.debug("Could not resolve device mapping via template: %s", exc)
+
             entities = []
             for s in states:
                 eid = s.get("entity_id", "")
                 attrs = s.get("attributes", {})
                 fn = attrs.get("friendly_name", eid)
                 domain = eid.split(".", 1)[0]
-                area = attrs.get("area_id") or ""
+                dev_info = device_mapping.get(eid, {})
+                dev_name = dev_info.get("device") or ""
+                area = dev_info.get("area") or attrs.get("area_id") or ""
                 entities.append({
                     "entity_id": eid,
                     "friendly_name": fn,
                     "domain": domain,
                     "area": area,
+                    "device_name": dev_name,
                     "state": s.get("state", ""),
                     "attributes": attrs,
                 })
