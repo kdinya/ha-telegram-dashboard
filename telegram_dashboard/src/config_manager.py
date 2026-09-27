@@ -1,6 +1,8 @@
 """Configuration manager: loads, validates and persists bot configuration."""
 from __future__ import annotations
 
+import re
+
 import json
 import os
 import shutil
@@ -108,6 +110,7 @@ def validate_config(config: Any) -> dict[str, Any]:
             raise ConfigError(
                 f"user role must be one of {sorted(REQUIRED_ROLES)}"
             )
+    seen_commands: dict[str, str] = {}
     for key, section in menu.items():
         if not isinstance(section, dict):
             raise ConfigError(f"menu section '{key}' must be an object")
@@ -122,6 +125,26 @@ def validate_config(config: Any) -> dict[str, Any]:
         widgets = section.get("widgets", [])
         if not isinstance(widgets, list):
             raise ConfigError(f"menu section '{key}' widgets must be a list")
+
+        # Validate Telegram command if specified
+        raw_cmd = section.get("command")
+        if raw_cmd:
+            if not isinstance(raw_cmd, str):
+                raise ConfigError(f"menu section '{key}' command must be a string")
+            cmd = raw_cmd.strip()
+            if cmd:
+                if not re.match(r"^/[a-zA-Z0-9_]{1,32}$", cmd):
+                    raise ConfigError(
+                        f"menu section '{key}' has invalid command '{cmd}': "
+                        f"must start with '/' followed by 1-32 letters, numbers or underscores"
+                    )
+                norm_cmd = cmd.lower()
+                if norm_cmd in seen_commands:
+                    prev = seen_commands[norm_cmd]
+                    raise ConfigError(
+                        f"duplicate command '{cmd}' in section '{key}' (already used in '{prev}')"
+                    )
+                seen_commands[norm_cmd] = key
     return config
 
 

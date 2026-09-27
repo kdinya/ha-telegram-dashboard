@@ -3206,9 +3206,24 @@ function setupEventListeners() {
     }
     if (editSecCommand) {
       const defaultCmd = getDefaultSectionCommand(currentSectionKey);
-      const cmd = editSecCommand.value.trim();
+      let cmd = editSecCommand.value.trim();
       if (cmd) {
-        sec.command = cmd.startsWith('/') ? cmd : '/' + cmd;
+        cmd = cmd.startsWith('/') ? cmd : '/' + cmd;
+        if (!/^\/[a-zA-Z0-9_]{1,32}$/.test(cmd)) {
+          showToast(t('toast_invalid_command') || 'Invalid command', 'error');
+          return;
+        }
+        const normCmd = cmd.toLowerCase();
+        for (const [k, s] of Object.entries(config.menu || {})) {
+          if (k !== currentSectionKey) {
+            const otherCmd = (s.command || getDefaultSectionCommand(k) || '').trim().toLowerCase();
+            if (otherCmd === normCmd) {
+              showToast(t('toast_duplicate_command') || 'Duplicate command', 'error');
+              return;
+            }
+          }
+        }
+        sec.command = cmd;
       } else if (defaultCmd) {
         sec.command = defaultCmd;
       } else {

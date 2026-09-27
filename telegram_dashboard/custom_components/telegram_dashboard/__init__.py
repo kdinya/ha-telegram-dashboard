@@ -80,6 +80,7 @@ SPEAK_SCHEMA = vol.Schema(
     extra=vol.ALLOW_EXTRA,
 )
 
+
 async def _call_telegram(hass: HomeAssistant, token: str, method: str, payload: dict) -> dict:
     """Delegate Telegram action to Home Assistant's standard telegram_bot integration."""
     try:

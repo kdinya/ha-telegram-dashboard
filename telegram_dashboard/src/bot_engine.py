@@ -150,10 +150,12 @@ class BotEngine:
         return next(iter(menu.keys()))
 
     def find_menu_by_command(self, cmd: str) -> str | None:
-        """Find menu section key by Telegram command (e.g. /dashboard or /menu)."""
+        """Find menu section key by Telegram command (e.g. /start, /climate)."""
         if not cmd:
             return None
-        clean_cmd = cmd.strip().lower().lstrip("/")
+        # Support /command@botname in group chats as well as trailing parameters
+        base_cmd = cmd.strip().split()[0] if cmd.strip() else ""
+        clean_cmd = base_cmd.split("@")[0].lower().lstrip("/")
         menu = self.config.get("menu", {})
         default_commands = {
             "main": "start",
@@ -164,7 +166,8 @@ class BotEngine:
             "system": "system",
         }
         for sec_key, sec in menu.items():
-            sec_cmd = str(sec.get("command", "")).strip().lower().lstrip("/")
+            sec_raw = str(sec.get("command", "")).strip()
+            sec_cmd = sec_raw.split("@")[0].lower().lstrip("/") if sec_raw else ""
             if not sec_cmd and sec_key in default_commands:
                 sec_cmd = default_commands[sec_key]
             if sec_cmd and sec_cmd == clean_cmd:

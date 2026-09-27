@@ -133,3 +133,23 @@ async def test_keyboard_layout_pairs_and_bottom_close():
     assert kb[1][1]["text"] == "🔄 Оновити"
     # Bottom row is exclusively Close button
     assert kb[-1] == [{"text": "❌ Закрити", "callback_data": "td:/close"}]
+
+
+def test_find_menu_by_command_groups_and_params():
+    config = {
+        "menu": {
+            "main": {"title": "Main", "roles": ["admin"], "command": "/start"},
+            "climate": {"title": "Climate", "roles": ["admin"], "command": "/climate"},
+        }
+    }
+    ac = AccessController([], default_role="admin")
+    renderer = MessageRenderer()
+    engine = BotEngine(config, ac, renderer)
+
+    assert engine.find_menu_by_command("/start") == "main"
+    assert engine.find_menu_by_command("/climate") == "climate"
+    assert engine.find_menu_by_command("/climate@my_test_bot") == "climate"
+    assert engine.find_menu_by_command("/start@my_test_bot") == "main"
+    assert engine.find_menu_by_command("/climate 22") == "climate"
+    assert engine.find_menu_by_command("/climate@my_test_bot 22") == "climate"
+    assert engine.find_menu_by_command("/unknown") is None

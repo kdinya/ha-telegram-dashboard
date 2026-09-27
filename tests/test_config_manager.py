@@ -70,3 +70,28 @@ def test_default_section_commands_presence_and_migration():
         cfg = mgr.load()
         assert cfg["menu"]["main"]["command"] == "/start"
         assert cfg["menu"]["climate"]["command"] == "/climate"
+
+
+def test_validate_config_command_rules(tmp_path: Path):
+    # Valid command format
+    from telegram_dashboard.src.config_manager import validate_config, ConfigError
+    cm = ConfigManager(tmp_path / "config.json")
+    sample_config = cm.load()
+    sample_config["menu"]["main"]["command"] = "/start"
+    sample_config["menu"]["climate"]["command"] = "/climate"
+    assert validate_config(sample_config) == sample_config
+
+    # Invalid command characters or missing slash
+    bad_cfg = dict(sample_config)
+    bad_cfg["menu"] = dict(sample_config["menu"])
+    bad_cfg["menu"]["custom"] = {"title": "Custom", "roles": ["admin"], "command": "invalid-no-slash"}
+    import pytest
+    with pytest.raises(ConfigError):
+        validate_config(bad_cfg)
+
+    # Duplicate command
+    dup_cfg = dict(sample_config)
+    dup_cfg["menu"] = dict(sample_config["menu"])
+    dup_cfg["menu"]["custom"] = {"title": "Custom", "roles": ["admin"], "command": "/start"}
+    with pytest.raises(ConfigError):
+        validate_config(dup_cfg)

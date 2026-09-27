@@ -27,6 +27,9 @@
      - Home Assistant Supervisor update dialog renders `telegram_dashboard/CHANGELOG.md` directly. It MUST always contain the latest version header at the top and stay 100% in sync with root `CHANGELOG.md`.
      - Changelog entries must be grouped by standard sections (e.g. `### Added`, `### Changed`, `### Fixed`, `### Security`).
      - Entries must describe meaningful user-facing changes clearly and concisely. Minor tweaks, minor layout adjustments or internal micro-refactors must be generalized into coherent points rather than listed line-by-line.
+   - **Documentation Hygiene & Deprecation Invariant**:
+     - Whenever code or features are modified, added, or removed, always check and synchronize all project documentation (`DOCS.md`, `README.md`, docstrings, guides).
+     - If functionality, commands, or settings are deleted, renamed, or modified, they MUST be immediately updated or purged from descriptions and documentation so that no obsolete, legacy, or misleading information remains.
 
 4. **Source of Truth & Git Discipline**:
    - Always verify and pull the latest changes from `origin/main` before making changes.

@@ -113,6 +113,22 @@ class HAClient:
             None,
         )
 
+    async def get_telegram_bot_token(self) -> str | None:
+        """Return the bot token from a loaded Telegram bot config entry if accessible."""
+        try:
+            entries = await self._get("/api/config/config_entries/entry?domain=telegram_bot")
+            if not isinstance(entries, list):
+                return None
+            for entry in entries:
+                if isinstance(entry, dict) and entry.get("state") == "loaded":
+                    data = entry.get("data", {})
+                    token = data.get("api_key") or data.get("bot_token") or data.get("token")
+                    if token and isinstance(token, str) and token.strip():
+                        return token.strip()
+        except Exception:
+            pass
+        return None
+
     async def get_states(self) -> list[dict[str, Any]]:
         return await self._get("/api/states")
 

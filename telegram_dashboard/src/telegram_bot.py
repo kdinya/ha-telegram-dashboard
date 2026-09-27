@@ -1,5 +1,9 @@
 """Telegram Bot integration bridge connecting through Home Assistant telegram_bot actions and events."""
 from __future__ import annotations
+import json
+import os
+from pathlib import Path
+import re
 import time
 
 import asyncio
@@ -261,7 +265,7 @@ class TelegramBotRunner:
         sec_key = None
         if hasattr(self.bot_engine, "find_menu_by_command"):
             sec_key = self.bot_engine.find_menu_by_command(command)
-        elif command.lstrip("/").lower() == "start":
+        elif command.strip().split()[0].split("@")[0].lstrip("/").lower() == "start":
             sec_key = "main"
 
         if not sec_key:
@@ -394,6 +398,74 @@ class TelegramBotRunner:
         if cb_id:
             await self.answer_callback_query(cb_id, text=toast)
 
+    async def register_bot_commands(self) -> bool:
+        """Register menu section commands with Telegram via setMyCommands."""
+        if not self.bot_engine or not hasattr(self.bot_engine, "config"):
+            return False
+        menu = self.bot_engine.config.get("menu", {})
+        default_commands = {
+            "main": "start",
+            "climate": "climate",
+            "light": "light",
+            "water": "water",
+            "battery": "battery",
+            "system": "system",
+        }
+        commands: list[dict[str, str]] = []
+        seen: set[str] = set()
+        for sec_key, sec in menu.items():
+            raw_cmd = sec.get("command") or default_commands.get(sec_key)
+            if not raw_cmd:
+                continue
+            clean_cmd = str(raw_cmd).strip().split()[0].split("@")[0].lower().lstrip("/")
+            if not clean_cmd or clean_cmd in seen or not re.match(r"^[a-z0-9_]{1,32}$", clean_cmd):
+                continue
+            seen.add(clean_cmd)
+            raw_title = str(sec.get("title") or sec_key)
+            title = re.sub(r"^[^\w\s]+", "", raw_title).strip() or raw_title
+            commands.append({"command": clean_cmd, "description": title[:256]})
+
+        if not commands:
+            return False
+
+        token = None
+        if self.ha_client and hasattr(self.ha_client, "get_telegram_bot_token"):
+            try:
+                token = await self.ha_client.get_telegram_bot_token()
+            except Exception:
+                token = None
+        if not token:
+            token = os.environ.get("TELEGRAM_BOT_TOKEN") or os.environ.get("TELEGRAM_TOKEN")
+        if not token:
+            try:
+                opt_path = Path("/data/options.json")
+                if opt_path.exists():
+                    opts = json.loads(opt_path.read_text(encoding="utf-8"))
+                    token = opts.get("telegram_token") or opts.get("bot_token")
+            except Exception:
+                pass
+
+        if not token:
+            logger.debug("Telegram bot token unavailable; skipping setMyCommands")
+            return False
+
+        try:
+            import aiohttp
+            url = f"https://api.telegram.org/bot{token}/setMyCommands"
+            timeout = aiohttp.ClientTimeout(total=10)
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    url, json={"commands": commands}, timeout=timeout
+                ) as resp:
+                    data = await resp.json()
+                    if data.get("ok"):
+                        logger.info("Successfully registered %d Telegram bot commands via setMyCommands", len(commands))
+                        return True
+                    logger.warning("Telegram setMyCommands returned error: %s", data.get("description"))
+        except Exception as e:
+            logger.warning("Failed to call Telegram setMyCommands: %s", e)
+        return False
+
     def start(self) -> None:
         """Register HA event listeners and start WebSocket connection."""
         if self._running:
@@ -404,6 +476,10 @@ class TelegramBotRunner:
             self.ha_client.register_event_listener("telegram_callback", self.handle_ha_callback)
             self.ha_client.start_websocket()
             logger.info("TelegramBotRunner registered HA event listeners for telegram_command and telegram_callback")
+        try:
+            asyncio.create_task(self.register_bot_commands())
+        except RuntimeError:
+            pass
 
     async def stop(self) -> None:
         self._running = False
