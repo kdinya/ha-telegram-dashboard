@@ -2744,6 +2744,8 @@ async function updatePreview() {
         /([─┄·–—━一]{3,})/g,
         '<span class="tg-preview-divider">$1</span>'
       );
+      // Remove invisible braille width spacers and trailing empty space strictly in preview
+      renderedHtml.innerHTML = renderedHtml.innerHTML.replace(/⠀+/g, "").trimEnd();
       previewText.innerHTML = renderedHtml.innerHTML;
       renderTelegramKeyboard(data.keyboard || []);
       if (previewTimestampEl) {

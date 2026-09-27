@@ -208,3 +208,8 @@ def test_preview_role_simulation_opens_at_top_and_divider_does_not_wrap():
     assert "white-space: nowrap !important;" in styles
     assert "overflow: hidden !important;" in styles
     assert "tg-preview-divider" in app
+
+
+def test_preview_cleans_braille_spacers_and_trailing_whitespace_before_buttons():
+    app = (UI_DIR / "app.js").read_text(encoding="utf-8")
+    assert "renderedHtml.innerHTML.replace(/⠀+/g, \"\").trimEnd()" in app
