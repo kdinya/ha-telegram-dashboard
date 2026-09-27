@@ -121,7 +121,7 @@ def test_render_section_with_dividers_and_spacers():
     assert not any(line == "─" * 14 for line in lines)
 
 
-def test_render_section_uses_unstyled_width_anchor_before_update_time():
+def test_render_section_has_no_artificial_blank_spacer_before_update_time():
     rendered = MessageRenderer().render_section(
         {"title": "Кухня", "items": [{"type": "text", "text": "Стан"}]},
         {"telegram_msg_width": 60, "updated_at": "12:00:00"},
@@ -129,17 +129,9 @@ def test_render_section_uses_unstyled_width_anchor_before_update_time():
     lines = rendered.splitlines()
     timestamp_index = next(i for i, line in enumerate(lines) if "Оновлено" in line)
     assert timestamp_index > 0
-    assert lines[timestamp_index - 1] and "<code>" not in lines[timestamp_index - 1]
-    assert len(lines[timestamp_index - 1]) >= 44
-
-
-def test_render_section_uses_global_width_not_section_override():
-    renderer = MessageRenderer()
-    base = renderer.render_section(
-        {"title": "A", "items": [], "telegram_msg_width": 20},
-        {"telegram_msg_width": 60, "updated_at": "12:00:00"},
-    )
-    assert len(base.splitlines()[-2]) >= 44
+    # Immediately preceding line is the text item, not an empty or invisible braille spacer
+    assert lines[timestamp_index - 1].strip() == "Стан"
+    assert not any("⠀" in line for line in lines)
 
 
 def test_render_section_escapes_dynamic_entity_state_and_unit():

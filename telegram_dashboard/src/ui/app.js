@@ -2744,6 +2744,7 @@ async function updatePreview() {
         /([─┄·–—━一]{3,})/g,
         '<span class="tg-preview-divider">$1</span>'
       );
+      renderedHtml.innerHTML = renderedHtml.innerHTML.trimEnd();
       previewText.innerHTML = renderedHtml.innerHTML;
       renderTelegramKeyboard(data.keyboard || []);
       if (previewTimestampEl) {
