@@ -2068,50 +2068,57 @@ body:has(.modal-overlay.open) {
   pointer-events: none !important;
 }
 
-.btn-lock-elem-item {
+#btn-lock-nav-sections-block.btn-lock-elem-item {
   font-size: 13px;
   transition: all 0.2s;
 }
 
-.btn-lock-elem-item.is-locked {
-  background: rgba(234, 179, 8, 0.2);
-  border: 1px solid rgba(234, 179, 8, 0.4);
+#btn-lock-nav-sections-block.btn-lock-elem-item.is-locked {
+  background: rgba(100, 116, 139, 0.25);
+  border: 1px solid rgba(148, 163, 184, 0.4);
   border-radius: 4px;
 }
 
+/* Locked section elements are completely grayscale, muted, and clearly locked */
 .section-text-item.is-locked {
-  border-color: rgba(234, 179, 8, 0.45) !important;
-  background: rgba(30, 41, 59, 0.45) !important;
+  border: 1px dashed rgba(148, 163, 184, 0.35) !important;
+  background: rgba(15, 23, 42, 0.5) !important;
+  box-shadow: none !important;
   transition: border-color 0.2s ease, background 0.2s ease;
 }
 
 .section-text-item.is-locked .section-text-item-main,
-.section-text-item.is-locked .item-drag-handle {
-  opacity: 0.55;
+.section-text-item.is-locked .item-drag-handle,
+.section-text-item.is-locked .btn-cycle-divider-style {
+  filter: grayscale(100%) !important;
+  opacity: 0.55 !important;
+  color: #94a3b8 !important;
+}
+
+.section-text-item.is-locked .section-text-item-icon,
+.section-text-item.is-locked .section-text-item-content b,
+.section-text-item.is-locked .section-text-item-content code,
+.section-text-item.is-locked .entity-item-state-badge,
+.section-text-item.is-locked .entity-row-device-tag,
+.section-text-item.is-locked .badge-text-type {
+  filter: grayscale(100%) !important;
+  background: rgba(51, 65, 85, 0.4) !important;
+  color: #94a3b8 !important;
+  border-color: rgba(100, 116, 139, 0.3) !important;
 }
 
 .section-text-item.is-locked .section-text-item-actions,
 .section-text-item.is-locked .item-actions-dropdown,
 .section-text-item.is-locked .item-dropdown-menu {
   opacity: 1 !important;
+  filter: none !important;
   isolation: isolate;
 }
 
-.section-text-item.is-locked .section-text-item-main {
-  opacity: 0.8;
-}
-
-.btn-lock-elem-item.is-locked {
-  opacity: 1 !important;
-  background: rgba(234, 179, 8, 0.25) !important;
-  border: 1px solid rgba(234, 179, 8, 0.6) !important;
-  box-shadow: 0 0 6px rgba(234, 179, 8, 0.3);
-  border-radius: 6px;
-}
-
 .badge-locked {
-  background: rgba(234, 179, 8, 0.2);
-  color: #facc15;
+  background: rgba(71, 85, 105, 0.35) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
   font-size: 11px;
   padding: 2px 6px;
   border-radius: 4px;
@@ -2119,6 +2126,7 @@ body:has(.modal-overlay.open) {
   display: inline-flex;
   align-items: center;
   gap: 3px;
+  filter: grayscale(100%) !important;
 }
 
 /* Hide left sidebar preview item on wide screens */
@@ -2226,7 +2234,7 @@ body:has(.modal-overlay.open) {
   }
 }
 
-.btn-lock-elem-item {
+#btn-lock-nav-sections-block {
   font-size: 17px;
   background: transparent !important;
   border: 1px solid transparent !important;
@@ -2241,7 +2249,7 @@ body:has(.modal-overlay.open) {
   text-shadow: 0 0 5px rgba(255, 255, 255, 0.45);
 }
 
-.btn-lock-elem-item:hover {
+#btn-lock-nav-sections-block:hover {
   background: rgba(255, 255, 255, 0.08) !important;
 }
 

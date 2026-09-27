@@ -1465,15 +1465,16 @@ function renderSectionElements(items) {
           <span class="section-text-item-content"><b>${safeLabel}</b>: <code>${escapeHtml(stateVal)}</code></span>
           <span class="badge-text-type entity">${t('badge_entity')}</span>
           ${indentBadge}
+          ${isLocked ? `<span class="badge-text-type badge-locked" title="${lockTitle}">🔒 ${t('badge_locked')}</span>` : ""}
         </div>
         <div class="section-text-item-actions">
           <div class="item-actions-dropdown">
             <button type="button" class="btn-icon-action btn-item-more" data-i18n-title="btn_more_options" title="${t('btn_more_options')}">⋮</button>
             <div class="item-dropdown-menu">
-              <button type="button" class="item-dropdown-item btn-edit-elem-item" title="${t('btn_edit_item_title')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}><span class="dropdown-item-icon">✏️</span> <span class="dropdown-item-label" data-i18n="action_edit">${t('action_edit')}</span></button>
-              <button type="button" class="item-dropdown-item btn-duplicate-elem-item" data-idx="${idx}" ${isLocked ? 'disabled' : ''}><span class="dropdown-item-icon">📋</span> <span class="dropdown-item-label" data-i18n="action_duplicate">${t('action_duplicate')}</span></button>
-              <button type="button" class="item-dropdown-item is-danger btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}><span class="dropdown-item-icon">🗑️</span> <span class="dropdown-item-label" data-i18n="action_delete">${t('action_delete')}</span></button>
-              <button type="button" class="item-dropdown-item btn-lock-elem-item" title="${lockTitle}" data-idx="${idx}"><span class="dropdown-item-icon">${lockIcon}</span> <span class="dropdown-item-label" data-i18n="${isLocked ? 'action_unlock' : 'action_lock'}">${isLocked ? t('action_unlock') : t('action_lock')}</span></button>
+              <button type="button" class="item-dropdown-item btn-edit-elem-item" title="${t('btn_edit_item_title')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}><span class="dropdown-item-icon">✏️</span><span class="dropdown-item-label" data-i18n="action_edit">${t('action_edit')}</span></button>
+              <button type="button" class="item-dropdown-item btn-duplicate-elem-item" data-idx="${idx}" ${isLocked ? 'disabled' : ''}><span class="dropdown-item-icon">📋</span><span class="dropdown-item-label" data-i18n="action_duplicate">${t('action_duplicate')}</span></button>
+              <button type="button" class="item-dropdown-item is-danger btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}><span class="dropdown-item-icon">🗑️</span><span class="dropdown-item-label" data-i18n="action_delete">${t('action_delete')}</span></button>
+              <button type="button" class="item-dropdown-item btn-lock-elem-item" title="${lockTitle}" data-idx="${idx}"><span class="dropdown-item-icon">${lockIcon}</span><span class="dropdown-item-label" data-i18n="${isLocked ? 'action_unlock' : 'action_lock'}">${isLocked ? t('action_unlock') : t('action_lock')}</span></button>
             </div>
           </div>
         </div>
@@ -1577,15 +1578,16 @@ function renderSectionElements(items) {
           <span class="section-divider-preview"><code>${escapeHtml(stylePreview)}</code></span>
           <span class="badge-text-type divider">${t('badge_divider')}</span>
           <span class="badge-text-type">${escapeHtml(styleLabel)}</span>
+          ${isLocked ? `<span class="badge-text-type badge-locked" title="${lockTitle}">🔒 ${t('badge_locked')}</span>` : ""}
         </div>
         <div class="section-text-item-actions">
           <button type="button" class="btn-icon-action btn-cycle-divider-style" title="${t('btn_change_divider_style')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>🔄</button>
           <div class="item-actions-dropdown">
             <button type="button" class="btn-icon-action btn-item-more" data-i18n-title="btn_more_options" title="${t('btn_more_options')}">⋮</button>
             <div class="item-dropdown-menu">
-              <button type="button" class="item-dropdown-item btn-duplicate-elem-item" data-idx="${idx}" ${isLocked ? 'disabled' : ''}><span class="dropdown-item-icon">📋</span> <span class="dropdown-item-label" data-i18n="action_duplicate">${t('action_duplicate')}</span></button>
-              <button type="button" class="item-dropdown-item is-danger btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}><span class="dropdown-item-icon">🗑️</span> <span class="dropdown-item-label" data-i18n="action_delete">${t('action_delete')}</span></button>
-              <button type="button" class="item-dropdown-item btn-lock-elem-item" title="${lockTitle}" data-idx="${idx}"><span class="dropdown-item-icon">${lockIcon}</span> <span class="dropdown-item-label" data-i18n="${isLocked ? 'action_unlock' : 'action_lock'}">${isLocked ? t('action_unlock') : t('action_lock')}</span></button>
+              <button type="button" class="item-dropdown-item btn-duplicate-elem-item" data-idx="${idx}" ${isLocked ? 'disabled' : ''}><span class="dropdown-item-icon">📋</span><span class="dropdown-item-label" data-i18n="action_duplicate">${t('action_duplicate')}</span></button>
+              <button type="button" class="item-dropdown-item is-danger btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}><span class="dropdown-item-icon">🗑️</span><span class="dropdown-item-label" data-i18n="action_delete">${t('action_delete')}</span></button>
+              <button type="button" class="item-dropdown-item btn-lock-elem-item" title="${lockTitle}" data-idx="${idx}"><span class="dropdown-item-icon">${lockIcon}</span><span class="dropdown-item-label" data-i18n="${isLocked ? 'action_unlock' : 'action_lock'}">${isLocked ? t('action_unlock') : t('action_lock')}</span></button>
             </div>
           </div>
         </div>
@@ -1700,15 +1702,16 @@ function renderSectionElements(items) {
           <span class="${contentClass}">${safeText}</span>
           ${badgeHtml}
           ${indentBadge}
+          ${isLocked ? `<span class="badge-text-type badge-locked" title="${lockTitle}">🔒 ${t('badge_locked')}</span>` : ""}
         </div>
         <div class="section-text-item-actions">
           <div class="item-actions-dropdown">
             <button type="button" class="btn-icon-action btn-item-more" data-i18n-title="btn_more_options" title="${t('btn_more_options')}">⋮</button>
             <div class="item-dropdown-menu">
-              <button type="button" class="item-dropdown-item btn-edit-elem-item" title="${t('btn_edit_item_title')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}><span class="dropdown-item-icon">✏️</span> <span class="dropdown-item-label" data-i18n="action_edit">${t('action_edit')}</span></button>
-              <button type="button" class="item-dropdown-item btn-duplicate-elem-item" data-idx="${idx}" ${isLocked ? 'disabled' : ''}><span class="dropdown-item-icon">📋</span> <span class="dropdown-item-label" data-i18n="action_duplicate">${t('action_duplicate')}</span></button>
-              <button type="button" class="item-dropdown-item is-danger btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}><span class="dropdown-item-icon">🗑️</span> <span class="dropdown-item-label" data-i18n="action_delete">${t('action_delete')}</span></button>
-              <button type="button" class="item-dropdown-item btn-lock-elem-item" title="${lockTitle}" data-idx="${idx}"><span class="dropdown-item-icon">${lockIcon}</span> <span class="dropdown-item-label" data-i18n="${isLocked ? 'action_unlock' : 'action_lock'}">${isLocked ? t('action_unlock') : t('action_lock')}</span></button>
+              <button type="button" class="item-dropdown-item btn-edit-elem-item" title="${t('btn_edit_item_title')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}><span class="dropdown-item-icon">✏️</span><span class="dropdown-item-label" data-i18n="action_edit">${t('action_edit')}</span></button>
+              <button type="button" class="item-dropdown-item btn-duplicate-elem-item" data-idx="${idx}" ${isLocked ? 'disabled' : ''}><span class="dropdown-item-icon">📋</span><span class="dropdown-item-label" data-i18n="action_duplicate">${t('action_duplicate')}</span></button>
+              <button type="button" class="item-dropdown-item is-danger btn-remove-elem-item" title="${t('btn_delete')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}><span class="dropdown-item-icon">🗑️</span><span class="dropdown-item-label" data-i18n="action_delete">${t('action_delete')}</span></button>
+              <button type="button" class="item-dropdown-item btn-lock-elem-item" title="${lockTitle}" data-idx="${idx}"><span class="dropdown-item-icon">${lockIcon}</span><span class="dropdown-item-label" data-i18n="${isLocked ? 'action_unlock' : 'action_lock'}">${isLocked ? t('action_unlock') : t('action_lock')}</span></button>
             </div>
           </div>
         </div>
