@@ -2657,7 +2657,7 @@ async function updatePreview() {
       updateMessageOverflowState();
 
       if (botBubble) {
-        const msgW = (config && config.telegram_msg_width) || 75;
+        const msgW = (config && config.telegram_msg_width) ? Math.max(88, config.telegram_msg_width) : 88;
         botBubble.style.width = msgW + '%';
         botBubble.style.maxWidth = msgW + '%';
 
@@ -2935,8 +2935,8 @@ $('btn-toggle-preview').addEventListener('click', () => {
 // --- Live section name/icon sync ---
 function setupEventListeners() {
 
-  // Fixed preview dimensions: 75% width
-  document.documentElement.style.setProperty('--tg-msg-width', '75%');
+  // Fixed preview dimensions: 88% width
+  document.documentElement.style.setProperty('--tg-msg-width', '88%');
 
   // Drag-to-scroll emulation for telegram simulator chat
   const msgArea = document.querySelector('.tg-messages-area');

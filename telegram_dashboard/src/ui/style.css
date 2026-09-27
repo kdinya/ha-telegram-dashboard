@@ -642,9 +642,9 @@ select.form-control option {
   color: var(--tg-text);
   box-sizing: border-box;
   align-self: flex-start;
-  width: var(--tg-msg-width, 75%) !important;
+  width: var(--tg-msg-width, 88%) !important;
   min-width: 0 !important;
-  max-width: var(--tg-msg-width, 75%) !important;
+  max-width: var(--tg-msg-width, 88%) !important;
   margin-top: 0; margin-bottom: 12px;
   overflow: hidden;
   transition: width 0.15s ease, max-width 0.15s ease;
@@ -669,14 +669,14 @@ select.form-control option {
 .tg-inline-keyboard {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-top: 10px;
+  gap: 5px;
+  margin-top: 8px;
   width: 100%;
 }
 
 .tg-btn-row {
   display: flex;
-  gap: 6px;
+  gap: 5px;
   width: 100%;
   min-width: 0;
 }
@@ -684,12 +684,14 @@ select.form-control option {
 .tg-button {
   flex: 1 1 0px;
   min-width: 0;
-  padding: 10px 8px;
+  padding: 6px 8px;
+  min-height: 32px;
+  line-height: 1.25;
   background-color: var(--tg-btn);
   border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 8px;
+  border-radius: 7px;
   color: #ffffff;
-  font-size: 14.5px;
+  font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.15s, transform 0.1s ease, opacity 0.1s ease, filter 0.1s ease;
