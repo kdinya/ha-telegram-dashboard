@@ -44,8 +44,21 @@
     <main class="content-area">
       <!-- Floating Actions (Bottom Right) -->
       <div class="floating-actions-bar">
-        <button type="button" id="btn-undo" class="btn btn-secondary btn-floating-action" data-i18n-title="btn_undo" title="Undo (Ctrl+Z)" disabled>↶</button>
-        <button type="button" id="btn-redo" class="btn btn-secondary btn-floating-action" data-i18n-title="btn_redo" title="Redo (Ctrl+Y)" disabled>↷</button>
+        <div class="history-actions-group" role="group" aria-label="Історія змін">
+          <button type="button" id="btn-undo" class="btn-history-action" data-i18n-title="btn_undo" title="Undo (Ctrl+Z)" disabled>
+            <svg class="history-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 7v6h6"></path>
+              <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
+            </svg>
+          </button>
+          <div class="history-actions-separator"></div>
+          <button type="button" id="btn-redo" class="btn-history-action" data-i18n-title="btn_redo" title="Redo (Ctrl+Y)" disabled>
+            <svg class="history-icon" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 7v6h-6"></path>
+              <path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"></path>
+            </svg>
+          </button>
+        </div>
         <button id="btn-toggle-preview" class="btn btn-secondary desktop-toggle-preview btn-floating" data-i18n-title="btn_preview_title" title="Show or hide preview">
           <span class="preview-toggle-icon">📱</span> <span class="preview-toggle-label" data-i18n="btn_preview">Preview</span>
         </button>
