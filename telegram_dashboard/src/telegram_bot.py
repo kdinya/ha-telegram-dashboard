@@ -261,7 +261,7 @@ class TelegramBotRunner:
         sec_key = None
         if hasattr(self.bot_engine, "find_menu_by_command"):
             sec_key = self.bot_engine.find_menu_by_command(command)
-        elif command.lstrip("/").lower() in ("dashboard", "menu", "start", "home"):
+        elif command.lstrip("/").lower() == "start":
             sec_key = "main"
 
         if not sec_key:

@@ -10,6 +10,16 @@ logger = logging.getLogger("telegram_dashboard.bot")
 
 ENTITIES_PAGE_SIZE = 8
 
+ALLOWED_ACTION_DOMAINS = {
+    "light", "switch", "climate", "cover", "fan", "lock", "media_player",
+    "vacuum", "scene", "script", "automation", "input_boolean", "input_select",
+    "input_number", "input_button", "button", "siren", "humidifier",
+    "water_heater", "valve", "camera", "notify", "tts", "homeassistant",
+}
+SAFE_HOMEASSISTANT_SERVICES = {
+    "turn_on", "turn_off", "toggle", "update_entity", "reload_core_config",
+}
+
 
 class BotEngine:
     """Core logic for routing commands, rendering screens and editing messages."""
@@ -149,8 +159,8 @@ class BotEngine:
             sec_cmd = str(sec.get("command", "")).strip().lower().lstrip("/")
             if sec_cmd and sec_cmd == clean_cmd:
                 return sec_key
-        # Default fallbacks for the primary menu
-        if clean_cmd in ("dashboard", "menu", "start", "home"):
+        # Default fallback for the primary menu: only /start
+        if clean_cmd == "start":
             return self._get_first_section_key()
         return None
 
@@ -457,6 +467,12 @@ class BotEngine:
             domain = str(target_entity).split(".", 1)[0]
         if not domain:
             domain = "homeassistant"
+
+        if domain not in ALLOWED_ACTION_DOMAINS:
+            return {"ok": False, "toast": f"⛔ Домен {domain} заборонено", "section_key": sec_key}
+        if domain == "homeassistant" and service not in SAFE_HOMEASSISTANT_SERVICES:
+            return {"ok": False, "toast": f"⛔ Сервіс {domain}.{service} заборонено", "section_key": sec_key}
+
         if target_entity:
             entity_decision = self.access.check_entity(
                 user_id, target_entity, area=area_of.get(target_entity), domain=domain_of.get(target_entity),

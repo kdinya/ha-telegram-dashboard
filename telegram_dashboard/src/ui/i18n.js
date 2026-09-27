@@ -18,6 +18,12 @@
       btn_preview: "Preview",
       btn_preview_title: "Show or hide preview",
       btn_save_changes: "💾 Save changes",
+      default_section_title: "Section",
+      btn_lock_block_title: "Lock elements",
+      preview_role_sim_title: "Role simulation",
+      btn_close_title: "Close",
+      err_failed_to_load_entities: "Failed to load entities",
+      btn_retry: "Retry",
 
       // Builder Section
       sections_title: "📂 Menu Sections",
@@ -280,6 +286,12 @@ btn_action_add_divider: "Add spacer",
       btn_preview: "Прев'ю",
       btn_preview_title: "Сховати або показати прев'ю",
       btn_save_changes: "💾 Зберегти зміни",
+      default_section_title: "Розділ",
+      btn_lock_block_title: "Заблокувати елементи",
+      preview_role_sim_title: "Симуляція ролі",
+      btn_close_title: "Закрити",
+      err_failed_to_load_entities: "Не вдалося завантажити сутності",
+      btn_retry: "Повторити",
 
       // Builder Section
       sections_title: "📂 Розділи меню",

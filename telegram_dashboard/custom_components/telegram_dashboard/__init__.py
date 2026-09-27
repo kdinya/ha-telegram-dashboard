@@ -183,16 +183,21 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
     async def handle_speak(call: ServiceCall) -> None:
         """Speak a message through a smart speaker via a TTS service."""
-        svc_name = call.data.get("tts_service", "tts.google_translate_say")
+        target_entity = str(call.data["entity_id"]).strip()
+        if not target_entity.startswith("media_player."):
+            raise HomeAssistantError(f"Entity '{target_entity}' must be in the media_player domain")
+        svc_name = str(call.data.get("tts_service", "tts.google_translate_say")).strip().lower()
         if "." in svc_name:
             domain, service = svc_name.split(".", 1)
         else:
             domain, service = "tts", svc_name
+        if domain != "tts":
+            raise HomeAssistantError(f"Invalid TTS service '{svc_name}': domain must be 'tts'")
         await hass.services.async_call(
             domain,
             service,
             {
-                "entity_id": call.data["entity_id"],
+                "entity_id": target_entity,
                 "message": call.data["message"],
             },
             blocking=False,

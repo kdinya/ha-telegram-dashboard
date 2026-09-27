@@ -37,7 +37,7 @@ async def test_bridge_routes_multi_menu_commands():
 
     # 1. Test /dashboard command
     await runner.handle_ha_command({
-        "command": "/dashboard",
+        "command": "/start",
         "chat_id": 100,
         "user_id": 100,
         "from_first_name": "Admin",
@@ -158,7 +158,7 @@ async def test_command_message_is_auto_deleted_after_configured_timeout():
     runner = TelegramBotRunner(ha_client, engine)
 
     await runner.handle_ha_command({
-        "command": "/dashboard",
+        "command": "/start",
         "chat_id": 100,
         "user_id": 100,
         "from_first_name": "Admin",

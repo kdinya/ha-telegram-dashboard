@@ -16,23 +16,34 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "menu": {
         "main": {
             "title": "🏠 Smart Home",
-            "command": "/dashboard",
+            "command": "/start",
             "type": "menu",
             "icon": "🏠",
             "roles": ["admin", "member", "guest"],
             "widgets": [],
-            "sections": ["climate", "water", "home", "battery", "system"],
+            "sections": ["climate", "light", "water", "battery", "system"],
         },
         "climate": {
             "title": "🌡 Climate",
+            "command": "/climate",
             "type": "section",
             "icon": "🌡",
             "roles": ["admin", "member", "guest"],
             "widgets": [],
             "actions": [],
         },
+        "light": {
+            "title": "💡 Light",
+            "command": "/light",
+            "type": "section",
+            "icon": "💡",
+            "roles": ["admin", "member", "guest"],
+            "widgets": [],
+            "actions": [],
+        },
         "water": {
             "title": "🚰 Water",
+            "command": "/water",
             "type": "section",
             "icon": "🚰",
             "roles": ["admin", "member"],
@@ -41,6 +52,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
         },
         "battery": {
             "title": "🔋 Batteries",
+            "command": "/battery",
             "type": "section",
             "icon": "🔋",
             "roles": ["admin", "member"],
@@ -48,6 +60,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
         },
         "system": {
             "title": "⚙️ System",
+            "command": "/system",
             "type": "section",
             "icon": "⚙️",
             "roles": ["admin"],

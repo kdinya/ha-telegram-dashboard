@@ -475,7 +475,7 @@ async function fetchEntities() {
     availableEntities = data.entities || [];
     if (haEntitiesDatalist) {
       haEntitiesDatalist.innerHTML = availableEntities
-        .map(e => `<option value="${e.entity_id}">${e.friendly_name} (${e.entity_id})</option>`)
+        .map(e => `<option value="${escapeHtml(e.entity_id || '')}">${escapeHtml(e.friendly_name || '')} (${escapeHtml(e.entity_id || '')})</option>`)
         .join('');
     }
   } catch (e) {
@@ -906,8 +906,8 @@ function renderEntityPickerList() {
 
   if (!list.length) {
     entityPickerList.innerHTML = entitiesLoadError
-      ? `<p class="field-hint" style="padding: 20px;">Не вдалося завантажити сутності: ${entitiesLoadError}. <button type="button" class="btn btn-secondary btn-sm" id="btn-retry-entities">Повторити</button></p>`
-      : '<p class="field-hint" style="padding: 20px;">Нічого не знайдено. Спробуйте інший пошук або фільтр.</p>';
+      ? `<p class="field-hint" style="padding: 20px;">${escapeHtml(t('err_failed_to_load_entities') || 'Failed to load entities')}: ${escapeHtml(entitiesLoadError)}. <button type="button" class="btn btn-secondary btn-sm" id="btn-retry-entities">${escapeHtml(t('btn_retry') || 'Retry')}</button></p>`
+      : `<p class="field-hint" style="padding: 20px;">${escapeHtml(t('picker_no_entities_found') || 'Nothing found. Try a different search or filter.')}</p>`;
     const retry = document.getElementById('btn-retry-entities');
     if (retry) retry.addEventListener('click', async () => {
       entitiesLoadError = null;
@@ -1080,7 +1080,7 @@ function renderActionServiceOptions(domain, entityId) {
   });
 
   actionServiceSelect.innerHTML = services.map(s =>
-    `<option value="${s.service}">${s.label}</option>`
+    `<option value="${escapeHtml(s.service || '')}">${escapeHtml(s.label || '')}</option>`
   ).join('');
 
   // Auto-fill button label with first suggestion
