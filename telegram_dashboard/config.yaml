@@ -19,6 +19,7 @@ panel_icon: mdi:send-circle
 panel_title: "Telegram Dashboard"
 ingress: true
 ingress_port: 8099
+apparmor: true
 schema:
   log_level: list(debug|info|warning|error)?
   default_role: list(guest|member|admin)?

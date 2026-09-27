@@ -9,7 +9,6 @@ import voluptuous as vol
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from .const import CONF_BOT_TOKEN, DOMAIN
 
 CONFIG_SCHEMA = vol.Schema(
@@ -81,17 +80,13 @@ SPEAK_SCHEMA = vol.Schema(
     extra=vol.ALLOW_EXTRA,
 )
 
-TELEGRAM_API_BASE = "https://api.telegram.org"
-
-
 async def _call_telegram(hass: HomeAssistant, token: str, method: str, payload: dict) -> dict:
-    session = async_get_clientsession(hass)
-    url = f"{TELEGRAM_API_BASE}/bot{token}/{method}"
-    async with session.post(url, json=payload, timeout=30) as resp:
-        body = await resp.json()
-        if not body.get("ok"):
-            raise HomeAssistantError(f"Telegram API {method} failed: {body}")
-        return body.get("result", {})
+    """Delegate Telegram action to Home Assistant's standard telegram_bot integration."""
+    try:
+        res = await hass.services.async_call("telegram_bot", method, payload, blocking=True, return_response=True)
+        return res or {}
+    except Exception as err:
+        raise HomeAssistantError(f"Telegram action telegram_bot.{method} failed: {err}") from err
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:

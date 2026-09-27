@@ -75,6 +75,27 @@ class HAClient:
     async def get_state(self, entity_id: str) -> dict[str, Any] | None:
         return await self._get(f"/api/states/{entity_id}")
 
+    async def get_telegram_bot_status(self) -> dict[str, Any]:
+        """Return diagnostics for the Home Assistant telegram_bot integration."""
+        try:
+            entries = await self._get("/api/config/config_entries/entry?domain=telegram_bot")
+            if not isinstance(entries, list):
+                return {"configured": False, "loaded": False, "status": "not_configured"}
+            loaded_entry = next(
+                (entry for entry in entries if isinstance(entry, dict) and entry.get("state") == "loaded"),
+                None
+            )
+            if loaded_entry:
+                title = (loaded_entry.get("title") or "Telegram Bot").strip()
+                return {"configured": True, "loaded": True, "status": "loaded", "title": title}
+            if entries:
+                first_state = entries[0].get("state", "unknown") if isinstance(entries[0], dict) else "unknown"
+                return {"configured": True, "loaded": False, "status": first_state}
+            return {"configured": False, "loaded": False, "status": "not_configured"}
+        except Exception as err:
+            logger.warning("Failed to check telegram_bot status in HA: %s", err)
+            return {"configured": False, "loaded": False, "status": "error", "error": str(err)}
+
     async def get_telegram_bot_name(self) -> str | None:
         """Return the title of a loaded Telegram bot config entry, without reading its credentials."""
         entries = await self._get("/api/config/config_entries/entry?domain=telegram_bot")
@@ -216,6 +237,7 @@ class HAClient:
         logger.info("Starting HA WebSocket client for %s...", ws_url)
         session = await self._ensure_session()
 
+        backoff = 1.0
         while self._ws_running:
             try:
                 async with session.ws_connect(ws_url) as ws:
@@ -235,6 +257,7 @@ class HAClient:
                         continue
 
                     logger.info("HA WebSocket authenticated successfully")
+                    backoff = 1.0
                     self._sub_id_to_event.clear()
 
                     # Step 2: Subscribe to all registered event types
@@ -269,5 +292,6 @@ class HAClient:
             except asyncio.CancelledError:
                 break
             except Exception as e:
-                logger.warning("HA WebSocket connection dropped: %s. Reconnecting in 3s...", e)
-                await asyncio.sleep(3)
+                logger.warning("HA WebSocket connection dropped: %s. Reconnecting with backoff...", e)
+                await asyncio.sleep(backoff)
+                backoff = min(backoff * 2, 30.0)

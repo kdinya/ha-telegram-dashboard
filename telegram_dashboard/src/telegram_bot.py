@@ -30,6 +30,11 @@ def format_inline_keyboard_for_ha(
             if isinstance(btn, dict):
                 text = str(btn.get('text', ''))
                 data = str(btn.get('callback_data') or btn.get('url', ''))
+                # Telegram inline callback_data limit is 64 bytes UTF-8
+                if 'callback_data' in btn and len(data.encode('utf-8')) > 64:
+                    logger.warning('Truncating callback_data exceeding 64 bytes: %s', data)
+                    encoded = data.encode('utf-8')[:64]
+                    data = encoded.decode('utf-8', errors='ignore')
                 ha_row.append([text, data])
             elif isinstance(btn, (list, tuple)) and len(btn) >= 2:
                 ha_row.append([str(btn[0]), str(btn[1])])
