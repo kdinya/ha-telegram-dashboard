@@ -155,8 +155,18 @@ class BotEngine:
             return None
         clean_cmd = cmd.strip().lower().lstrip("/")
         menu = self.config.get("menu", {})
+        default_commands = {
+            "main": "start",
+            "climate": "climate",
+            "light": "light",
+            "water": "water",
+            "battery": "battery",
+            "system": "system",
+        }
         for sec_key, sec in menu.items():
             sec_cmd = str(sec.get("command", "")).strip().lower().lstrip("/")
+            if not sec_cmd and sec_key in default_commands:
+                sec_cmd = default_commands[sec_key]
             if sec_cmd and sec_cmd == clean_cmd:
                 return sec_key
         # Default fallback for the primary menu: only /start

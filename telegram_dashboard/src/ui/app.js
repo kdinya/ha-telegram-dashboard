@@ -240,6 +240,22 @@ function slugify(text) {
 
 /** Strip leading emoji so icon + title don't duplicate */
 
+const DEFAULT_SECTION_COMMANDS = {
+  main: '/start',
+  climate: '/climate',
+  light: '/light',
+  water: '/water',
+  battery: '/battery',
+  system: '/system'
+};
+
+function getDefaultSectionCommand(key) {
+  if (!key) return '';
+  if (DEFAULT_SECTION_COMMANDS[key]) return DEFAULT_SECTION_COMMANDS[key];
+  if (key === 'main') return '/start';
+  return '';
+}
+
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
   return String(str)
@@ -487,6 +503,13 @@ async function fetchEntities() {
 async function loadConfig() {
   try {
     config = await api('api/config');
+    if (config && config.menu) {
+      Object.keys(DEFAULT_SECTION_COMMANDS).forEach(k => {
+        if (config.menu[k] && !config.menu[k].command) {
+          config.menu[k].command = DEFAULT_SECTION_COMMANDS[k];
+        }
+      });
+    }
     const currentLang = config.language || (window.I18N ? window.I18N.getLanguage() : 'uk');
     if (window.I18N) window.I18N.setLanguage(currentLang, false);
     updateHistoryButtons();
@@ -2694,7 +2717,8 @@ async function updatePreview() {
       // Update command in user bubble if current section has one
       const userCmdEl = document.querySelector('.tg-user-bubble-text');
       if (userCmdEl && config.menu && config.menu[currentSectionKey]) {
-        userCmdEl.textContent = config.menu[currentSectionKey].command || '/dashboard';
+        const defaultCmd = getDefaultSectionCommand(currentSectionKey);
+        userCmdEl.textContent = config.menu[currentSectionKey].command || defaultCmd || (currentSectionKey === 'main' ? '/start' : '/' + currentSectionKey);
       }
 
       const prevHeight = (botBubble && botBubble.offsetHeight > 0) ? botBubble.offsetHeight : 0;
@@ -3156,7 +3180,11 @@ function setupEventListeners() {
       if (editSectionIconDisplay) editSectionIconDisplay.textContent = sec.icon || '📁';
       if (editSecTitle) {
         editSecTitle.value = stripLeadingEmoji(sec.title || '');
-    if (editSecCommand) { editSecCommand.value = sec.command || ''; }
+      }
+      if (editSecCommand) {
+        const defaultCmd = getDefaultSectionCommand(currentSectionKey);
+        editSecCommand.value = sec.command || defaultCmd;
+        editSecCommand.placeholder = defaultCmd || '/start, /climate...';
       }
       modalEditSection?.classList.add('open');
       // Do not automatically autofocus title to prevent unwanted virtual keyboard popup on mobile
@@ -3175,10 +3203,17 @@ function setupEventListeners() {
     recordHistory();
     if (editSecTitle) {
       sec.title = stripLeadingEmoji(editSecTitle.value.trim()) || 'Розділ';
-    if (editSecCommand) {
-      const cmd = editSecCommand.value.trim();
-      if (cmd) { sec.command = cmd.startsWith('/') ? cmd : '/' + cmd; } else { delete sec.command; }
     }
+    if (editSecCommand) {
+      const defaultCmd = getDefaultSectionCommand(currentSectionKey);
+      const cmd = editSecCommand.value.trim();
+      if (cmd) {
+        sec.command = cmd.startsWith('/') ? cmd : '/' + cmd;
+      } else if (defaultCmd) {
+        sec.command = defaultCmd;
+      } else {
+        delete sec.command;
+      }
     }
     if (editSecIcon) {
       sec.icon = editSecIcon.value.trim() || '📁';

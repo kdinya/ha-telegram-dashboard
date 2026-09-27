@@ -45,3 +45,28 @@ def test_save_is_newline_terminated_and_backup_is_valid(tmp_path: Path):
     cm.upsert_user(55, "User", "guest")
     assert cfg_file.with_suffix(".json.bak").read_bytes() == first
     assert ConfigManager(cfg_file).load()["users"][0]["telegram_id"] == 55
+
+
+def test_default_section_commands_presence_and_migration():
+    from telegram_dashboard.src.config_manager import DEFAULT_SECTION_COMMANDS, ConfigManager
+    import tempfile
+
+    assert DEFAULT_SECTION_COMMANDS["main"] == "/start"
+    assert DEFAULT_SECTION_COMMANDS["climate"] == "/climate"
+    assert DEFAULT_SECTION_COMMANDS["light"] == "/light"
+    assert DEFAULT_SECTION_COMMANDS["water"] == "/water"
+    assert DEFAULT_SECTION_COMMANDS["battery"] == "/battery"
+    assert DEFAULT_SECTION_COMMANDS["system"] == "/system"
+
+    with tempfile.NamedTemporaryFile("w+", suffix=".json", delete=False) as f:
+        # Simulate legacy config where default sections lacked 'command'
+        legacy_cfg = (
+            '{"version": "1.0.0", "menu": {"main": {"title": "Home", "roles": ["admin"]}, '
+            '"climate": {"title": "Climate", "roles": ["admin"]}}, "users": []}'
+        )
+        f.write(legacy_cfg)
+        f.flush()
+        mgr = ConfigManager(f.name)
+        cfg = mgr.load()
+        assert cfg["menu"]["main"]["command"] == "/start"
+        assert cfg["menu"]["climate"]["command"] == "/climate"

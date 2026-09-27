@@ -71,6 +71,15 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "users": [],
 }
 
+DEFAULT_SECTION_COMMANDS: dict[str, str] = {
+    "main": "/start",
+    "climate": "/climate",
+    "light": "/light",
+    "water": "/water",
+    "battery": "/battery",
+    "system": "/system",
+}
+
 REQUIRED_ROLES = {"admin", "member", "guest"}
 
 
@@ -137,6 +146,12 @@ class ConfigManager:
                     parsed = json.loads(raw) if raw.strip() else dict(DEFAULT_CONFIG)
                 except json.JSONDecodeError as exc:
                     raise ConfigError(f"invalid JSON in {self._path}: {exc}") from exc
+                # Populate default commands for default sections if missing
+                menu = parsed.get("menu")
+                if isinstance(menu, dict):
+                    for sec_k, def_cmd in DEFAULT_SECTION_COMMANDS.items():
+                        if sec_k in menu and isinstance(menu[sec_k], dict) and not menu[sec_k].get("command"):
+                            menu[sec_k]["command"] = def_cmd
                 self._config = validate_config(parsed)
             else:
                 self._config = validate_config(json.loads(json.dumps(DEFAULT_CONFIG)))
