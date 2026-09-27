@@ -109,8 +109,8 @@ def test_render_section_with_dividers_and_spacers():
     rendered = renderer.render_section(section, state)
     lines = rendered.split("\n")
     # Solid divider between block one and two
-    solid = "─" * 18
-    dashed = "┄" * 18
+    solid = "─" * 28
+    dashed = "┄" * 28
     assert solid in lines
     assert dashed in lines
     # Blank spacer line exists

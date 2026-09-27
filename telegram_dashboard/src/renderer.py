@@ -197,20 +197,20 @@ class MessageRenderer:
         parts = [
             "<b>🏠 ДІМ І БЕЗПЕКА</b>",
             f"<i>За бортом: {outside}°C • {people}</i>",
-            "──────────────────",
+            "────────────────────────────",
             "<b>Клімат у кімнатах:</b>",
             climate_block,
-            "──────────────────",
+            "────────────────────────────",
             "<b>Водопостачання та безпека:</b>",
             f"├ Ввідний кран: {water_status}",
         ]
         if leaks_block:
             parts.append(leaks_block.strip())
         parts.extend([
-            "──────────────────",
+            "────────────────────────────",
             "<b>Заряди пристроїв:</b>",
             bat_block,
-            "──────────────────",
+            "────────────────────────────",
             f"<i>⏱ Оновлено: {html.escape(str(state.get('updated_at', '—')))}</i>"
         ])
         return truncate_telegram_html("\n".join(parts))
@@ -293,11 +293,11 @@ class MessageRenderer:
                 if style == "space":
                     rows.append("")
                 elif style == "dashed":
-                    rows.append("┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
+                    rows.append("┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
                 elif style == "dotted":
-                    rows.append("··················")
+                    rows.append("····························")
                 else:
-                    rows.append("──────────────────")
+                    rows.append("────────────────────────────")
 
         if not has_items:
             rows.append("<i>Показники не налаштовані.</i>")
@@ -326,7 +326,7 @@ class MessageRenderer:
     def render_entity_list(self, section: dict, states: dict[str, Any]) -> str:
         """Render an auto-generated entity browser section."""
         title = html.escape(str(section.get("title", "")))
-        rows = [f"<b>{title}</b>", "──────────────────"]
+        rows = [f"<b>{title}</b>", "────────────────────────────"]
         count = 0
         for entity_id, value in sorted(states.items()):
             icon = DOMAIN_ICONS.get(entity_id.split(".", 1)[0], "🔘")
@@ -337,7 +337,7 @@ class MessageRenderer:
             count += 1
         if count == 0:
             rows.append("├ <i>Немає доступних сутностей</i>")
-        rows.append("──────────────────")
+        rows.append("────────────────────────────")
         rows.append(f"<i>Всього: {count}</i>")
         return truncate_telegram_html("\n".join(rows))
 
