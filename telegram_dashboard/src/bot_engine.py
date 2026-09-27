@@ -164,6 +164,8 @@ class BotEngine:
         first_key = self._get_first_section_key()
         state = state or {}
 
+        content_buttons: list[dict[str, str]] = []
+
         # 1. Navigation buttons for sub-sections
         sub_keys = section.get("sections")
         if sub_keys is None:
@@ -172,7 +174,6 @@ class BotEngine:
                 sub_keys = [k for k in menu.keys() if k != first_key]
 
         if sub_keys:
-            row: list[dict[str, str]] = []
             for sub_key in sub_keys:
                 if sub_key == section_key:
                     continue
@@ -181,38 +182,32 @@ class BotEngine:
                 if decision.allowed:
                     icon = sub_section.get("icon", "📁")
                     title = sub_section.get("title", sub_key)
-                    row.append({"text": f"{icon} {title}".strip(), "callback_data": f"td:/sec_{sub_key}"})
-                    if len(row) == 2:
-                        keyboard.append(row)
-                        row = []
-            if row:
-                keyboard.append(row)
+                    btn_text = f"{icon} {title}".strip()
+                    content_buttons.append({"text": btn_text, "callback_data": f"td:/sec_{sub_key}"})
 
         # 2. Entity browser buttons if type == 'entities'
+        pagination_row: list[dict[str, str]] = []
         if section.get("type") == "entities":
             visible = self._visible_entities(section, user_id)
             total_pages = max(1, (len(visible) + ENTITIES_PAGE_SIZE - 1) // ENTITIES_PAGE_SIZE)
             page = max(0, min(page, total_pages - 1))
             chunk = visible[page * ENTITIES_PAGE_SIZE:(page + 1) * ENTITIES_PAGE_SIZE]
-            ent_buttons: list[dict[str, str]] = []
             for idx, ent in enumerate(chunk):
                 global_idx = page * ENTITIES_PAGE_SIZE + idx
-                ent_buttons.append({
+                content_buttons.append({
                     "text": f"🔘 {friendly_name(ent)}",
                     "callback_data": f"td:/tog_{section_key}_{global_idx}",
                 })
-            for i in range(0, len(ent_buttons), 2):
-                keyboard.append(ent_buttons[i:i + 2])
-            nav_row: list[dict[str, str]] = []
             if page > 0:
-                nav_row.append({"text": "⬅️", "callback_data": f"td:/ent_{section_key}_{page - 1}"})
-            nav_row.append({"text": f"{page + 1}/{total_pages}", "callback_data": f"td:/ent_{section_key}_{page}"})
+                pagination_row.append({"text": "⬅️", "callback_data": f"td:/ent_{section_key}_{page - 1}"})
+            pagination_row.append({
+                "text": f"{page + 1}/{total_pages}",
+                "callback_data": f"td:/ent_{section_key}_{page}",
+            })
             if page < total_pages - 1:
-                nav_row.append({"text": "➡️", "callback_data": f"td:/ent_{section_key}_{page + 1}"})
-            keyboard.append(nav_row)
+                pagination_row.append({"text": "➡️", "callback_data": f"td:/ent_{section_key}_{page + 1}"})
 
-        # 3. Action / Control buttons (paired by 2, remainder as 1)
-        action_buttons: list[dict[str, str]] = []
+        # 3. Action / Control buttons
         buttons = section.get("buttons")
         if buttons is not None:
             for idx, btn in enumerate(buttons):
@@ -234,33 +229,35 @@ class BotEngine:
                         btn_text = f"🟢 {raw_label}"
                     elif ent_st_lower in ("off", "closed", "false"):
                         btn_text = f"🔴 {raw_label}"
-                action_buttons.append({"text": btn_text, "callback_data": f"td:/btn_{section_key}_{idx}"})
+                content_buttons.append({"text": btn_text, "callback_data": f"td:/btn_{section_key}_{idx}"})
         else:
             actions = section.get("actions", [])
             allowed_actions = self.access.filter_actions(user_id, actions)
             for idx, act in enumerate(allowed_actions):
                 act_id = act.get("id") or f"act_{idx}"
                 raw_label = act.get("label", "Дія")
-                action_buttons.append({"text": raw_label, "callback_data": f"td:/act_{act_id}"})
+                content_buttons.append({"text": raw_label, "callback_data": f"td:/act_{act_id}"})
 
-        for i in range(0, len(action_buttons), 2):
-            keyboard.append(action_buttons[i:i + 2])
-
-        # 4. Standard footer buttons
+        # 4. Standard footer buttons (Refresh and Back)
         from datetime import datetime
         now_time = state.get("updated_at")
         if not now_time or now_time == "—":
             now_time = datetime.now().strftime("%H:%M:%S")
             state["updated_at"] = now_time
 
-        if section_key == first_key:
-            keyboard.append([{"text": "🔄 Оновити", "callback_data": f"td:/sec_{section_key}"}])
-        else:
+        content_buttons.append({"text": "🔄 Оновити", "callback_data": f"td:/sec_{section_key}"})
+        if section_key != first_key:
             parent_key = section.get("parent") or first_key
-            keyboard.append([
-                {"text": "🔄 Оновити", "callback_data": f"td:/sec_{section_key}"},
-                {"text": "↩️ Назад", "callback_data": f"td:/sec_{parent_key}"},
-            ])
+            content_buttons.append({"text": "↩️ Назад", "callback_data": f"td:/sec_{parent_key}"})
+
+        # Group all content and navigation buttons in pairs of 2
+        for i in range(0, len(content_buttons), 2):
+            keyboard.append(content_buttons[i:i + 2])
+
+        if pagination_row:
+            keyboard.append(pagination_row)
+
+        # Single sole Close button at the very bottom
         keyboard.append([{"text": "❌ Закрити", "callback_data": "td:/close"}])
 
         return keyboard

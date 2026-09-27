@@ -197,20 +197,20 @@ class MessageRenderer:
         parts = [
             "<b>🏠 ДІМ І БЕЗПЕКА</b>",
             f"<i>За бортом: {outside}°C • {people}</i>",
-            "────────────────────────────",
+            "──────────────────────",
             "<b>Клімат у кімнатах:</b>",
             climate_block,
-            "────────────────────────────",
+            "──────────────────────",
             "<b>Водопостачання та безпека:</b>",
             f"├ Ввідний кран: {water_status}",
         ]
         if leaks_block:
             parts.append(leaks_block.strip())
         parts.extend([
-            "────────────────────────────",
+            "──────────────────────",
             "<b>Заряди пристроїв:</b>",
             bat_block,
-            "────────────────────────────",
+            "──────────────────────",
             f"<i>⏱ Оновлено: {html.escape(str(state.get('updated_at', '—')))}</i>"
         ])
         return truncate_telegram_html("\n".join(parts))
@@ -289,18 +289,39 @@ class MessageRenderer:
                 )
             elif item_type in ("divider", "spacer"):
                 has_items = True
-                style = item.get("style", "line")
-                if style == "space":
-                    rows.append("")
-                elif style == "dashed":
-                    rows.append("┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
-                elif style == "dotted":
-                    rows.append("····························")
-                else:
-                    rows.append("────────────────────────────")
+                # Placeholder to replace with dynamically calculated divider length
+                rows.append({"__divider_style__": item.get("style", "line")})
 
         if not has_items:
             rows.append("<i>Показники не налаштовані.</i>")
+
+        # Dynamically calculate divider length to fill the row without wrapping
+        import re
+        max_line_len = 0
+        for r in rows:
+            if isinstance(r, str) and r:
+                clean_line = re.sub(r"<[^>]+>", "", r).strip()
+                if clean_line:
+                    max_line_len = max(max_line_len, len(clean_line))
+
+        # Safe line length that fills message bubble on mobile without wrapping (20-22 chars)
+        divider_len = max(20, min(22, max(max_line_len, 21)))
+
+        resolved_rows: list[str] = []
+        for r in rows:
+            if isinstance(r, dict) and "__divider_style__" in r:
+                d_style = r["__divider_style__"]
+                if d_style == "space":
+                    resolved_rows.append("")
+                elif d_style == "dashed":
+                    resolved_rows.append("┄" * divider_len)
+                elif d_style == "dotted":
+                    resolved_rows.append("·" * divider_len)
+                else:
+                    resolved_rows.append("─" * divider_len)
+            else:
+                resolved_rows.append(r)
+        rows = resolved_rows
 
         # Keep a deterministic full-width anchor in every section. Telegram
         # sizes text bubbles by their longest rendered line, so relying only
@@ -326,7 +347,7 @@ class MessageRenderer:
     def render_entity_list(self, section: dict, states: dict[str, Any]) -> str:
         """Render an auto-generated entity browser section."""
         title = html.escape(str(section.get("title", "")))
-        rows = [f"<b>{title}</b>", "────────────────────────────"]
+        rows = [f"<b>{title}</b>", "──────────────────────"]
         count = 0
         for entity_id, value in sorted(states.items()):
             icon = DOMAIN_ICONS.get(entity_id.split(".", 1)[0], "🔘")
@@ -337,7 +358,7 @@ class MessageRenderer:
             count += 1
         if count == 0:
             rows.append("├ <i>Немає доступних сутностей</i>")
-        rows.append("────────────────────────────")
+        rows.append("──────────────────────")
         rows.append(f"<i>Всього: {count}</i>")
         return truncate_telegram_html("\n".join(rows))
 

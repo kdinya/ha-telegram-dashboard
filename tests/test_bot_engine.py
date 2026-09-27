@@ -121,11 +121,15 @@ async def test_keyboard_layout_pairs_and_bottom_close():
     renderer = MessageRenderer()
     engine = BotEngine(cfg, ac, renderer)
     kb = engine.build_keyboard("main", 123)
-    # Action buttons: 3 buttons -> first row has 2, second row has 1
+    # Buttons + Refresh are paired by 2:
+    # Row 0: Btn 1, Btn 2
+    # Row 1: Btn 3, 🔄 Оновити
+    # Row 2: ❌ Закрити
     assert len(kb[0]) == 2
     assert kb[0][0]["text"] == "Btn 1"
     assert kb[0][1]["text"] == "Btn 2"
-    assert len(kb[1]) == 1
+    assert len(kb[1]) == 2
     assert kb[1][0]["text"] == "Btn 3"
+    assert kb[1][1]["text"] == "🔄 Оновити"
     # Bottom row is exclusively Close button
     assert kb[-1] == [{"text": "❌ Закрити", "callback_data": "td:/close"}]
