@@ -1369,6 +1369,9 @@ body:has(.modal-overlay.open) {
   border-radius: 6px;
   padding: 8px 12px;
   transition: transform 0.15s ease, background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .section-text-item:hover {
@@ -1380,8 +1383,9 @@ body:has(.modal-overlay.open) {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
+  max-width: 100%;
   position: relative;
   z-index: 1;
 }
@@ -1396,6 +1400,9 @@ body:has(.modal-overlay.open) {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 13.5px;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .section-text-item-heading {
@@ -1409,8 +1416,9 @@ body:has(.modal-overlay.open) {
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.08);
   color: #94a3b8;
-  margin-left: 6px;
   flex-shrink: 0;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .badge-text-type.heading {
@@ -1455,30 +1463,104 @@ body:has(.modal-overlay.open) {
   background: rgba(239, 68, 68, 0.15);
 }
 
-/* Responsive adjustments for narrow screens */
+/* Responsive adjustments for narrow screens: ensure all section elements stay within boundaries */
 @media (max-width: 640px) {
+  .panel-card {
+    padding: 14px 12px;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  .sub-block {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  .section-texts-list {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  .section-texts-list > div[data-idx] {
+    padding: 8px 10px;
+    gap: 8px;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  .section-text-item-main {
+    flex-wrap: wrap;
+    gap: 4px 6px;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .section-text-item-content {
+    flex: 1 1 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .section-divider-item-main {
+    flex-wrap: wrap;
+    gap: 4px 6px;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .section-divider-preview {
+    flex: 1 1 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
   .builder-actions-row {
     flex-direction: column;
     gap: 8px;
+    max-width: 100%;
+    box-sizing: border-box;
   }
   .btn-builder-action {
     width: 100%;
     min-width: 0;
     padding: 12px 14px;
+    box-sizing: border-box;
   }
   .add-text-inline-row {
     flex-direction: row;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     align-items: center;
     gap: 6px;
-    padding: 6px 8px;
+    padding: 8px 10px;
+    max-width: 100%;
+    box-sizing: border-box;
   }
   .add-text-inline-row .item-input-val {
-    min-width: 60px;
+    flex: 1 1 calc(100% - 46px);
+    min-width: 0;
+    box-sizing: border-box;
   }
   .add-text-inline-row-actions {
+    margin-left: auto;
     margin-top: 0;
     gap: 4px;
+  }
+  .add-entity-inline-card {
+    padding: 8px 10px;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  .add-entity-row-1 {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .add-entity-row-1 .item-name-input {
+    flex: 1 1 calc(100% - 46px);
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  .add-entity-row-1 .add-inline-row-actions {
+    margin-left: auto;
+  }
+  .add-entity-row-2 {
+    max-width: 100%;
+  }
+  .entity-select-display {
+    max-width: 100%;
+    box-sizing: border-box;
+    min-width: 0;
   }
 }
 
@@ -1901,8 +1983,9 @@ body:has(.modal-overlay.open) {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
+  max-width: 100%;
 }
 
 .section-divider-preview {
@@ -1912,7 +1995,9 @@ body:has(.modal-overlay.open) {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 220px;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .badge-text-type.divider {

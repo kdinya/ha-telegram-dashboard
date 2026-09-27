@@ -1465,7 +1465,6 @@ function renderSectionElements(items) {
           <span class="section-text-item-content"><b>${safeLabel}</b>: <code>${escapeHtml(stateVal)}</code></span>
           <span class="badge-text-type entity">${t('badge_entity')}</span>
           ${indentBadge}
-          ${isLocked ? `<span class="badge-text-type badge-locked" title="${lockTitle}">🔒 ${t('badge_locked')}</span>` : ""}
         </div>
         <div class="section-text-item-actions">
           <div class="item-actions-dropdown">
@@ -1578,7 +1577,6 @@ function renderSectionElements(items) {
           <span class="section-divider-preview"><code>${escapeHtml(stylePreview)}</code></span>
           <span class="badge-text-type divider">${t('badge_divider')}</span>
           <span class="badge-text-type">${escapeHtml(styleLabel)}</span>
-          ${isLocked ? `<span class="badge-text-type badge-locked" title="${lockTitle}">🔒 ${t('badge_locked')}</span>` : ""}
         </div>
         <div class="section-text-item-actions">
           <button type="button" class="btn-icon-action btn-cycle-divider-style" title="${t('btn_change_divider_style')}" data-idx="${idx}" ${isLocked ? 'disabled' : ''}>🔄</button>
@@ -1702,7 +1700,6 @@ function renderSectionElements(items) {
           <span class="${contentClass}">${safeText}</span>
           ${badgeHtml}
           ${indentBadge}
-          ${isLocked ? `<span class="badge-text-type badge-locked" title="${lockTitle}">🔒 ${t('badge_locked')}</span>` : ""}
         </div>
         <div class="section-text-item-actions">
           <div class="item-actions-dropdown">
