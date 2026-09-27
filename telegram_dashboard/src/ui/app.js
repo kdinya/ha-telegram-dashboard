@@ -1930,14 +1930,34 @@ function renderSectionElements(items) {
     el.addEventListener('dragover', (e) => {
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
+      const draggingNode = container.querySelector('.section-text-item.is-dragging');
+      if (!draggingNode || draggingNode === el) {
+        el.classList.remove('drag-over-top', 'drag-over-bottom');
+        return;
+      }
+      const fromIdx = parseInt(draggingNode.dataset.idx, 10);
       const rect = el.getBoundingClientRect();
       const mid = rect.top + rect.height / 2;
-      if (e.clientY < mid) {
-        el.classList.add('drag-over-top');
-        el.classList.remove('drag-over-bottom');
-      } else {
-        el.classList.add('drag-over-bottom');
-        el.classList.remove('drag-over-top');
+      if (fromIdx < idx) {
+        if (e.clientY >= mid) {
+          el.classList.add('drag-over-bottom');
+          el.classList.remove('drag-over-top');
+        } else if (fromIdx < idx - 1) {
+          el.classList.add('drag-over-top');
+          el.classList.remove('drag-over-bottom');
+        } else {
+          el.classList.remove('drag-over-top', 'drag-over-bottom');
+        }
+      } else if (fromIdx > idx) {
+        if (e.clientY < mid) {
+          el.classList.add('drag-over-top');
+          el.classList.remove('drag-over-bottom');
+        } else if (fromIdx > idx + 1) {
+          el.classList.add('drag-over-bottom');
+          el.classList.remove('drag-over-top');
+        } else {
+          el.classList.remove('drag-over-top', 'drag-over-bottom');
+        }
       }
     });
 
@@ -1965,7 +1985,7 @@ function renderSectionElements(items) {
 
     // Native HTML5 drag-and-drop is unavailable on many touch browsers.
     // Use the whole item row for touch/pen while keeping native desktop DnD intact.
-    // Require a short press-and-hold delay (280ms) so regular scrolling is uninterrupted.
+    // Require a short press-and-hold delay (320ms) so regular scrolling is uninterrupted.
     let pointerDrag = null;
     const isInteractiveTarget = (target) => Boolean(
       target instanceof Element
@@ -1976,35 +1996,99 @@ function renderSectionElements(items) {
         node.classList.remove('drag-over-top', 'drag-over-bottom');
       });
     };
-    const pointerTargetAt = (clientY) => {
+    const pointerTargetAt = (clientY, startY) => {
       const fromIdx = Number(el.dataset.idx);
-      const nodes = [...container.querySelectorAll('.section-text-item')].filter(node => node !== el);
-      for (const node of nodes) {
-        const nodeIdx = Number(node.dataset.idx);
-        const rect = node.getBoundingClientRect();
-        const mid = rect.top + rect.height / 2;
-        if (fromIdx < nodeIdx && fromIdx === nodeIdx - 1) {
-          if (clientY >= rect.top && clientY <= rect.bottom) return { node, toIdx: nodeIdx + 1 };
-        } else if (fromIdx > nodeIdx && fromIdx === nodeIdx + 1) {
-          if (clientY >= rect.top && clientY <= rect.bottom) return { node, toIdx: nodeIdx };
-        }
-        if (clientY < mid) return { node, toIdx: nodeIdx };
-        if (clientY < rect.bottom) return { node, toIdx: nodeIdx + 1 };
+      const fromRect = el.getBoundingClientRect();
+
+      // If finger/pointer is still within the dragged element bounds, do not highlight any target
+      if (clientY >= fromRect.top && clientY <= fromRect.bottom) {
+        return { node: null, toIdx: fromIdx, position: null };
       }
-      return { node: null, toIdx: sec.items.length };
+
+      const allNodes = [...container.querySelectorAll('.section-text-item')];
+
+      // Dragging UP
+      if (clientY < fromRect.top) {
+        const nodesAbove = allNodes
+          .filter(node => Number(node.dataset.idx) < fromIdx)
+          .sort((a, b) => Number(b.dataset.idx) - Number(a.dataset.idx));
+
+        for (const node of nodesAbove) {
+          const nodeIdx = Number(node.dataset.idx);
+          const rect = node.getBoundingClientRect();
+          const mid = rect.top + rect.height / 2;
+
+          if (nodeIdx === fromIdx - 1) {
+            if (clientY < mid) {
+              return { node, toIdx: nodeIdx, position: 'top' };
+            }
+            return { node: null, toIdx: fromIdx, position: null };
+          }
+          if (clientY >= mid && clientY <= rect.bottom) {
+            return { node, toIdx: nodeIdx + 1, position: 'bottom' };
+          }
+          if (clientY < mid) {
+            if (nodeIdx === 0 || clientY >= rect.top) {
+              return { node, toIdx: nodeIdx, position: 'top' };
+            }
+          }
+        }
+        if (nodesAbove.length > 0) {
+          const topNode = nodesAbove[nodesAbove.length - 1];
+          return { node: topNode, toIdx: 0, position: 'top' };
+        }
+      }
+
+      // Dragging DOWN
+      if (clientY > fromRect.bottom) {
+        const nodesBelow = allNodes
+          .filter(node => Number(node.dataset.idx) > fromIdx)
+          .sort((a, b) => Number(a.dataset.idx) - Number(b.dataset.idx));
+
+        for (const node of nodesBelow) {
+          const nodeIdx = Number(node.dataset.idx);
+          const rect = node.getBoundingClientRect();
+          const mid = rect.top + rect.height / 2;
+
+          if (nodeIdx === fromIdx + 1) {
+            if (clientY > mid) {
+              return { node, toIdx: nodeIdx + 1, position: 'bottom' };
+            }
+            return { node: null, toIdx: fromIdx, position: null };
+          }
+          if (clientY <= mid && clientY >= rect.top) {
+            return { node, toIdx: nodeIdx, position: 'top' };
+          }
+          if (clientY > mid) {
+            if (nodeIdx === sec.items.length - 1 || clientY <= rect.bottom) {
+              return { node, toIdx: nodeIdx + 1, position: 'bottom' };
+            }
+          }
+        }
+        if (nodesBelow.length > 0) {
+          const bottomNode = nodesBelow[nodesBelow.length - 1];
+          return { node: bottomNode, toIdx: sec.items.length, position: 'bottom' };
+        }
+      }
+
+      return { node: null, toIdx: fromIdx, position: null };
     };
+
     const stopPointerReorder = (e) => {
       if (!pointerDrag || e.pointerId !== pointerDrag.pointerId) return;
       if (pointerDrag.timer) clearTimeout(pointerDrag.timer);
       if (pointerDrag.active && pointerDrag.moved) {
-        const { toIdx } = pointerTargetAt(e.clientY);
-        reorderSectionItems(Number(el.dataset.idx), toIdx);
+        const { toIdx } = pointerTargetAt(e.clientY, pointerDrag.startY);
+        if (toIdx !== Number(el.dataset.idx)) {
+          reorderSectionItems(Number(el.dataset.idx), toIdx);
+        }
       }
       el.classList.remove('is-dragging', 'is-holding');
       clearPointerDropMarkers();
       el.releasePointerCapture?.(e.pointerId);
       pointerDrag = null;
     };
+
     el.addEventListener('pointerdown', (e) => {
       if (e.pointerType === 'mouse' || e.pointerType === 'touch' || item.locked || isInteractiveTarget(e.target)) return;
       pointerDrag = {
@@ -2018,10 +2102,11 @@ function renderSectionElements(items) {
       pointerDrag.timer = setTimeout(() => {
         if (!pointerDrag) return;
         pointerDrag.active = true;
-        el.classList.add('is-dragging', 'is-holding');
+        el.classList.add('is-holding');
         if (navigator.vibrate) navigator.vibrate(30);
-      }, 400);
+      }, 350);
     });
+
     el.addEventListener('pointermove', (e) => {
       if (!pointerDrag || e.pointerId !== pointerDrag.pointerId) return;
       if (!pointerDrag.active) {
@@ -2031,13 +2116,18 @@ function renderSectionElements(items) {
         }
         return;
       }
-      pointerDrag.moved = true;
+      if (Math.abs(e.clientY - pointerDrag.startY) >= 8) {
+        pointerDrag.moved = true;
+        el.classList.add('is-dragging');
+      }
+      if (!pointerDrag.moved) return;
       e.preventDefault();
       clearPointerDropMarkers();
-      const { node, toIdx } = pointerTargetAt(e.clientY);
-      if (node && toIdx <= Number(el.dataset.idx)) node.classList.add('drag-over-top');
-      else if (node) node.classList.add('drag-over-bottom');
+      const { node, position } = pointerTargetAt(e.clientY, pointerDrag.startY);
+      if (node && position === 'top') node.classList.add('drag-over-top');
+      else if (node && position === 'bottom') node.classList.add('drag-over-bottom');
     }, { passive: false });
+
     el.addEventListener('pointerup', stopPointerReorder);
     el.addEventListener('pointercancel', stopPointerReorder);
 
@@ -2049,13 +2139,16 @@ function renderSectionElements(items) {
       if (touchDrag.timer) clearTimeout(touchDrag.timer);
       const point = touchPoint(e);
       if (touchDrag.active && touchDrag.moved && point) {
-        const { toIdx } = pointerTargetAt(point.clientY);
-        reorderSectionItems(Number(el.dataset.idx), toIdx);
+        const { toIdx } = pointerTargetAt(point.clientY, touchDrag.startY);
+        if (toIdx !== Number(el.dataset.idx)) {
+          reorderSectionItems(Number(el.dataset.idx), toIdx);
+        }
       }
       el.classList.remove('is-dragging', 'is-holding');
       clearPointerDropMarkers();
       touchDrag = null;
     };
+
     el.addEventListener('touchstart', (e) => {
       el.draggable = false;
       if (item.locked || isInteractiveTarget(e.target) || e.touches.length !== 1) return;
@@ -2070,10 +2163,11 @@ function renderSectionElements(items) {
       touchDrag.timer = setTimeout(() => {
         if (!touchDrag) return;
         touchDrag.active = true;
-        el.classList.add('is-dragging', 'is-holding');
+        el.classList.add('is-holding');
         if (navigator.vibrate) navigator.vibrate(30);
-      }, 400);
+      }, 350);
     }, { passive: true });
+
     el.addEventListener('touchmove', (e) => {
       if (!touchDrag || e.touches.length !== 1) return;
       const point = e.touches[0];
@@ -2084,13 +2178,18 @@ function renderSectionElements(items) {
         }
         return;
       }
-      touchDrag.moved = true;
+      if (Math.abs(point.clientY - touchDrag.startY) >= 8) {
+        touchDrag.moved = true;
+        el.classList.add('is-dragging');
+      }
+      if (!touchDrag.moved) return;
       e.preventDefault();
       clearPointerDropMarkers();
-      const { node, toIdx } = pointerTargetAt(point.clientY);
-      if (node && toIdx <= Number(el.dataset.idx)) node.classList.add('drag-over-top');
-      else if (node) node.classList.add('drag-over-bottom');
+      const { node, position } = pointerTargetAt(point.clientY, touchDrag.startY);
+      if (node && position === 'top') node.classList.add('drag-over-top');
+      else if (node && position === 'bottom') node.classList.add('drag-over-bottom');
     }, { passive: false });
+
     el.addEventListener('touchend', stopTouchReorder, { passive: false });
     el.addEventListener('touchcancel', stopTouchReorder, { passive: false });
 
