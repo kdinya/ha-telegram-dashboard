@@ -154,7 +154,18 @@ def test_preview_sanitizes_html_and_save_preserves_message_width():
 
 def test_entity_picker_resolves_device_and_parameter_accurately():
     app = (UI_DIR / "app.js").read_text(encoding="utf-8")
-    assert "function splitEntityName(friendlyName, domain, attributes, deviceName, areaName)" in app
+    assert "function splitEntityName(friendlyName, domain, attributes, deviceName, areaName" in app
     assert "cleanDevicePrefix" in app
     assert "e.device_name" in app
-    assert "splitEntityName(fullFriendlyName, domain, e.attributes, e.device_name, e.area || e.area_name)" in app
+    expected_call = ("splitEntityName(fullFriendlyName, domain, e.attributes, "
+                     "e.device_name, e.area || e.area_name, e.entity_id)")
+    assert expected_call in app
+
+
+def test_entity_picker_handles_hyphenated_device_names_and_multilingual_params():
+    app = (UI_DIR / "app.js").read_text(encoding="utf-8")
+    assert "DEVICE_CLASS_PARAM_NAMES" in app
+    assert "inferParamFromEntityId" in app
+    assert "'влажность'" in app
+    assert "e.entity_id" in app
+    assert "splitEntityName(fullFriendlyName" in app

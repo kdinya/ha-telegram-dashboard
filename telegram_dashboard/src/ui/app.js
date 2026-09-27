@@ -689,18 +689,53 @@ function capitalizeFirst(str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+const DEVICE_CLASS_PARAM_NAMES = {
+  temperature: 'Температура',
+  humidity: 'Вологість',
+  pressure: 'Тиск',
+  battery: 'Батарея',
+  illuminance: 'Освітленість',
+  motion: 'Рух',
+  occupancy: 'Присутність',
+  door: 'Двері',
+  window: 'Вікно',
+  opening: 'Відкриття',
+  moisture: 'Протікання',
+  smoke: 'Дим',
+  gas: 'Газ',
+  power: 'Потужність',
+  energy: 'Енергія',
+  voltage: 'Напруга',
+  current: 'Струм'
+};
+
+function inferParamFromEntityId(entityId, attributes) {
+  if (attributes && attributes.device_class && DEVICE_CLASS_PARAM_NAMES[attributes.device_class]) {
+    return DEVICE_CLASS_PARAM_NAMES[attributes.device_class];
+  }
+  const suffix = (entityId || '').split('.').pop() || '';
+  const parts = suffix.split('_');
+  const last = parts[parts.length - 1];
+  if (DEVICE_CLASS_PARAM_NAMES[last]) {
+    return DEVICE_CLASS_PARAM_NAMES[last];
+  }
+  return '';
+}
+
 function cleanDevicePrefix(name) {
   if (!name) return '';
   return name.replace(/^(?:(?:у|в|на|біля|для|по)\s+)/i, '').trim();
 }
 
-function splitEntityName(friendlyName, domain, attributes, deviceName, areaName) {
+function splitEntityName(friendlyName, domain, attributes, deviceName, areaName, entityId) {
   const fn = String(friendlyName || '').trim();
   const dom = String(domain || '').toLowerCase();
   const dev = String(deviceName || '').trim();
   const area = String(areaName || '').trim();
 
   if (!fn) return { device: dev || area || dom.toUpperCase(), param: '' };
+
+  const eid = String(entityId || '').trim();
 
   // 1. If explicit device name is provided (e.g. from Home Assistant device registry)
   if (dev) {
@@ -710,11 +745,15 @@ function splitEntityName(friendlyName, domain, attributes, deviceName, areaName)
     } else if (p.toLowerCase().endsWith(dev.toLowerCase())) {
       p = p.slice(0, p.length - dev.length).replace(/[\s—\-:|/]+$/, '').trim();
     }
+    if (!p || p.toLowerCase() === dev.toLowerCase()) {
+      p = inferParamFromEntityId(eid, attributes);
+    }
     return { device: dev, param: p ? capitalizeFirst(p) : fn };
   }
 
   // 2. Check explicit separators: " - ", " — ", " : ", ": ", " | ", " / "
-  const sepMatch = fn.match(/^(.+?)\s*(?:—|-|:|\||\/)\s*(.+)$/);
+  // Requires whitespace around hyphen/dash so words like 'Тем-ра' or 'Wi-Fi' are not split
+  const sepMatch = fn.match(/^(.+?)(?:\s+[-—]\s+|\s*[:|/]\s+)(.+)$/);
   if (sepMatch && sepMatch[1].trim() && sepMatch[2].trim()) {
     return {
       device: capitalizeFirst(sepMatch[1].trim()),
@@ -722,34 +761,43 @@ function splitEntityName(friendlyName, domain, attributes, deviceName, areaName)
     };
   }
 
-  // 3. Known parameters (Ukrainian and English)
+  // 3. Known parameters (Ukrainian, Russian, English)
   const paramKeywords = [
-    'рівень заряду', 'battery level', 'якість повітря', 'air quality',
-    'потужність сигналу', 'water leak', 'витік води', 'захист від протікання',
-    'нічний режим', 'night mode', 'датчик затоплення', 'датчик протікання',
-    'датчик руху', 'датчик відкриття', 'датчик присутності', 'датчик температури',
-    'датчик вологості', 'датчик тиску', 'датчик диму', 'датчик газу',
-    'тепла підлога', 'підігрів підлоги',
+    'рівень заряду', 'battery level', 'уровень заряда',
+    'якість повітря', 'air quality', 'качество воздуха',
+    'потужність сигналу', 'signal strength', 'уровень сигнала',
+    'water leak', 'витік води', 'утечка воды', 'захист від протікання',
+    'нічний режим', 'night mode', 'ночной режим',
+    'датчик затоплення', 'датчик протікання', 'датчик протечки',
+    'датчик руху', 'датчик движения', 'motion sensor',
+    'датчик відкриття', 'датчик открытия',
+    'датчик присутності', 'датчик присутствия',
+    'датчик температури', 'датчик температуры',
+    'датчик вологості', 'датчик влажности',
+    'датчик тиску', 'датчик давления',
+    'датчик диму', 'датчик дыма',
+    'датчик газу', 'датчик газа',
+    'тепла підлога', 'підігрів підлоги', 'теплый пол',
     'температура', 'temperature', 'temp',
-    'вологість', 'humidity', 'hum',
-    'тиск', 'pressure',
-    'батарея', 'battery', 'batt',
-    'освітленість', 'яскравість', 'освітлення', 'illuminance', 'brightness', 'light', 'світло',
-    'рух', 'motion', 'occupancy', 'присутність',
+    'вологість', 'влажность', 'humidity', 'hum',
+    'тиск', 'давление', 'pressure',
+    'батарея', 'батарейка', 'battery', 'batt',
+    'освітленість', 'освещенность', 'яскравість', 'яркость', 'освітлення', 'освещение', 'illuminance', 'brightness', 'light', 'світло', 'свет',
+    'рух', 'движение', 'motion', 'occupancy', 'присутність', 'присутствие',
     'стан', 'статус', 'state', 'status',
-    'потужність', 'power',
-    'енергія', 'energy',
-    'напруга', 'voltage',
-    'струм', 'current',
-    'швидкість', 'speed',
+    'потужність', 'мощность', 'power',
+    'енергія', 'энергия', 'energy',
+    'напруга', 'напряжение', 'voltage',
+    'струм', 'ток', 'current',
+    'швидкість', 'скорость', 'speed',
     'co2', 'voc', 'pm2.5', 'pm10', 'pm1', 'pm25',
-    'відкриття', 'закриття', 'door', 'window', 'contact', 'контакт',
-    'затоплення', 'протікання', 'leak', 'moisture',
-    'дим', 'smoke', 'газ', 'gas', 'вібрація', 'vibration',
-    'вимикач', 'switch', 'реле', 'relay', 'розетка', 'socket', 'plug',
+    'відкриття', 'відчинення', 'открытие', 'закриття', 'зачинення', 'закрытие', 'door', 'window', 'contact', 'контакт', 'двері', 'двери', 'вікно', 'окно',
+    'затоплення', 'протікання', 'протечка', 'leak', 'moisture',
+    'дим', 'дым', 'smoke', 'газ', 'gas', 'вібрація', 'вибрация', 'vibration',
+    'вимикач', 'выключатель', 'switch', 'реле', 'relay', 'розетка', 'socket', 'plug',
     'кнопка', 'button', 'клапан', 'valve', 'замок', 'lock',
-    'сирена', 'siren', 'гучність', 'volume',
-    'доступність', 'availability', 'linkquality', 'rssi', 'ping'
+    'сирена', 'siren', 'гучність', 'громкость', 'volume',
+    'доступність', 'доступность', 'availability', 'linkquality', 'rssi', 'ping'
   ];
 
   // 4. Keyword at the END: e.g. "Клімат в кімнаті Температура"
@@ -877,7 +925,7 @@ function renderEntityPickerList() {
     const unit = escapeHtml(e.attributes && e.attributes.unit_of_measurement ? e.attributes.unit_of_measurement : '');
     const displayParam = unit ? `${stateVal} ${unit}` : stateVal;
 
-    const parts = splitEntityName(fullFriendlyName, domain, e.attributes, e.device_name, e.area || e.area_name);
+    const parts = splitEntityName(fullFriendlyName, domain, e.attributes, e.device_name, e.area || e.area_name, e.entity_id);
     const escapedDevice = escapeHtml(parts.device || e.area || e.area_name || domain.toUpperCase());
     const escapedParam = escapeHtml(parts.param || fullFriendlyName);
     const escapedFullName = escapeHtml(fullFriendlyName);
