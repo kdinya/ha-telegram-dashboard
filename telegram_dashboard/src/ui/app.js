@@ -479,8 +479,7 @@ async function init() {
     }
   });
 
-  await fetchEntities();
-  await loadConfig();
+  await Promise.all([loadConfig(), fetchEntities()]);
   void loadTelegramBotName();
   setupEventListeners();
 }
@@ -1458,7 +1457,10 @@ function loadSectionIntoEditor(key) {
   const sec = config.menu[key];
   if (editorSectionKey) editorSectionKey.textContent = key;
   if (editorSectionIcon) editorSectionIcon.textContent = sec.icon || '📁';
-  if (editorSectionTitle) editorSectionTitle.textContent = stripLeadingEmoji(sec.title || '') || key;
+  if (editorSectionTitle) {
+    const fallbackTitle = key === 'main' ? (window.t ? window.t('nav_main_menu') || 'Головне меню' : 'Головне меню') : key;
+    editorSectionTitle.textContent = stripLeadingEmoji(sec.title || '') || fallbackTitle;
+  }
   if (secTitle) secTitle.value = stripLeadingEmoji(sec.title || '');
   if (secIcon) secIcon.value = sec.icon || '📁';
   if (secIconDisplay) secIconDisplay.textContent = sec.icon || '📁';
@@ -1976,9 +1978,23 @@ function renderSectionElements(items) {
       const mid = rect.top + rect.height / 2;
       let toIdx = idx;
       if (fromIdx < idx) {
-        toIdx = (e.clientY >= mid || fromIdx === idx - 1) ? idx + 1 : idx;
+        if (e.clientY >= mid) {
+          toIdx = idx + 1;
+        } else if (fromIdx < idx - 1) {
+          toIdx = idx;
+        } else {
+          return;
+        }
       } else if (fromIdx > idx) {
-        toIdx = (e.clientY < mid || fromIdx === idx + 1) ? idx : idx + 1;
+        if (e.clientY < mid) {
+          toIdx = idx;
+        } else if (fromIdx > idx + 1) {
+          toIdx = idx + 1;
+        } else {
+          return;
+        }
+      } else {
+        return;
       }
       reorderSectionItems(fromIdx, toIdx);
     });
@@ -1998,80 +2014,52 @@ function renderSectionElements(items) {
     };
     const pointerTargetAt = (clientY, startY) => {
       const fromIdx = Number(el.dataset.idx);
-      const fromRect = el.getBoundingClientRect();
+      const allNodes = [...container.querySelectorAll('.section-text-item')].sort(
+        (a, b) => Number(a.dataset.idx) - Number(b.dataset.idx)
+      );
+      if (!allNodes.length) return { node: null, toIdx: fromIdx, position: null };
+
+      const fromNode = allNodes.find(n => Number(n.dataset.idx) === fromIdx) || el;
+      const fromRect = fromNode.getBoundingClientRect();
 
       // If finger/pointer is still within the dragged element bounds, do not highlight any target
       if (clientY >= fromRect.top && clientY <= fromRect.bottom) {
         return { node: null, toIdx: fromIdx, position: null };
       }
 
-      const allNodes = [...container.querySelectorAll('.section-text-item')];
+      let targetIdx = fromIdx;
+      const firstRect = allNodes[0].getBoundingClientRect();
+      const lastRect = allNodes[allNodes.length - 1].getBoundingClientRect();
 
-      // Dragging UP
-      if (clientY < fromRect.top) {
-        const nodesAbove = allNodes
-          .filter(node => Number(node.dataset.idx) < fromIdx)
-          .sort((a, b) => Number(b.dataset.idx) - Number(a.dataset.idx));
-
-        for (const node of nodesAbove) {
-          const nodeIdx = Number(node.dataset.idx);
-          const rect = node.getBoundingClientRect();
-          const mid = rect.top + rect.height / 2;
-
-          if (nodeIdx === fromIdx - 1) {
-            if (clientY < mid) {
-              return { node, toIdx: nodeIdx, position: 'top' };
-            }
-            return { node: null, toIdx: fromIdx, position: null };
-          }
-          if (clientY >= mid && clientY <= rect.bottom) {
-            return { node, toIdx: nodeIdx + 1, position: 'bottom' };
-          }
-          if (clientY < mid) {
-            if (nodeIdx === 0 || clientY >= rect.top) {
-              return { node, toIdx: nodeIdx, position: 'top' };
+      if (clientY <= firstRect.top + firstRect.height / 2) {
+        targetIdx = 0;
+      } else if (clientY >= lastRect.top + lastRect.height / 2) {
+        targetIdx = allNodes.length;
+      } else {
+        for (let i = 0; i < allNodes.length; i++) {
+          const rect = allNodes[i].getBoundingClientRect();
+          if (clientY >= rect.top && clientY <= rect.bottom) {
+            targetIdx = clientY < (rect.top + rect.height / 2) ? i : i + 1;
+            break;
+          } else if (i < allNodes.length - 1) {
+            const nextRect = allNodes[i + 1].getBoundingClientRect();
+            if (clientY > rect.bottom && clientY < nextRect.top) {
+              targetIdx = i + 1;
+              break;
             }
           }
-        }
-        if (nodesAbove.length > 0) {
-          const topNode = nodesAbove[nodesAbove.length - 1];
-          return { node: topNode, toIdx: 0, position: 'top' };
         }
       }
 
-      // Dragging DOWN
-      if (clientY > fromRect.bottom) {
-        const nodesBelow = allNodes
-          .filter(node => Number(node.dataset.idx) > fromIdx)
-          .sort((a, b) => Number(a.dataset.idx) - Number(b.dataset.idx));
-
-        for (const node of nodesBelow) {
-          const nodeIdx = Number(node.dataset.idx);
-          const rect = node.getBoundingClientRect();
-          const mid = rect.top + rect.height / 2;
-
-          if (nodeIdx === fromIdx + 1) {
-            if (clientY > mid) {
-              return { node, toIdx: nodeIdx + 1, position: 'bottom' };
-            }
-            return { node: null, toIdx: fromIdx, position: null };
-          }
-          if (clientY <= mid && clientY >= rect.top) {
-            return { node, toIdx: nodeIdx, position: 'top' };
-          }
-          if (clientY > mid) {
-            if (nodeIdx === sec.items.length - 1 || clientY <= rect.bottom) {
-              return { node, toIdx: nodeIdx + 1, position: 'bottom' };
-            }
-          }
-        }
-        if (nodesBelow.length > 0) {
-          const bottomNode = nodesBelow[nodesBelow.length - 1];
-          return { node: bottomNode, toIdx: sec.items.length, position: 'bottom' };
-        }
+      if (targetIdx === fromIdx || targetIdx === fromIdx + 1) {
+        return { node: null, toIdx: fromIdx, position: null };
       }
 
-      return { node: null, toIdx: fromIdx, position: null };
+      if (targetIdx < fromIdx) {
+        return { node: allNodes[targetIdx], toIdx: targetIdx, position: 'top' };
+      } else {
+        return { node: allNodes[targetIdx - 1], toIdx: targetIdx, position: 'bottom' };
+      }
     };
 
     const stopPointerReorder = (e) => {
@@ -2540,7 +2528,7 @@ function syncCurrentSectionFromForm() {
   if (!sec) return;
 
   if (secTitle) {
-    sec.title = stripLeadingEmoji(secTitle.value.trim()) || 'Розділ';
+    sec.title = stripLeadingEmoji(secTitle.value.trim()) || (currentSectionKey === 'main' ? 'Головне меню' : currentSectionKey);
   }
   if (secIcon) {
     sec.icon = secIcon.value.trim() || '📁';
@@ -3301,7 +3289,7 @@ function setupEventListeners() {
     if (!sec) return;
     recordHistory();
     if (editSecTitle) {
-      sec.title = stripLeadingEmoji(editSecTitle.value.trim()) || 'Розділ';
+      sec.title = stripLeadingEmoji(editSecTitle.value.trim()) || (currentSectionKey === 'main' ? 'Головне меню' : currentSectionKey);
     }
     if (editSecCommand) {
       const defaultCmd = getDefaultSectionCommand(currentSectionKey);
