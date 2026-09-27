@@ -204,6 +204,17 @@
                 <span class="role-arrow">▾</span>
               </button>
             </div>
+            <div class="preview-role-picker" id="preview-role-picker">
+              <div class="preview-role-picker-inner">
+                <span class="preview-role-picker-label" data-i18n="preview_sim_role">Role simulation:</span>
+                <select id="preview-role-select" class="form-control form-control-sm">
+                  <option value="admin" data-i18n="role_admin">Administrator</option>
+                  <option value="member" data-i18n="role_member">Family member</option>
+                  <option value="guest" data-i18n="role_guest">Guest</option>
+                </select>
+                <button type="button" class="btn-close-role-picker" id="btn-close-role-picker" title="Закрити" aria-label="Закрити" data-i18n-title="preview_sim_role_close">✕</button>
+              </div>
+            </div>
             <div class="tg-messages-area">
               <div class="tg-message-bubble tg-user-bubble">
                 <div class="tg-user-bubble-text">/start</div>
@@ -215,17 +226,6 @@
                   <div id="preview-buttons" class="tg-inline-keyboard"></div>
                   <div id="preview-timestamp" class="preview-timestamp" hidden></div>
                 </div>
-              </div>
-            </div>
-            <div class="preview-role-picker" id="preview-role-picker">
-              <div class="preview-role-picker-inner">
-                <span class="preview-role-picker-label" data-i18n="preview_sim_role">Role simulation:</span>
-                <select id="preview-role-select" class="form-control form-control-sm">
-                  <option value="admin" data-i18n="role_admin">Administrator</option>
-                  <option value="member" data-i18n="role_member">Family member</option>
-                  <option value="guest" data-i18n="role_guest">Guest</option>
-                </select>
-                <button type="button" class="btn-close-role-picker" id="btn-close-role-picker" title="Закрити" aria-label="Закрити" data-i18n-title="preview_sim_role_close">✕</button>
               </div>
             </div>
           </div>

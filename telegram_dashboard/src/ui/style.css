@@ -517,6 +517,7 @@ select.form-control option {
 }
 
 .phone-frame {
+  position: relative;
   width: var(--preview-frame-w, 320px);
   background-color: var(--tg-bubble);
   border: 10px solid #2d3748;
@@ -794,14 +795,24 @@ select.form-control option {
 }
 
 .preview-role-picker {
+  position: absolute;
+  top: 73px;
+  left: 0;
+  right: 0;
+  z-index: 40;
   max-height: 0;
   opacity: 0;
   overflow: hidden;
   padding: 0 14px;
-  background-color: rgba(0, 0, 0, 0.35);
-  border-top: 1px solid transparent;
+  background-color: rgba(22, 30, 44, 0.96);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid transparent;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+  transform: translateY(-8px);
   transition: max-height 0.28s cubic-bezier(0.4, 0, 0.2, 1),
               opacity 0.22s ease,
+              transform 0.24s cubic-bezier(0.4, 0, 0.2, 1),
               padding 0.28s cubic-bezier(0.4, 0, 0.2, 1),
               border-color 0.2s ease;
   box-sizing: border-box;
@@ -812,9 +823,20 @@ select.form-control option {
 .preview-role-picker.open {
   max-height: 64px;
   opacity: 1;
+  transform: translateY(0);
   padding: 8px 14px;
-  border-top-color: rgba(255, 255, 255, 0.08);
+  border-bottom-color: rgba(255, 255, 255, 0.12);
   pointer-events: auto;
+}
+
+/* Ensure divider lines in preview occupy strictly one line without wrapping */
+.tg-rendered-content .tg-preview-divider {
+  display: inline-block;
+  max-width: 100%;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  vertical-align: middle;
+  line-height: 1.1;
 }
 
 .preview-role-picker-inner {

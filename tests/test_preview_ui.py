@@ -187,3 +187,24 @@ def test_preview_role_simulation_is_collapsible_and_anchors_messages_to_bottom()
     assert "btnCloseRolePicker?.addEventListener('click'" in app
     assert 'preview_sim_role_btn:' in i18n
     assert 'preview_sim_role_close:' in i18n
+
+
+def test_preview_role_simulation_opens_at_top_and_divider_does_not_wrap():
+    html = (UI_DIR / "index.html").read_text(encoding="utf-8")
+    styles = (UI_DIR / "style.css").read_text(encoding="utf-8")
+    app = (UI_DIR / "app.js").read_text(encoding="utf-8")
+
+    # Role simulation appears right below chat header as a top overlay
+    header_idx = html.find("tg-chat-header")
+    picker_idx = html.find("preview-role-picker")
+    messages_idx = html.find("tg-messages-area")
+    assert header_idx != -1 and picker_idx != -1 and messages_idx != -1
+    assert header_idx < picker_idx < messages_idx
+
+    assert "position: absolute;" in styles
+    assert "top: 73px;" in styles
+    assert "z-index: 40;" in styles
+    assert ".tg-preview-divider" in styles
+    assert "white-space: nowrap !important;" in styles
+    assert "overflow: hidden !important;" in styles
+    assert "tg-preview-divider" in app

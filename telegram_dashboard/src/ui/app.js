@@ -2739,6 +2739,11 @@ async function updatePreview() {
         .find((node) => (node.textContent || '').includes('Оновлено'));
       const timestampText = timestampNode?.textContent?.trim() || '';
       timestampNode?.remove();
+      // Ensure divider lines in preview occupy strictly one line without wrapping
+      renderedHtml.innerHTML = renderedHtml.innerHTML.replace(
+        /([─┄·–—━一]{3,})/g,
+        '<span class="tg-preview-divider">$1</span>'
+      );
       previewText.innerHTML = renderedHtml.innerHTML;
       renderTelegramKeyboard(data.keyboard || []);
       if (previewTimestampEl) {
@@ -3038,6 +3043,15 @@ btnToggleRoleSim?.addEventListener('click', () => {
 
 btnCloseRolePicker?.addEventListener('click', () => {
   setRoleSimulationDrawerOpen(false);
+});
+
+// Close role simulation dropdown when clicking outside
+document.addEventListener('click', (e) => {
+  if (rolePickerEl?.classList.contains('open')) {
+    if (!e.target.closest('#preview-role-picker') && !e.target.closest('#btn-toggle-role-sim')) {
+      setRoleSimulationDrawerOpen(false);
+    }
+  }
 });
 
 $('preview-role-select').addEventListener('change', e => {
